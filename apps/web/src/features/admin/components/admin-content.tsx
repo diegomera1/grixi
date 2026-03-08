@@ -333,7 +333,7 @@ export function AdminContent({
         ))}
       </div>
 
-      {/* ── Tab: Overview ─────────────── */}
+      {/* -- Tab: Overview -- */}
       <AnimatePresence mode="wait">
         {activeTab === "overview" && (
           <motion.div

@@ -11,6 +11,7 @@ import {
   Shield,
   Warehouse,
   Sparkles,
+  DollarSign,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -30,6 +31,14 @@ const navItems = [
     color: "#06B6D4", // cyan
     bgActive: "rgba(6,182,212,0.08)",
     borderActive: "rgba(6,182,212,0.3)",
+  },
+  {
+    label: "Finanzas",
+    href: "/finanzas",
+    icon: DollarSign,
+    color: "#8B5CF6", // violet
+    bgActive: "rgba(139,92,246,0.08)",
+    borderActive: "rgba(139,92,246,0.3)",
   },
   {
     label: "Usuarios",
