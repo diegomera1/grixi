@@ -1,126 +1,242 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
   Shield,
   Warehouse,
-  Bot,
+  Sparkles,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  Settings,
 } from "lucide-react";
-import { useState } from "react";
+import { cn } from "@/lib/utils/cn";
 
+// Module-specific accent colors
 const navItems = [
   {
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+    color: "#06B6D4", // cyan
+    bgActive: "rgba(6,182,212,0.08)",
+    borderActive: "rgba(6,182,212,0.3)",
   },
   {
     label: "Usuarios",
     href: "/usuarios",
     icon: Users,
+    color: "#F59E0B", // amber
+    bgActive: "rgba(245,158,11,0.08)",
+    borderActive: "rgba(245,158,11,0.3)",
   },
   {
     label: "Administración",
     href: "/administracion",
     icon: Shield,
+    color: "#F43F5E", // rose
+    bgActive: "rgba(244,63,94,0.08)",
+    borderActive: "rgba(244,63,94,0.3)",
   },
   {
     label: "Almacenes",
     href: "/almacenes",
     icon: Warehouse,
+    color: "#10B981", // emerald
+    bgActive: "rgba(16,185,129,0.08)",
+    borderActive: "rgba(16,185,129,0.3)",
   },
   {
-    label: "Asistente IA",
-    href: "/asistente",
-    icon: Bot,
+    label: "Grixi AI",
+    href: "/ai",
+    icon: Sparkles,
+    color: "#8B5CF6", // violet
+    bgActive: "rgba(139,92,246,0.08)",
+    borderActive: "rgba(139,92,246,0.3)",
   },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
-    <aside
-      className={cn(
-        "h-screen sticky top-0 flex flex-col transition-all duration-300 z-30",
-        collapsed ? "w-[68px]" : "w-[260px]"
-      )}
-      style={{
-        background: "var(--sidebar-bg)",
-        borderRight: "1px solid var(--sidebar-border)",
-      }}
+    <motion.aside
+      initial={false}
+      animate={{ width: collapsed ? 56 : 220 }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      className="relative flex h-screen flex-col border-r border-[var(--border)] bg-[var(--bg-surface)]"
     >
-      {/* Logo */}
-      <div
-        className={cn(
-          "h-16 flex items-center px-5 shrink-0",
-          collapsed ? "justify-center" : "gap-3"
-        )}
-        style={{ borderBottom: "1px solid var(--sidebar-border)" }}
-      >
-        <div className="w-8 h-8 rounded-lg bg-[var(--color-brand)] flex items-center justify-center text-white font-bold text-sm shrink-0">
-          G
-        </div>
-        {!collapsed && (
-          <span
-            className="text-lg font-bold tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Grixi
-          </span>
-        )}
+      {/* Logo — compact */}
+      <div className="flex h-12 items-center gap-2.5 border-b border-[var(--border)] px-3">
+        <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
+          <Image
+            src="/brand/icon.png"
+            alt="Grixi"
+            width={24}
+            height={24}
+            className="h-6 w-6 shrink-0"
+          />
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden whitespace-nowrap text-sm font-semibold text-[var(--text-primary)]"
+              >
+                Grixi
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+      {/* Navigation — compact with module colors */}
+      <nav className="flex-1 space-y-0.5 px-2 py-2">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
-                collapsed && "justify-center px-0",
+                "group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-all duration-150",
                 isActive
-                  ? "text-white"
-                  : "hover:opacity-80"
+                  ? "text-[var(--text-primary)]"
+                  : "text-[var(--text-muted)] hover:bg-[var(--bg-muted)]/60 hover:text-[var(--text-secondary)]"
               )}
-              style={{
-                background: isActive ? "var(--color-brand)" : "transparent",
-                color: isActive ? "#FFFFFF" : "var(--text-secondary)",
-              }}
-              title={collapsed ? item.label : undefined}
+              style={
+                isActive
+                  ? {
+                      backgroundColor: item.bgActive,
+                      border: `1px solid ${item.borderActive}`,
+                    }
+                  : { border: "1px solid transparent" }
+              }
             >
-              <item.icon size={20} className="shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {/* Active indicator bar */}
+              {isActive && (
+                <motion.div
+                  layoutId="sidebar-active"
+                  className="absolute -left-2 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+              )}
+
+              <item.icon
+                size={16}
+                className="shrink-0 transition-colors"
+                style={{ color: isActive ? item.color : undefined }}
+              />
+              <AnimatePresence>
+                {!collapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: "auto" }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden whitespace-nowrap"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </Link>
           );
         })}
       </nav>
 
-      {/* Collapse Toggle */}
-      <div className="p-3 shrink-0" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn(
-            "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 hover:opacity-80",
-            collapsed && "justify-center px-0"
-          )}
-          style={{ color: "var(--text-tertiary)" }}
+      {/* Bottom section — compact */}
+      <div className="border-t border-[var(--border)] px-2 py-2">
+        {/* Settings */}
+        <Link
+          href="/dashboard"
+          className="group mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-[var(--text-muted)] transition-all hover:bg-[var(--bg-muted)]/60 hover:text-[var(--text-secondary)]"
         >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          {!collapsed && <span>Colapsar</span>}
-        </button>
+          <Settings size={16} className="shrink-0" />
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden whitespace-nowrap"
+              >
+                Configuración
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Link>
+
+        {/* User card — minimal */}
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
+          <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--border)]">
+            <Image
+              src="https://randomuser.me/api/portraits/women/20.jpg"
+              alt="Admin"
+              width={24}
+              height={24}
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex-1 overflow-hidden"
+              >
+                <p className="truncate text-[12px] font-medium text-[var(--text-primary)]">
+                  Mariana Solís
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <Link
+                  href="/login"
+                  className="rounded p-1 text-[var(--text-muted)] transition-colors hover:text-[var(--error)]"
+                >
+                  <LogOut size={13} />
+                </Link>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-    </aside>
+
+      {/* Collapse toggle — smaller */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="absolute -right-2.5 top-16 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)] shadow-sm transition-all hover:bg-[var(--bg-muted)]"
+      >
+        {collapsed ? <ChevronRight size={11} /> : <ChevronLeft size={11} />}
+      </button>
+    </motion.aside>
   );
 }

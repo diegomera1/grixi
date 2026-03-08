@@ -1,129 +1,90 @@
 import { createClient } from "@/lib/supabase/server";
-import { LayoutDashboard, Users, Shield, Warehouse, Bot } from "lucide-react";
+import { DashboardContent } from "@/features/dashboard/components/dashboard-content";
 
-const modules = [
-  {
-    title: "Usuarios",
-    description: "Gestión de personas, roles y permisos",
-    href: "/usuarios",
-    icon: Users,
-    color: "#3B82F6",
-  },
-  {
-    title: "Administración",
-    description: "Auditoría, tracking y sesiones",
-    href: "/administracion",
-    icon: Shield,
-    color: "#EF4444",
-  },
-  {
-    title: "Almacenes",
-    description: "Warehouse 2D/3D, inventario, racks",
-    href: "/almacenes",
-    icon: Warehouse,
-    color: "#10B981",
-  },
-  {
-    title: "Asistente IA",
-    description: "Chat inteligente con Gemini",
-    href: "/asistente",
-    icon: Bot,
-    color: "#7C3AED",
-  },
-];
+export const metadata = {
+  title: "Dashboard",
+};
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+
+  // Fetch KPI data
+  const [
+    { count: totalUsers },
+    { count: totalProducts },
+    { count: totalWarehouses },
+    { count: recentActivity },
+    { data: recentAudit },
+    { data: activityByDay },
+  ] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase.from("products").select("*", { count: "exact", head: true }),
+    supabase.from("warehouses").select("*", { count: "exact", head: true }),
+    supabase
+      .from("activity_tracking")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+    supabase
+      .from("audit_logs")
+      .select("id, action, resource_type, new_data, created_at, user_id")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("activity_tracking")
+      .select("created_at")
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order("created_at", { ascending: true }),
+  ]);
+
+  // Process activity data by day for chart
+  const activityChartData = processActivityByDay(activityByDay || []);
+
+  // Get user names for audit logs
+  const userIds = [...new Set((recentAudit || []).map((a) => a.user_id).filter(Boolean))];
+  const { data: userProfiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .in("id", userIds);
+
+  const profileMap = new Map((userProfiles || []).map((p) => [p.id, p]));
+
+  const enrichedAudit = (recentAudit || []).map((log) => ({
+    ...log,
+    user: profileMap.get(log.user_id) || { full_name: "Sistema", avatar_url: null },
+  }));
 
   return (
-    <div className="space-y-8">
-      {/* Welcome */}
-      <div>
-        <h1
-          className="text-3xl font-bold tracking-tight"
-          style={{ color: "var(--text-primary)" }}
-        >
-          Hola, {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuario"} 👋
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
-          Bienvenido a la plataforma de interconexión inteligente de tu empresa.
-        </p>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Usuarios activos", value: "0", change: "+0%", icon: Users },
-          { label: "Acciones hoy", value: "0", change: "+0%", icon: LayoutDashboard },
-          { label: "Almacenes", value: "0", change: "", icon: Warehouse },
-          { label: "Consultas IA", value: "0", change: "", icon: Bot },
-        ].map((kpi) => (
-          <div
-            key={kpi.label}
-            className="rounded-xl p-5 transition-all duration-200"
-            style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-primary)",
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-                {kpi.label}
-              </span>
-              <kpi.icon size={16} style={{ color: "var(--text-tertiary)" }} />
-            </div>
-            <div className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-              {kpi.value}
-            </div>
-            {kpi.change && (
-              <span className="text-xs mt-1" style={{ color: "var(--color-success)" }}>
-                {kpi.change}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Module Cards */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
-          Módulos
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {modules.map((mod) => (
-            <a
-              key={mod.href}
-              href={mod.href}
-              className="group rounded-xl p-5 transition-all duration-200 hover:shadow-md"
-              style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border-primary)",
-              }}
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: `${mod.color}15`, color: mod.color }}
-                >
-                  <mod.icon size={20} />
-                </div>
-                <div>
-                  <h3
-                    className="font-semibold group-hover:underline"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {mod.title}
-                  </h3>
-                  <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                    {mod.description}
-                  </p>
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
+    <DashboardContent
+      kpis={{
+        totalUsers: totalUsers || 0,
+        totalProducts: totalProducts || 0,
+        totalWarehouses: totalWarehouses || 0,
+        recentActivity: recentActivity || 0,
+      }}
+      activityChartData={activityChartData}
+      recentAudit={enrichedAudit}
+    />
   );
+}
+
+function processActivityByDay(
+  activities: Array<{ created_at: string }>
+): Array<{ day: string; count: number }> {
+  const dayMap = new Map<string, number>();
+
+  // Initialize last 7 days
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    const dayKey = date.toLocaleDateString("es-ES", { weekday: "short" });
+    dayMap.set(dayKey, 0);
+  }
+
+  // Count activities per day
+  for (const activity of activities) {
+    const date = new Date(activity.created_at);
+    const dayKey = date.toLocaleDateString("es-ES", { weekday: "short" });
+    dayMap.set(dayKey, (dayMap.get(dayKey) || 0) + 1);
+  }
+
+  return Array.from(dayMap.entries()).map(([day, count]) => ({ day, count }));
 }

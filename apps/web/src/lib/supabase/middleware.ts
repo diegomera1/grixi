@@ -15,7 +15,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
@@ -29,29 +29,27 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the auth token
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refresh session if it exists
+  await supabase.auth.getUser();
 
-  // Protected routes: redirect to login if not authenticated
-  const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/usuarios") ||
-    request.nextUrl.pathname.startsWith("/administracion") ||
-    request.nextUrl.pathname.startsWith("/almacenes");
-
-  if (isProtectedRoute && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
-  // If user is logged in and trying to access login page, redirect to dashboard
-  if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/register")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
+  // For demo mode: skip auth protection — all routes are public
+  // When Google OAuth is configured, uncomment the protection logic below:
+  
+  // const { data: { user } } = await supabase.auth.getUser();
+  // const protectedPaths = ["/dashboard", "/usuarios", "/administracion", "/almacenes"];
+  // const isProtectedRoute = protectedPaths.some((path) =>
+  //   request.nextUrl.pathname.startsWith(path)
+  // );
+  // if (isProtectedRoute && !user) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = "/login";
+  //   return NextResponse.redirect(url);
+  // }
+  // if (request.nextUrl.pathname === "/login" && user) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = "/dashboard";
+  //   return NextResponse.redirect(url);
+  // }
 
   return supabaseResponse;
 }

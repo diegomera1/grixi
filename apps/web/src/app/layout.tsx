@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,23 +13,60 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "Grixi — La interconexión inteligente",
+    default: "Grixi — La interconexión inteligente de toda la empresa",
     template: "%s | Grixi",
   },
   description:
-    "Plataforma enterprise para conectar, visualizar y gestionar la información de toda la empresa de manera inteligente.",
+    "Plataforma enterprise que conecta, visualiza y gestiona la información de tu empresa de manera inteligente. Multi-tenant, IA integrada, visualización 3D.",
   keywords: [
-    "Grixi",
     "enterprise",
     "SaaS",
+    "multi-tenant",
     "warehouse",
-    "almacén",
     "3D",
     "AI",
-    "inteligencia artificial",
+    "Gemini",
+    "Supabase",
+    "interconexión",
   ],
+  authors: [{ name: "Grixi" }],
+  openGraph: {
+    type: "website",
+    locale: "es_ES",
+    url: "https://grixi.vercel.app",
+    siteName: "Grixi",
+    title: "Grixi — La interconexión inteligente de toda la empresa",
+    description:
+      "Plataforma enterprise que conecta, visualiza y gestiona la información de tu empresa de manera inteligente.",
+    images: [
+      {
+        url: "/brand/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Grixi Platform",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Grixi — La interconexión inteligente",
+    description:
+      "Plataforma enterprise multi-tenant con IA, visualización 3D de almacenes, y auditoría inteligente.",
+    images: ["/brand/og-image.png"],
+  },
+  icons: {
+    icon: "/brand/icon.png",
+    apple: "/brand/icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -41,22 +77,9 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster
-            position="bottom-right"
-            richColors
-            closeButton
-            theme="system"
-          />
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
