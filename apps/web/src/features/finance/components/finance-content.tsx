@@ -56,6 +56,20 @@ import type {
   CurrencyCode,
   FinanceCostCenter,
 } from "../types";
+import { GeneralLedgerTab } from "./general-ledger-tab";
+import { AccountsReceivableTab } from "./accounts-receivable-tab";
+import { AccountsPayableTab } from "./accounts-payable-tab";
+import { BudgetsTab } from "./budgets-tab";
+
+type FinanceTab = "resumen" | "libro_mayor" | "cxc" | "cxp" | "presupuestos";
+
+const TABS: { id: FinanceTab; label: string; icon: string }[] = [
+  { id: "resumen", label: "Resumen", icon: "📊" },
+  { id: "libro_mayor", label: "Libro Mayor", icon: "📖" },
+  { id: "cxc", label: "Ctas × Cobrar", icon: "💰" },
+  { id: "cxp", label: "Ctas × Pagar", icon: "💳" },
+  { id: "presupuestos", label: "Presupuestos", icon: "🎯" },
+];
 
 // ── Transaction config ─────────────────────────
 const TX_CONFIG: Record<string, { label: string; icon: typeof DollarSign; color: string }> = {
@@ -81,6 +95,7 @@ type Props = {
 export function FinanceContent({ initialTransactions, costCenters }: Props) {
   const [currency, setCurrency] = useState<CurrencyCode>("USD");
   const [selectedTx, setSelectedTx] = useState<FinanceTransaction | null>(null);
+  const [activeTab, setActiveTab] = useState<FinanceTab>("resumen");
   const { isSimulating } = useFinanceSimulator();
 
   const { liveTransactions, transactions, kpis, departmentBreakdown } =
@@ -210,7 +225,35 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           </div>
         </div>
       </div>
+      {/* ── Tab Navigation ─────────────────────── */}
+      <div className="flex items-center gap-1 border-b border-[var(--border)] -mx-1 px-1 overflow-x-auto">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-all relative shrink-0",
+              activeTab === tab.id
+                ? "text-violet-500"
+                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+            )}
+          >
+            <span>{tab.icon}</span>
+            <span>{tab.label}</span>
+            {activeTab === tab.id && (
+              <motion.div
+                layoutId="finance-tab-indicator"
+                className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-500 rounded-full"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+          </button>
+        ))}
+      </div>
 
+      {/* ── Tab Content ────────────────────────── */}
+      {activeTab === "resumen" && (
+        <>
       {/* ── KPI Cards ──────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KPICard
@@ -511,6 +554,8 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           </div>
         </div>
       )}
+      </>
+      )}
 
       {/* ── Transaction Detail Drawer ──────────── */}
       <AnimatePresence>
@@ -523,6 +568,42 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           />
         )}
       </AnimatePresence>
+
+      {activeTab === "libro_mayor" && (
+        <GeneralLedgerTab
+          transactions={allTransactions}
+          currency={currency}
+          convert={c}
+          onSelectTx={setSelectedTx}
+        />
+      )}
+
+      {activeTab === "cxc" && (
+        <AccountsReceivableTab
+          transactions={allTransactions}
+          currency={currency}
+          convert={c}
+          onSelectTx={setSelectedTx}
+        />
+      )}
+
+      {activeTab === "cxp" && (
+        <AccountsPayableTab
+          transactions={allTransactions}
+          currency={currency}
+          convert={c}
+          onSelectTx={setSelectedTx}
+        />
+      )}
+
+      {activeTab === "presupuestos" && (
+        <BudgetsTab
+          transactions={allTransactions}
+          costCenters={costCenters}
+          currency={currency}
+          convert={c}
+        />
+      )}
     </div>
   );
 }
