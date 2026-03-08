@@ -25,6 +25,7 @@ import {
   Wallet,
   ChevronDown,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import {
   AreaChart,
@@ -154,12 +155,16 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
   }, [c]);
 
   // Recent transactions for feed (last 30)
+  // Show ALL transactions — historical + live, with live ones first
   const recentTransactions = useMemo(
-    () =>
-      [...liveTransactions]
+    () => {
+      const live = liveTransactions.map(t => ({ ...t, _isLive: true }));
+      const historical = transactions.filter(t => !t.is_live).map(t => ({ ...t, _isLive: false }));
+      return [...live, ...historical]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 30),
-    [liveTransactions]
+        .slice(0, 50);
+    },
+    [liveTransactions, transactions]
   );
 
   return (
@@ -185,7 +190,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           </div>
 
           {/* Currency selector */}
-          <div className="flex rounded-lg border border-white/10 bg-white/5 p-0.5">
+          <div className="flex rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-0.5">
             {(["USD", "EUR", "GBP"] as CurrencyCode[]).map((code) => (
               <button
                 key={code}
@@ -193,8 +198,8 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
                   currency === code
-                    ? "bg-violet-500/20 text-violet-300 shadow-sm"
-                    : "text-white/50 hover:text-white/80"
+                    ? "bg-violet-500/20 text-violet-400 shadow-sm"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                 )}
               >
                 <span>{CURRENCY_CONFIG[code].flag}</span>
@@ -252,7 +257,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
       {/* ── Main Grid: Chart + Feed ──────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Cash Flow Chart */}
-        <div className="lg:col-span-2 rounded-xl border border-white/10 bg-white/[0.02] p-5">
+        <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-sm">Flujo de Caja</h3>
@@ -285,13 +290,13 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                       <stop offset="100%" stopColor="#F43F5E" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="time" tick={{ fontSize: 10, fill: "#64748B" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "#64748B" }} tickLine={false} axisLine={false}
                     tickFormatter={(v) => formatCurrencyCompact(Number(v), currency)}
                   />
                   <Tooltip
-                    contentStyle={{ background: "#1E1B2E", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", fontSize: "12px", color: "var(--text-primary)" }}
+                    contentStyle={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: "12px", color: "var(--text-primary)" }}
                     formatter={(v) => formatCurrency(Number(v), currency)}
                   />
                   <Area type="monotone" dataKey="inflows" stroke="#10B981" fill="url(#inflowGrad)" strokeWidth={2} dot={false} />
@@ -308,7 +313,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
         </div>
 
         {/* Live Transaction Feed */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 flex flex-col max-h-[380px]">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 flex flex-col max-h-[380px]">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-sm">Transacciones</h3>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono">
@@ -335,7 +340,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                     exit={{ opacity: 0, x: -20, scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
                     onClick={() => setSelectedTx(tx)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all group text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-muted)]/30 hover:bg-[var(--bg-muted)] border border-transparent hover:border-[var(--border)] transition-all group text-left cursor-pointer"
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -344,9 +349,12 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{tx.counterparty}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">
+                      <p className="text-xs font-medium truncate text-[var(--text-primary)]">{tx.counterparty}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] truncate">
                         {cfg.label} · {tx.invoice_number || tx.sap_document_id}
+                        {(tx as unknown as { _isLive?: boolean })._isLive && (
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-500 text-[9px] font-bold">LIVE</span>
+                        )}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
@@ -367,7 +375,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
       {/* ── Bottom Grid: Donut + P&L + AR Aging ─── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Expenses Donut */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <h3 className="font-semibold text-sm mb-1">Gastos por Departamento</h3>
           <p className="text-xs text-muted-foreground mb-4">Distribución proporcional</p>
           <div className="h-[200px]">
@@ -389,7 +397,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ background: "#1E1B2E", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", fontSize: "11px" }}
+                    contentStyle={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: "11px" }}
                     formatter={(v) => formatCurrency(Number(v), currency)}
                   />
                 </RechartsPie>
@@ -412,26 +420,26 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
         </div>
 
         {/* Mini P&L */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <h3 className="font-semibold text-sm mb-1">Estado de Resultados</h3>
           <p className="text-xs text-muted-foreground mb-4">P&L resumido — {CURRENCY_CONFIG[currency].flag} {currency}</p>
           <div className="space-y-3">
             <PnLRow label="Ingresos Totales" amount={pnlData.revenue} currency={currency} type="revenue" />
-            <div className="border-t border-white/5 pt-2">
+            <div className="border-t border-[var(--border)] pt-2">
               <PnLRow label="Gastos Operativos" amount={pnlData.expenses} currency={currency} type="expense" expandable>
                 {pnlData.departments.slice(0, 5).map((d) => (
                   <PnLRow key={d.name} label={d.name} amount={d.amount} currency={currency} type="expense" indent />
                 ))}
               </PnLRow>
             </div>
-            <div className="border-t border-white/10 pt-2">
+            <div className="border-t border-[var(--border)] pt-2">
               <PnLRow label="EBITDA" amount={pnlData.ebitda} currency={currency} type="total" bold />
             </div>
           </div>
         </div>
 
         {/* AR Aging */}
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <h3 className="font-semibold text-sm mb-1">Aging de Cartera</h3>
           <p className="text-xs text-muted-foreground mb-4">Cuentas por cobrar por antigüedad</p>
           <div className="h-[200px]">
@@ -440,7 +448,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="range" tick={{ fontSize: 11, fill: "#94A3B8" }} width={50} tickLine={false} axisLine={false} />
                 <Tooltip
-                  contentStyle={{ background: "#1E1B2E", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", fontSize: "11px" }}
+                  contentStyle={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: "11px" }}
                   formatter={(v) => formatCurrency(Number(v), currency)}
                 />
                 <Bar dataKey="amount" radius={[0, 6, 6, 0]} barSize={20}>
@@ -452,7 +460,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
             </ResponsiveContainer>
           </div>
           {/* Balance sheet mini */}
-          <div className="mt-4 pt-4 border-t border-white/5">
+          <div className="mt-4 pt-4 border-t border-[var(--border)]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">Balance General</span>
             </div>
@@ -466,7 +474,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
 
       {/* ── Cost Centers Section ────────────────── */}
       {costCenters.length > 0 && (
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <h3 className="font-semibold text-sm mb-1">Centros de Costo</h3>
           <p className="text-xs text-muted-foreground mb-4">Presupuesto anual vs ejecutado por departamento</p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -476,10 +484,10 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
               const spentConverted = c(spent);
               const pct = budgetConverted > 0 ? Math.min((spentConverted / budgetConverted) * 100, 100) : 0;
               return (
-                <div key={cc.id} className="p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                <div key={cc.id} className="p-3 rounded-lg bg-[var(--bg-muted)]/30 border border-[var(--border)]">
                   <p className="text-[10px] font-mono text-muted-foreground mb-1">{cc.code}</p>
                   <p className="text-xs font-medium truncate mb-2">{cc.department}</p>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-[var(--bg-muted)] rounded-full overflow-hidden">
                     <motion.div
                       className="h-full rounded-full"
                       style={{ backgroundColor: pct > 80 ? "#EF4444" : pct > 50 ? "#F59E0B" : "#10B981" }}
@@ -540,7 +548,7 @@ function KPICard({
 
   return (
     <motion.div
-      className="rounded-xl border border-white/10 bg-white/[0.02] p-4 relative overflow-hidden group hover:bg-white/[0.04] transition-colors"
+      className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 relative overflow-hidden group hover:bg-[var(--bg-muted)]/30 transition-colors"
       layout
     >
       {/* Background icon */}
@@ -582,7 +590,7 @@ function PnLRow({
   children?: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const colorClass = type === "revenue" ? "text-emerald-400" : type === "expense" ? "text-rose-400" : "text-white";
+  const colorClass = type === "revenue" ? "text-emerald-500" : type === "expense" ? "text-rose-500" : "text-[var(--text-primary)]";
 
   return (
     <div>
@@ -591,7 +599,7 @@ function PnLRow({
         className={cn(
           "w-full flex items-center justify-between py-1",
           indent && "pl-4",
-          expandable && "cursor-pointer hover:bg-white/[0.02] rounded-md px-2 -mx-2",
+          expandable && "cursor-pointer hover:bg-[var(--bg-muted)]/30 rounded-md px-2 -mx-2",
         )}
       >
         <span className={cn("text-xs", bold ? "font-bold" : indent ? "text-muted-foreground" : "font-medium")}>
@@ -636,7 +644,7 @@ function BalanceRow({
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs w-14 text-muted-foreground">{label}</span>
-      <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-[var(--bg-muted)] rounded-full overflow-hidden">
         <motion.div
           className={cn("h-full rounded-full", colorClass)}
           initial={{ width: 0 }}
@@ -663,14 +671,20 @@ function TransactionDrawer({
   convert: (v: number) => number;
   onClose: () => void;
 }) {
+  const [aiAnalysis, setAiAnalysis] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [notes, setNotes] = useState(tx.notes || "");
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [notesSaving, setNotesSaving] = useState(false);
+
   const cfg = TX_CONFIG[tx.transaction_type] || TX_CONFIG.manual_entry;
   const isPositive = ["revenue", "payment_in"].includes(tx.category);
 
   const statusColors: Record<string, string> = {
-    draft: "bg-gray-500/20 text-gray-400",
-    posted: "bg-emerald-500/20 text-emerald-400",
-    cleared: "bg-blue-500/20 text-blue-400",
-    reversed: "bg-rose-500/20 text-rose-400",
+    draft: "bg-gray-500/20 text-gray-500",
+    posted: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+    cleared: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+    reversed: "bg-rose-500/20 text-rose-600 dark:text-rose-400",
   };
 
   const pmLabels: Record<string, string> = {
@@ -681,6 +695,51 @@ function TransactionDrawer({
     direct_debit: "Débito directo",
   };
 
+  const handleAnalyze = async () => {
+    setAiLoading(true);
+    try {
+      const { analyzeTransaction } = await import("../actions/analyze-transaction");
+      const result = await analyzeTransaction({
+        transaction_type: tx.transaction_type,
+        category: tx.category,
+        department: tx.department,
+        amount: tx.amount,
+        currency: tx.currency,
+        counterparty: tx.counterparty,
+        description: tx.description,
+        tax_rate: tx.tax_rate,
+        tax_amount: tx.tax_amount,
+        net_amount: tx.net_amount,
+        payment_terms: tx.payment_terms,
+        due_date: tx.due_date,
+        status: tx.status,
+        cost_center_code: tx.cost_center_code,
+        gl_account: tx.gl_account,
+        invoice_number: tx.invoice_number,
+        sap_document_id: tx.sap_document_id,
+        created_at: tx.created_at,
+        notes: tx.notes,
+      });
+      setAiAnalysis(result.analysis || result.error || "Sin resultado");
+    } catch {
+      setAiAnalysis("Error al analizar la transacción");
+    }
+    setAiLoading(false);
+  };
+
+  const handleSaveNotes = async () => {
+    setNotesSaving(true);
+    try {
+      const { updateTransactionNotes } = await import("../actions/analyze-transaction");
+      await updateTransactionNotes(tx.id, notes);
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
+    } catch {
+      // silently fail
+    }
+    setNotesSaving(false);
+  };
+
   return (
     <>
       {/* Backdrop */}
@@ -688,7 +747,7 @@ function TransactionDrawer({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
         onClick={onClose}
       />
       {/* Drawer */}
@@ -697,10 +756,10 @@ function TransactionDrawer({
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-[#0F0D1A] border-l border-white/10 z-50 overflow-y-auto"
+        className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-[var(--bg-surface)] border-l border-[var(--border)] z-50 overflow-y-auto"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-[#0F0D1A]/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-[var(--bg-surface)]/95 backdrop-blur-sm border-b border-[var(--border)] px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -709,15 +768,15 @@ function TransactionDrawer({
               <cfg.icon className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-semibold text-sm">{cfg.label}</h2>
-              <p className="text-xs text-muted-foreground font-mono">{tx.sap_document_id}</p>
+              <h2 className="font-semibold text-sm text-[var(--text-primary)]">{cfg.label}</h2>
+              <p className="text-xs text-[var(--text-muted)] font-mono">{tx.sap_document_id}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-lg bg-[var(--bg-muted)] hover:bg-[var(--bg-muted)]/80 flex items-center justify-center transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
 
@@ -726,7 +785,7 @@ function TransactionDrawer({
           <div className="text-center py-4">
             <p className={cn(
               "text-4xl font-bold font-mono tracking-tight",
-              isPositive ? "text-emerald-400" : "text-rose-400"
+              isPositive ? "text-emerald-500" : "text-rose-500"
             )}>
               {isPositive ? "+" : "-"}{formatCurrency(convert(tx.amount_usd), currency)}
             </p>
@@ -734,14 +793,14 @@ function TransactionDrawer({
               <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium", statusColors[tx.status || "posted"])}>
                 {(tx.status || "posted").toUpperCase()}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-[var(--text-muted)]">
                 {new Date(tx.created_at).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" })}
               </span>
             </div>
           </div>
 
           {/* Document info */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] divide-y divide-white/5">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 divide-y divide-[var(--border)]">
             <DetailRow icon={FileText} label="Nº Factura" value={tx.invoice_number || "—"} />
             <DetailRow icon={Hash} label="Doc. SAP" value={tx.sap_document_id} />
             <DetailRow icon={Building2} label="Contraparte" value={tx.counterparty} />
@@ -752,9 +811,9 @@ function TransactionDrawer({
           </div>
 
           {/* Financial details */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] divide-y divide-white/5">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 divide-y divide-[var(--border)]">
             <DetailRow icon={DollarSign} label="Monto Bruto" value={formatCurrency(convert(tx.amount_usd), currency)} />
-            <DetailRow icon={Receipt} label="IVA ({tx.tax_rate}%)" value={formatCurrency(convert(tx.tax_amount || 0), currency)} />
+            <DetailRow icon={Receipt} label={`IVA (${tx.tax_rate}%)`} value={formatCurrency(convert(tx.tax_amount || 0), currency)} />
             <DetailRow icon={Banknote} label="Monto Neto" value={formatCurrency(convert(tx.net_amount || tx.amount_usd), currency)} highlight />
             <DetailRow icon={CreditCard} label="Método de Pago" value={pmLabels[tx.payment_method] || tx.payment_method} />
             <DetailRow icon={Calendar} label="Condición de Pago" value={tx.payment_terms || "NET30"} />
@@ -762,7 +821,7 @@ function TransactionDrawer({
           </div>
 
           {/* Dates */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] divide-y divide-white/5">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 divide-y divide-[var(--border)]">
             <DetailRow icon={Calendar} label="Fecha Contabilización" value={tx.posting_date ? new Date(tx.posting_date).toLocaleDateString("es-EC") : "—"} />
             <DetailRow icon={Calendar} label="Fecha Documento" value={tx.document_date ? new Date(tx.document_date).toLocaleDateString("es-EC") : "—"} />
             <DetailRow icon={Clock} label="Creación" value={new Date(tx.created_at).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "medium" })} />
@@ -770,20 +829,20 @@ function TransactionDrawer({
 
           {/* Line items */}
           {tx.line_items && tx.line_items.length > 0 && (
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
-              <div className="px-4 py-3 border-b border-white/5">
-                <h4 className="text-xs font-semibold">Partidas ({tx.line_items.length})</h4>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 overflow-hidden">
+              <div className="px-4 py-3 border-b border-[var(--border)]">
+                <h4 className="text-xs font-semibold text-[var(--text-primary)]">Partidas ({tx.line_items.length})</h4>
               </div>
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-[var(--border)]">
                 {tx.line_items.map((item, i) => (
                   <div key={i} className="px-4 py-3 flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium">{item.description}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-xs font-medium text-[var(--text-primary)]">{item.description}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
                         {item.quantity} × {formatCurrency(convert(item.unit_price), currency)} · Cta: {item.gl_account}
                       </p>
                     </div>
-                    <p className="text-xs font-mono font-semibold shrink-0">
+                    <p className="text-xs font-mono font-semibold shrink-0 text-[var(--text-primary)]">
                       {formatCurrency(convert(item.total), currency)}
                     </p>
                   </div>
@@ -793,26 +852,81 @@ function TransactionDrawer({
           )}
 
           {/* Description */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Descripción</p>
-            <p className="text-xs">{tx.description}</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 p-4">
+            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Descripción</p>
+            <p className="text-xs text-[var(--text-primary)]">{tx.description}</p>
             {tx.reference && (
-              <p className="text-[10px] text-muted-foreground mt-2">Referencia: {tx.reference}</p>
+              <p className="text-[10px] text-[var(--text-muted)] mt-2">Referencia: {tx.reference}</p>
             )}
           </div>
 
           {/* Currency info */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Moneda Original</p>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 p-4">
+            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">Moneda Original</p>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-mono">{tx.currency}</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs font-mono text-[var(--text-primary)]">{tx.currency}</span>
+              <span className="text-xs text-[var(--text-muted)]">
                 {formatCurrency(tx.amount, tx.currency as CurrencyCode)} @ {tx.exchange_rate}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-[var(--text-muted)]">
                 → {formatCurrency(tx.amount_usd, "USD")} USD
               </span>
             </div>
+          </div>
+
+          {/* ── Notes Section ──────────────────────── */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Notas</p>
+              {notesSaved && (
+                <span className="text-[10px] text-emerald-500 font-medium">✓ Guardado</span>
+              )}
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Agregar notas sobre esta transacción..."
+              className="w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] resize-none focus:outline-none focus:border-violet-500 transition-colors"
+              rows={3}
+            />
+            <button
+              onClick={handleSaveNotes}
+              disabled={notesSaving || notes === (tx.notes || "")}
+              className="mt-2 w-full py-2 rounded-lg text-xs font-medium bg-violet-500/10 text-violet-500 hover:bg-violet-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              {notesSaving ? "Guardando..." : "Guardar notas"}
+            </button>
+          </div>
+
+          {/* ── AI Analysis Section ─────────────────── */}
+          <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-violet-500" />
+              <p className="text-xs font-semibold text-violet-500">Grixi AI — Análisis</p>
+            </div>
+            {aiAnalysis ? (
+              <div className="text-xs text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
+                {aiAnalysis}
+              </div>
+            ) : (
+              <button
+                onClick={handleAnalyze}
+                disabled={aiLoading}
+                className="w-full py-2.5 rounded-lg text-xs font-medium bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                {aiLoading ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+                    Analizando con Gemini...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Analizar transacción con IA
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -835,7 +949,7 @@ function DetailRow({
         <Icon className="w-3.5 h-3.5" />
         <span className="text-xs">{label}</span>
       </div>
-      <span className={cn("text-xs font-mono", highlight && "font-bold text-white")}>{value}</span>
+      <span className={cn("text-xs font-mono text-[var(--text-primary)]", highlight && "font-bold")}>{value}</span>
     </div>
   );
 }
