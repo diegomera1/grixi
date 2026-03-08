@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* ========================================
+   GRIXI DESIGN SYSTEM — "Refined Minimalism"
+   Inspired by MetaLab + Enterprise UX
+   ======================================== */
+
+@theme {
+  /* Brand Colors */
+  --color-brand: #7c3aed;
+  --color-brand-light: #a78bfa;
+  --color-brand-surface: #f5f3ff;
+  --color-brand-dark: #5b21b6;
+
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-success-light: #d1fae5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-error: #ef4444;
+  --color-error-light: #fee2e2;
+  --color-info: #3b82f6;
+  --color-info-light: #dbeafe;
+
+  /* Warehouse Status */
+  --color-rack-occupied: #10b981;
+  --color-rack-expired: #ef4444;
+  --color-rack-expiring: #f59e0b;
+  --color-rack-empty: #d4d4d8;
+  --color-rack-reserved: #3b82f6;
+  --color-rack-quarantine: #7c3aed;
+
+  /* Spacing */
+  --spacing-micro: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-base: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+  --spacing-4xl: 128px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Animation */
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+}
+
+/* Light Mode (default) */
+:root {
+  --bg-primary: #fafafa;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-muted: #f4f4f5;
+  --border-primary: #e4e4e7;
+  --border-secondary: #f4f4f5;
+  --text-primary: #09090b;
+  --text-secondary: #71717a;
+  --text-tertiary: #a1a1aa;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e4e4e7;
+}
+
+/* Dark Mode */
+.dark {
+  --bg-primary: #09090b;
+  --bg-surface: #111113;
+  --bg-elevated: #1a1a1d;
+  --bg-muted: #18181b;
+  --border-primary: #27272a;
+  --border-secondary: #1f1f23;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --sidebar-bg: #0a0a0c;
+  --sidebar-border: #1f1f23;
+}
+
+/* Base Styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(124, 58, 237, 0.2);
+  color: var(--text-primary);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Focus Ring */
+*:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
