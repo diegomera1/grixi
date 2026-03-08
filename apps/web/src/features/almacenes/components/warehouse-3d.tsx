@@ -14,6 +14,9 @@ import * as THREE from "three";
 import { BoxDetailDrawer } from "./box-detail-drawer";
 import { WarehouseSearch } from "./warehouse-search";
 import type { SearchableItem } from "./warehouse-search";
+import { RackPanel } from "./rack-panel";
+import { ProductLocator } from "./product-locator";
+import { getAIWarehouseRecommendations } from "../actions/ai-warehouse-action";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -458,19 +461,103 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
         />
       </mesh>
 
-      {/* ── Floor markings (yellow safety lines) ────── */}
-      {[-8, -4, 0, 4, 8].map((x) =>
-        Array.from({ length: 14 }, (_, j) => (
-          <mesh
-            key={`al-${x}-${j}`}
-            position={[x, 0.004, -D / 2 + 1 + j * 1.4]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          >
-            <planeGeometry args={[0.07, 0.8]} />
-            <meshBasicMaterial color="#EAB308" transparent opacity={0.35} />
-          </mesh>
+      {/* ── Traffic arrows in aisles (yellow directional) ────── */}
+      {[-7, -2.5, 2, 6.5].map((z, ai) =>
+        Array.from({ length: 8 }, (_, j) => (
+          <group key={`traf-${ai}-${j}`}>
+            {/* Dashed center line */}
+            <mesh position={[-10 + j * 3, 0.004, z]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[1.5, 0.06]} />
+              <meshBasicMaterial color="#EAB308" transparent opacity={0.5} />
+            </mesh>
+            {/* Directional arrow every 3rd segment */}
+            {j % 3 === 0 && (
+              <Text
+                position={[-10 + j * 3, 0.006, z]}
+                rotation={[-Math.PI / 2, 0, ai % 2 === 0 ? 0 : Math.PI]}
+                fontSize={0.2}
+                color="#EAB308"
+                anchorX="center"
+                anchorY="middle"
+              >
+                ▶
+              </Text>
+            )}
+          </group>
         ))
       )}
+
+      {/* ── Red pedestrian zones along walls ────── */}
+      {[[-W / 2 + 0.6, 0], [W / 2 - 0.6, 0]].map(([x, z], i) => (
+        <group key={`ped-${i}`}>
+          <mesh position={[x, 0.003, z]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[0.8, D - 2]} />
+            <meshBasicMaterial color="#EF4444" transparent opacity={0.06} />
+          </mesh>
+          {/* Striped border */}
+          {Array.from({ length: Math.floor(D / 0.8) }, (_, j) => (
+            <mesh key={`ps-${i}-${j}`} position={[x + (i === 0 ? 0.45 : -0.45), 0.004, -D / 2 + 1 + j * 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[0.05, 0.4]} />
+              <meshBasicMaterial color="#EF4444" transparent opacity={0.3} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+
+      {/* ── Green vehicle zones in center aisles ────── */}
+      {[-7, -2.5, 2, 6.5].map((z, i) => (
+        <mesh key={`vz-${i}`} position={[0, 0.002, z]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[22, 1.4]} />
+          <meshBasicMaterial color="#22C55E" transparent opacity={0.03} />
+        </mesh>
+      ))}
+
+      {/* ── Yellow crossing hatches at front ────── */}
+      {[-4, 0, 4].map((x, i) => (
+        <group key={`cross-${i}`}>
+          {Array.from({ length: 6 }, (_, j) => (
+            <mesh key={`ch-${i}-${j}`} position={[x - 0.5 + j * 0.2, 0.005, D / 2 - 4]} rotation={[-Math.PI / 2, 0, Math.PI / 4]}>
+              <planeGeometry args={[0.04, 0.6]} />
+              <meshBasicMaterial color="#EAB308" transparent opacity={0.3} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+
+      {/* ── Staging areas at front (RECEPCIÓN / DESPACHO) ────── */}
+      <group position={[0, 0, D / 2 - 1.5]}>
+        {/* RECEPCIÓN */}
+        <mesh position={[-6, 0.003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[5, 2]} />
+          <meshBasicMaterial color="#3B82F6" transparent opacity={0.06} />
+        </mesh>
+        <Text position={[-6, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.2} color="#3B82F6" anchorX="center" anchorY="middle">
+          📥 RECEPCIÓN
+        </Text>
+        {/* DESPACHO */}
+        <mesh position={[6, 0.003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[5, 2]} />
+          <meshBasicMaterial color="#F59E0B" transparent opacity={0.06} />
+        </mesh>
+        <Text position={[6, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.2} color="#F59E0B" anchorX="center" anchorY="middle">
+          📤 DESPACHO
+        </Text>
+      </group>
+
+      {/* ── Aisle labels on floor ────── */}
+      {['A', 'B', 'C', 'D', 'E', 'F'].map((label, i) => (
+        <Text
+          key={`aisle-${label}`}
+          position={[-13.5, 0.006, -7 + i * 2.3]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          fontSize={0.2}
+          color="#94A3B8"
+          anchorX="center"
+          anchorY="middle"
+        >
+          Pasillo {label}
+        </Text>
+      ))}
 
       {/* Epoxy zone rectangles */}
       {[[-13, -5, 4, 3], [-13, 4, 4, 3], [11, -5, 4, 3], [11, 4, 4, 3]].map(
@@ -946,13 +1033,31 @@ function Rack3D({
 
         return (
           <group key={pos.id} position={[cx, cy, 0]}>
+            {/* 3D Wooden pallet */}
+            <group position={[0, -ch * 0.22, 0]}>
+              {[-1, 0, 1].map((s) => (
+                <mesh key={`ps-${pos.id}-${s}`} position={[s * cw * 0.22, 0, 0]} castShadow>
+                  <boxGeometry args={[cw * 0.08, 0.02, rD * 0.5]} />
+                  <meshStandardMaterial color={0x8B6914} roughness={0.9} />
+                </mesh>
+              ))}
+              {[-1, 1].map((s) => (
+                <mesh key={`pc-${pos.id}-${s}`} position={[0, -0.015, s * rD * 0.16]}>
+                  <boxGeometry args={[cw * 0.6, 0.015, 0.03]} />
+                  <meshStandardMaterial color={0x7A5A10} roughness={0.9} />
+                </mesh>
+              ))}
+            </group>
             <mesh
               castShadow
               onClick={(e) => {
                 e.stopPropagation();
                 onBoxClick?.(pos, rack.code);
               }}
-              onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                document.body.style.cursor = 'pointer';
+              }}
               onPointerOut={() => { document.body.style.cursor = 'auto'; }}
             >
               <boxGeometry args={[cw * 0.7, ch * 0.45, rD * 0.55]} />
@@ -992,6 +1097,26 @@ function Rack3D({
       >
         {rack.code}
       </Text>
+      {/* Rack code on floor */}
+      <Text
+        position={[0, 0.008, rD / 2 + 0.3]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.12}
+        color="#475569"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {rack.code}
+      </Text>
+      {/* Heat map tile on floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
+        <planeGeometry args={[rW + 0.2, rD + 0.4]} />
+        <meshBasicMaterial
+          color={occupancy > 0.8 ? "#EF4444" : occupancy > 0.5 ? "#F59E0B" : "#22C55E"}
+          transparent
+          opacity={0.06}
+        />
+      </mesh>
       <Text
         position={[0, rH + 0.02, 0]}
         fontSize={0.08}
@@ -1494,11 +1619,16 @@ export function Warehouse3DScene({
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [selectedBox, setSelectedBox] = useState<SelectedBox>(null);
+  const [selectedRack, setSelectedRack] = useState<Rack | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fpsMode, setFpsMode] = useState(false);
   const [minimapHover, setMinimapHover] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [distanceMeasuring, setDistanceMeasuring] = useState(false);
+  const [locatorOpen, setLocatorOpen] = useState(false);
+  const [aiRecs, setAiRecs] = useState<{ recommendations: { type: string; title: string; description: string; impactLevel: string; rackCode: string; productSku?: string }[]; summary: string } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1559,7 +1689,6 @@ export function Warehouse3DScene({
     setSelectedRackId(item.rackId);
   }, []);
 
-  // Screenshot
   const takeScreenshot = useCallback(() => {
     if (!canvasRef.current) return;
     const link = document.createElement("a");
@@ -1567,6 +1696,91 @@ export function Warehouse3DScene({
     link.href = canvasRef.current.toDataURL("image/png");
     link.click();
   }, [warehouse.name]);
+
+  // Locator items for product search
+  const locatorItems = useMemo(() => {
+    return racks.flatMap((rack, i) => {
+      const racksPerAisle = Math.ceil(racks.length / 4);
+      const aisleIdx = Math.floor(i / racksPerAisle);
+      const posInAisle = i % racksPerAisle;
+      const side = posInAisle % 2 === 0 ? -1 : 1;
+      const col = Math.floor(posInAisle / 2);
+
+      return rack.rack_positions
+        .filter((pos) => pos.inventory)
+        .map((pos) => ({
+          positionId: pos.id,
+          productName: pos.inventory!.product_name,
+          productSku: pos.inventory!.product_sku,
+          category: pos.inventory!.category,
+          quantity: pos.inventory!.quantity,
+          rackCode: rack.code,
+          row: pos.row_number,
+          col: pos.column_number,
+          status: pos.inventory!.status || pos.status,
+          supplier: pos.inventory!.supplier || null,
+          lotNumber: pos.inventory!.lot_number || null,
+          expiryDate: pos.inventory!.expiry_date || null,
+          warehouseId: warehouse.id,
+          warehouseName: warehouse.name,
+          _posX: -10 + col * 3.2,
+          _posZ: -7 + aisleIdx * 4.5 + side * 1.2,
+        }));
+    });
+  }, [racks, warehouse]);
+
+  // Handle locate from product locator
+  const handleLocateProduct = useCallback((item: { positionId: string; rackCode: string; _posX?: number; _posZ?: number }) => {
+    const extItem = item as typeof locatorItems[0];
+    if (extItem._posX !== undefined) {
+      setCameraTarget(new THREE.Vector3(extItem._posX, 1.5, extItem._posZ));
+    }
+    const rack = racks.find((r) => r.code === item.rackCode);
+    if (rack) {
+      setSelectedRackId(rack.id);
+      setSelectedRack(rack);
+    }
+    setLocatorOpen(false);
+  }, [racks]);
+
+  // Load AI recommendations
+  const handleLoadAI = useCallback(async () => {
+    setAiLoading(true);
+    setAiPanelOpen(true);
+
+    const summaries = racks.map((rack) => ({
+      code: rack.code,
+      type: rack.rack_type,
+      totalPositions: rack.rows * rack.columns,
+      occupiedPositions: rack.rack_positions.filter((p) => p.status !== "empty").length,
+      products: rack.rack_positions
+        .filter((p) => p.inventory)
+        .map((p) => {
+          const inv = p.inventory!;
+          const entryDate = inv.entry_date ? new Date(inv.entry_date) : new Date();
+          const expiryDate = inv.expiry_date ? new Date(inv.expiry_date) : null;
+          return {
+            name: inv.product_name,
+            sku: inv.product_sku,
+            category: inv.category,
+            quantity: inv.quantity,
+            daysInStock: Math.floor((Date.now() - entryDate.getTime()) / 86400000),
+            daysUntilExpiry: expiryDate ? Math.floor((expiryDate.getTime() - Date.now()) / 86400000) : null,
+            status: inv.status,
+          };
+        }),
+    }));
+
+    try {
+      const result = await getAIWarehouseRecommendations(warehouse.name, summaries);
+      setAiRecs(result);
+    } catch (err) {
+      console.error("AI error:", err);
+      setAiRecs({ recommendations: [], summary: "Error al cargar recomendaciones." });
+    } finally {
+      setAiLoading(false);
+    }
+  }, [racks, warehouse.name]);
 
   // Fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -1647,6 +1861,7 @@ export function Warehouse3DScene({
   const handleRackSelect = useCallback(
     (rack: Rack) => {
       setSelectedRackId(rack.id);
+      setSelectedRack(rack);
       onRackSelect(rack);
       const rIdx = initialRacks.indexOf(rack);
       const racksPerAisle = Math.ceil(initialRacks.length / 4);
@@ -1946,6 +2161,24 @@ export function Warehouse3DScene({
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
         </button>
+        {/* Product Locator */}
+        <button
+          onClick={() => setLocatorOpen(true)}
+          title="Localizar producto (QR/Código)"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-slate-500 shadow-md ring-1 ring-black/5 transition-all hover:bg-emerald-50 hover:text-emerald-600"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="8" height="8" rx="1" /><rect x="14" y="2" width="8" height="8" rx="1" /><rect x="2" y="14" width="8" height="8" rx="1" /><path d="M14 14h2v4h4v2" /></svg>
+        </button>
+        {/* AI Recommendations */}
+        <button
+          onClick={handleLoadAI}
+          title="Recomendaciones AI (Gemini)"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            aiPanelOpen ? "bg-violet-500 text-white" : "bg-white/95 text-slate-500 hover:bg-violet-50 hover:text-violet-600"
+          }`}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1.27c.35-.6 1-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1H20a7 7 0 01-7 7v1.27c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73V23a7 7 0 01-7-7H2.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1H4a7 7 0 017-7V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z" /></svg>
+        </button>
       </div>
 
       {/* ── FPS Mode HUD ──────────── */}
@@ -1975,6 +2208,35 @@ export function Warehouse3DScene({
         />
       )}
 
+      {/* ── Rack Panel (position grid + inventory list) ──────── */}
+      {selectedRack && !selectedBox && (
+        <RackPanel
+          rackCode={selectedRack.code}
+          positions={selectedRack.rack_positions}
+          rows={selectedRack.rows}
+          columns={selectedRack.columns}
+          occupancy={
+            selectedRack.rack_positions.filter((p) => p.status !== "empty").length /
+            (selectedRack.rows * selectedRack.columns || 1)
+          }
+          onClose={() => {
+            setSelectedRack(null);
+            setSelectedRackId(null);
+          }}
+          onPositionClick={(pos) => {
+            if (pos.inventory) {
+              setSelectedBox({
+                inventory: pos.inventory,
+                rackCode: selectedRack.code,
+                row: pos.row_number,
+                col: pos.column_number,
+              });
+              setSelectedRack(null);
+            }
+          }}
+        />
+      )}
+
       {/* ── Distance Measuring HUD ──────── */}
       {distanceMeasuring && (
         <div className="absolute left-1/2 bottom-16 -translate-x-1/2 rounded-lg bg-red-500/90 px-3 py-1 text-[10px] font-semibold text-white shadow-md backdrop-blur">
@@ -1989,6 +2251,88 @@ export function Warehouse3DScene({
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
       />
+
+      {/* ── Product Locator ──────────── */}
+      <ProductLocator
+        items={locatorItems}
+        onLocate={handleLocateProduct}
+        isOpen={locatorOpen}
+        onClose={() => setLocatorOpen(false)}
+      />
+
+      {/* ── AI Recommendations Panel ──────────── */}
+      {aiPanelOpen && (
+        <div className="absolute right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/10">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1.27c.35-.6 1-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1H20a7 7 0 01-7 7v1.27c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73V23a7 7 0 01-7-7H2.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1H4a7 7 0 017-7V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z" /></svg>
+              </div>
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">AI Insights</h3>
+            </div>
+            <button onClick={() => setAiPanelOpen(false)} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
+          </div>
+
+          {aiLoading ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 text-[var(--text-muted)]">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              <p className="text-xs">Gemini está analizando {racks.length} racks...</p>
+            </div>
+          ) : aiRecs ? (
+            <div className="flex-1 overflow-y-auto">
+              {/* Summary */}
+              <div className="border-b border-[var(--border)] bg-violet-500/5 px-4 py-3">
+                <p className="text-xs text-[var(--text-secondary)]">{aiRecs.summary}</p>
+              </div>
+              {/* Recommendations */}
+              <div className="space-y-2 p-3">
+                {aiRecs.recommendations.map((rec, i) => {
+                  const typeIcons: Record<string, string> = {
+                    reubicacion: "🔄",
+                    alerta_vencimiento: "⚠️",
+                    optimizacion_espacio: "📐",
+                    reabastecimiento: "📦",
+                  };
+                  const impactColors: Record<string, string> = {
+                    alto: "bg-red-500/10 text-red-600",
+                    medio: "bg-amber-500/10 text-amber-600",
+                    bajo: "bg-blue-500/10 text-blue-600",
+                  };
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        const rack = racks.find((r) => r.code === rec.rackCode);
+                        if (rack) {
+                          handleRackSelect(rack);
+                          setAiPanelOpen(false);
+                        }
+                      }}
+                      className="w-full rounded-lg bg-[var(--bg-muted)]/40 p-3 text-left transition-colors hover:bg-[var(--bg-muted)]"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm">{typeIcons[rec.type] || "💡"}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[11px] font-semibold text-[var(--text-primary)]">{rec.title}</p>
+                            <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${impactColors[rec.impactLevel] || impactColors.bajo}`}>
+                              {rec.impactLevel.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[10px] text-[var(--text-muted)] leading-relaxed">{rec.description}</p>
+                          <p className="mt-1 text-[9px] text-violet-500 font-medium">📍 Rack {rec.rackCode}{rec.productSku ? ` · ${rec.productSku}` : ""} →</p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

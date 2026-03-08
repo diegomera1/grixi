@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { createClient } from "@/lib/supabase/client";
+import { logLogoutEvent } from "@/lib/actions/audit";
 import type { User } from "@supabase/supabase-js";
 
 // Module-specific accent colors
@@ -80,6 +81,7 @@ export function Sidebar() {
   }, []);
 
   const handleSignOut = async () => {
+    await logLogoutEvent();
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");

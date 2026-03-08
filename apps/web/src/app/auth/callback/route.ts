@@ -38,6 +38,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/login?error=auth`);
     }
 
+    // Log the login event to audit
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("audit_logs").insert({
+        user_id: user.id,
+        org_id: "a0000000-0000-0000-0000-000000000001",
+        action: "login",
+        resource_type: "session",
+        new_data: {
+          description: "Inició sesión con Google",
+          email: user.email,
+          provider: user.app_metadata?.provider || "google",
+        },
+      });
+    }
+
     return response;
   }
 
