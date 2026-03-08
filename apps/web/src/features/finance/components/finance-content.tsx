@@ -102,7 +102,18 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
     useFinanceRealtime(initialTransactions);
 
   const allTransactions = useMemo(
-    () => [...liveTransactions, ...transactions],
+    () => {
+      const seen = new Set<string>();
+      const result: FinanceTransaction[] = [];
+      // Live transactions take priority
+      for (const t of liveTransactions) {
+        if (!seen.has(t.id)) { seen.add(t.id); result.push(t); }
+      }
+      for (const t of transactions) {
+        if (!seen.has(t.id)) { seen.add(t.id); result.push(t); }
+      }
+      return result;
+    },
     [liveTransactions, transactions]
   );
 
@@ -171,11 +182,16 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
   }, [c]);
 
   // Recent transactions for feed (last 30)
-  // Show ALL transactions — historical + live, with live ones first
+  // Show ALL transactions — historical + live, deduplicated, with live ones first
   const recentTransactions = useMemo(
     () => {
-      const live = liveTransactions.map(t => ({ ...t, _isLive: true }));
-      const historical = transactions.filter(t => !t.is_live).map(t => ({ ...t, _isLive: false }));
+      const seen = new Set<string>();
+      const live = liveTransactions
+        .filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; })
+        .map(t => ({ ...t, _isLive: true }));
+      const historical = transactions
+        .filter(t => !t.is_live && !seen.has(t.id))
+        .map(t => { seen.add(t.id); return { ...t, _isLive: false }; });
       return [...live, ...historical]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 50);

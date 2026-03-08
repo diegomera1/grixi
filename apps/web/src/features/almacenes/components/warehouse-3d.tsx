@@ -17,6 +17,33 @@ import type { SearchableItem } from "./warehouse-search";
 import { RackPanel } from "./rack-panel";
 import { ProductLocator } from "./product-locator";
 import { getAIWarehouseRecommendations } from "../actions/ai-warehouse-action";
+import { getWarehouseAdvancedData, getAllWarehouses } from "../actions/warehouse-advanced-actions";
+import {
+  IoTSensors3D,
+  Operators3D,
+  RackAlerts3D,
+  HeatMapOverlay,
+  StockAgingOverlay,
+  ABCClassification,
+  HazardousZones,
+  ColdStorageFog,
+  PickingPath3D,
+  DockArea3D,
+  CrossDockingFlow,
+  ARLabels3D,
+  CycleCountOverlay,
+} from "./warehouse-3d-overlays";
+import {
+  ViewModeToolbar,
+  IoTDashboardPanel,
+  LaborPanel,
+  WaveManagementPanel,
+  AlertFeed,
+  CapacityPlanningPanel,
+  SlottingOptimizerPanel,
+  GuidedTourOverlay,
+  WarehouseComparisonPanel,
+} from "./warehouse-3d-hud";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -604,36 +631,7 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
         />
       </mesh>
 
-      {/* NO CEILING — open top for visibility */}
-
-      {/* ── Roof beams (structural, visible from top) ────── */}
-      {Array.from({ length: 5 }, (_, i) => {
-        const z = -D / 2 + 2 + i * (D / 5);
-        return (
-          <mesh key={`beam-${i}`} position={[0, H - 0.15, z]}>
-            <boxGeometry args={[W, 0.22, 0.16]} />
-            <meshStandardMaterial
-              map={textures.metal}
-              color="#94A3B8"
-              metalness={0.65}
-              roughness={0.25}
-            />
-          </mesh>
-        );
-      })}
-
-      {/* Cross beams */}
-      {Array.from({ length: 4 }, (_, i) => (
-        <mesh key={`xbeam-${i}`} position={[-W / 4 + i * (W / 3), H - 0.15, 0]}>
-          <boxGeometry args={[0.12, 0.18, D]} />
-          <meshStandardMaterial
-            map={textures.metal}
-            color="#94A3B8"
-            metalness={0.65}
-            roughness={0.25}
-          />
-        </mesh>
-      ))}
+      {/* NO CEILING / NO ROOF — fully open top for clean visibility */}
 
       {/* ── Columns ────── */}
       {[-W / 2 + 0.2, W / 2 - 0.2].map((x) =>
@@ -780,19 +778,7 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
         </Text>
       ))}
 
-      {/* ── Volumetric light cones from ceiling ────── */}
-      {Array.from({ length: 4 }, (_, row) =>
-        Array.from({ length: 3 }, (_, col) => {
-          const lx = -W / 3 + col * (W / 3);
-          const lz = -D / 2 + 3 + row * 5;
-          return (
-            <mesh key={`cone-${row}-${col}`} position={[lx, H / 2 - 0.2, lz]}>
-              <coneGeometry args={[1.2, H - 0.5, 8, 1, true]} />
-              <meshBasicMaterial color="#FFFDE7" transparent opacity={0.02} side={THREE.DoubleSide} depthWrite={false} />
-            </mesh>
-          );
-        })
-      )}
+      {/* Volumetric light cones removed for clean open-top view */}
 
       {/* ── Dust Particles ────── */}
       <DustParticles />
@@ -1499,6 +1485,13 @@ function SceneContent({
   onBoxClick,
   fpsMode,
   distanceMeasuring,
+  viewMode,
+  toggles,
+  sensors,
+  operators,
+  pickingPath,
+  countedRacks,
+  warehouseType,
 }: {
   racks: Rack[];
   selectedRackId: string | null;
@@ -1508,8 +1501,24 @@ function SceneContent({
   onBoxClick?: (pos: Position, rackCode: string) => void;
   fpsMode?: boolean;
   distanceMeasuring?: boolean;
+  viewMode?: string;
+  toggles?: Record<string, boolean>;
+  sensors?: { id: string; sensor_type: string; label: string; position_x: number; position_y: number; position_z: number; current_value: number; unit: string; status: string; min_threshold: number | null; max_threshold: number | null }[];
+  operators?: { id: string; name: string; role: string; avatar_color: string; current_zone: string | null; current_task: string | null; position_x: number; position_z: number; tasks_completed_today: number; items_picked_today: number }[];
+  pickingPath?: [number, number, number][];
+  countedRacks?: Set<string>;
+  warehouseType?: string;
 }) {
   const textures = useWarehouseTextures();
+
+  const getRackPosition = useCallback((index: number): [number, number, number] => {
+    const racksPerAisle = Math.ceil(racks.length / 4);
+    const aisleIdx = Math.floor(index / racksPerAisle);
+    const posInAisle = index % racksPerAisle;
+    const side = posInAisle % 2 === 0 ? -1 : 1;
+    const col = Math.floor(posInAisle / 2);
+    return [-10 + col * 3.2, 0, -7 + aisleIdx * 4.5 + side * 1.2];
+  }, [racks.length]);
 
   return (
     <>
@@ -1570,6 +1579,25 @@ function SceneContent({
       {fpsMode && <FPSControls active={fpsMode} />}
       <DistanceTool active={distanceMeasuring || false} />
       <FloatingDashboard racks={racks} />
+
+      {/* ── Advanced Overlays ────────────────────────── */}
+      {toggles?.iot && sensors && <IoTSensors3D sensors={sensors} />}
+      {toggles?.operators && operators && <Operators3D operators={operators} />}
+      {toggles?.alerts && <RackAlerts3D racks={racks} getRackPosition={getRackPosition} />}
+      {toggles?.labels && <ARLabels3D racks={racks} getRackPosition={getRackPosition} active />}
+      {toggles?.dock && <DockArea3D active />}
+      {toggles?.crossdock && <CrossDockingFlow active />}
+      {toggles?.coldFog && <ColdStorageFog active warehouseType={warehouseType || "general"} />}
+
+      {/* View mode overlays */}
+      <HeatMapOverlay racks={racks} getRackPosition={getRackPosition} active={viewMode === "heatmap"} />
+      <StockAgingOverlay racks={racks} getRackPosition={getRackPosition} active={viewMode === "aging"} />
+      <ABCClassification racks={racks} getRackPosition={getRackPosition} active={viewMode === "abc"} />
+      <HazardousZones active={viewMode === "hazardous"} />
+      <CycleCountOverlay racks={racks} getRackPosition={getRackPosition} active={viewMode === "cycle_count"} countedRacks={countedRacks || new Set()} />
+
+      {/* Picking path */}
+      <PickingPath3D path={pickingPath || []} active={(pickingPath || []).length > 0} />
     </>
   );
 }
@@ -1629,6 +1657,23 @@ export function Warehouse3DScene({
   const [aiRecs, setAiRecs] = useState<{ recommendations: { type: string; title: string; description: string; impactLevel: string; rackCode: string; productSku?: string }[]; summary: string } | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  // Advanced features state
+  const [viewMode, setViewMode] = useState<"normal" | "heatmap" | "aging" | "abc" | "hazardous" | "cycle_count">("normal");
+  const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>({ alerts: true, iot: false, operators: false, labels: false, dock: false, crossdock: false, coldFog: false });
+  const [sensors, setSensors] = useState<{ id: string; sensor_type: string; label: string; position_x: number; position_y: number; position_z: number; current_value: number; unit: string; status: string; min_threshold: number | null; max_threshold: number | null }[]>([]);
+  const [operators, setOperators] = useState<{ id: string; name: string; role: string; avatar_color: string; current_zone: string | null; current_task: string | null; position_x: number; position_z: number; tasks_completed_today: number; items_picked_today: number }[]>([]);
+  const [pickingOrders, setPickingOrders] = useState<{ id: string; order_number: string; wave_id: string | null; status: string; priority: string; total_items: number; picked_items: number; estimated_time_min: number | null; items: { sku: string; qty: number; picked: boolean }[] }[]>([]);
+  const [pickingPath, setPickingPath] = useState<[number, number, number][]>([]);
+  const [allWarehouses, setAllWarehouses] = useState<{ id: string; name: string; type: string }[]>([]);
+  const [iotPanelOpen, setIotPanelOpen] = useState(false);
+  const [laborPanelOpen, setLaborPanelOpen] = useState(false);
+  const [wavePanelOpen, setWavePanelOpen] = useState(false);
+  const [alertFeedOpen, setAlertFeedOpen] = useState(false);
+  const [capacityPanelOpen, setCapacityPanelOpen] = useState(false);
+  const [slottingPanelOpen, setSlottingPanelOpen] = useState(false);
+  const [guidedTourActive, setGuidedTourActive] = useState(false);
+  const [warehouseNavOpen, setWarehouseNavOpen] = useState(false);
+  const [countedRacks, setCountedRacks] = useState<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1636,6 +1681,64 @@ export function Warehouse3DScene({
   useEffect(() => {
     setRacks(initialRacks);
   }, [initialRacks]);
+
+  // Fetch advanced data (IoT, operators, orders)
+  useEffect(() => {
+    const fetchAdvanced = async () => {
+      try {
+        const [advanced, warehouses] = await Promise.all([
+          getWarehouseAdvancedData(warehouse.id),
+          getAllWarehouses(),
+        ]);
+        setSensors(advanced.sensors);
+        setOperators(advanced.operators);
+        setPickingOrders(advanced.pickingOrders);
+        setAllWarehouses(warehouses);
+      } catch (err) {
+        console.error("Error loading advanced data:", err);
+      }
+    };
+    fetchAdvanced();
+    // Live IoT simulation: drift sensor values every 30s
+    const iotInterval = setInterval(() => {
+      setSensors((prev) =>
+        prev.map((s) => ({
+          ...s,
+          current_value: s.current_value + (Math.random() - 0.5) * 1.5,
+          status:
+            s.current_value > (s.max_threshold || Infinity) || s.current_value < (s.min_threshold || -Infinity)
+              ? "alarm"
+              : Math.abs(s.current_value - (s.max_threshold || 0)) < 3
+              ? "warning"
+              : "active",
+        }))
+      );
+    }, 30000);
+    return () => clearInterval(iotInterval);
+  }, [warehouse.id]);
+
+  const handleToggleFeature = useCallback((key: string) => {
+    setFeatureToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const handleActivatePicking = useCallback((orderId: string) => {
+    // Generate a demo picking path through racks
+    const racksPerAisle = Math.ceil(racks.length / 4);
+    const path: [number, number, number][] = [
+      [0, 0.3, 8], // Start at staging
+    ];
+    // Pick 3-4 random rack positions
+    for (let i = 0; i < Math.min(4, racks.length); i++) {
+      const rackIdx = Math.floor(Math.random() * racks.length);
+      const aisleIdx = Math.floor(rackIdx / racksPerAisle);
+      const posInAisle = rackIdx % racksPerAisle;
+      const col = Math.floor(posInAisle / 2);
+      const side = posInAisle % 2 === 0 ? -1 : 1;
+      path.push([-10 + col * 3.2, 0.3, -7 + aisleIdx * 4.5 + side * 1.2]);
+    }
+    path.push([0, 0.3, 8]); // Return to staging
+    setPickingPath(path);
+  }, [racks.length]);
 
   // ⌘K / Ctrl+K shortcut
   useEffect(() => {
@@ -1957,6 +2060,13 @@ export function Warehouse3DScene({
               }}
               fpsMode={fpsMode}
               distanceMeasuring={distanceMeasuring}
+              viewMode={viewMode}
+              toggles={featureToggles}
+              sensors={sensors}
+              operators={operators}
+              pickingPath={pickingPath}
+              countedRacks={countedRacks}
+              warehouseType={warehouse.type}
             />
           </Suspense>
         </Canvas>
@@ -2179,6 +2289,86 @@ export function Warehouse3DScene({
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1.27c.35-.6 1-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1H20a7 7 0 01-7 7v1.27c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73V23a7 7 0 01-7-7H2.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1H4a7 7 0 017-7V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z" /></svg>
         </button>
+        {/* IoT Dashboard */}
+        <button
+          onClick={() => { setIotPanelOpen((p) => !p); setFeatureToggles((p) => ({ ...p, iot: true })); }}
+          title="IoT Sensores"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            iotPanelOpen ? "bg-emerald-500 text-white" : "bg-white/95 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600"
+          }`}
+        >
+          <span className="text-[11px]">📡</span>
+        </button>
+        {/* Labor Panel */}
+        <button
+          onClick={() => { setLaborPanelOpen((p) => !p); setFeatureToggles((p) => ({ ...p, operators: true })); }}
+          title="Personal y Operarios"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            laborPanelOpen ? "bg-blue-500 text-white" : "bg-white/95 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+          }`}
+        >
+          <span className="text-[11px]">👷</span>
+        </button>
+        {/* Wave Management */}
+        <button
+          onClick={() => setWavePanelOpen((p) => !p)}
+          title="Wave Management"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            wavePanelOpen ? "bg-amber-500 text-white" : "bg-white/95 text-slate-500 hover:bg-amber-50 hover:text-amber-600"
+          }`}
+        >
+          <span className="text-[11px]">📋</span>
+        </button>
+        {/* Alert Feed */}
+        <button
+          onClick={() => setAlertFeedOpen((p) => !p)}
+          title="Alertas en Tiempo Real"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            alertFeedOpen ? "bg-red-500 text-white" : "bg-white/95 text-slate-500 hover:bg-red-50 hover:text-red-600"
+          }`}
+        >
+          <span className="text-[11px]">🔔</span>
+        </button>
+        {/* Capacity Planning */}
+        <button
+          onClick={() => setCapacityPanelOpen((p) => !p)}
+          title="Planeación de Capacidad"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            capacityPanelOpen ? "bg-purple-500 text-white" : "bg-white/95 text-slate-500 hover:bg-purple-50 hover:text-purple-600"
+          }`}
+        >
+          <span className="text-[11px]">📐</span>
+        </button>
+        {/* Slotting Optimizer */}
+        <button
+          onClick={() => setSlottingPanelOpen((p) => !p)}
+          title="Optimizador de Slotting (AI)"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            slottingPanelOpen ? "bg-fuchsia-500 text-white" : "bg-white/95 text-slate-500 hover:bg-fuchsia-50 hover:text-fuchsia-600"
+          }`}
+        >
+          <span className="text-[11px]">🧩</span>
+        </button>
+        {/* Guided Tour */}
+        <button
+          onClick={() => setGuidedTourActive((p) => !p)}
+          title="Recorrido Guiado"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            guidedTourActive ? "bg-teal-500 text-white" : "bg-white/95 text-slate-500 hover:bg-teal-50 hover:text-teal-600"
+          }`}
+        >
+          <span className="text-[11px]">🎯</span>
+        </button>
+        {/* Multi-warehouse Nav */}
+        <button
+          onClick={() => setWarehouseNavOpen((p) => !p)}
+          title="Navegación Multi-Almacén"
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            warehouseNavOpen ? "bg-cyan-500 text-white" : "bg-white/95 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600"
+          }`}
+        >
+          <span className="text-[11px]">🏗</span>
+        </button>
       </div>
 
       {/* ── FPS Mode HUD ──────────── */}
@@ -2333,6 +2523,49 @@ export function Warehouse3DScene({
           ) : null}
         </div>
       )}
+
+      {/* ── Advanced HUD Panels ──────────── */}
+      <IoTDashboardPanel sensors={sensors} isOpen={iotPanelOpen} onClose={() => setIotPanelOpen(false)} />
+      <LaborPanel operators={operators} isOpen={laborPanelOpen} onClose={() => setLaborPanelOpen(false)} />
+      <WaveManagementPanel orders={pickingOrders} isOpen={wavePanelOpen} onClose={() => setWavePanelOpen(false)} onActivatePicking={handleActivatePicking} />
+      <AlertFeed racks={racks} sensors={sensors} isOpen={alertFeedOpen} onClose={() => setAlertFeedOpen(false)} />
+      <CapacityPlanningPanel racks={racks} isOpen={capacityPanelOpen} onClose={() => setCapacityPanelOpen(false)} />
+      <SlottingOptimizerPanel racks={racks} isOpen={slottingPanelOpen} onClose={() => setSlottingPanelOpen(false)} />
+      <GuidedTourOverlay
+        racks={racks}
+        active={guidedTourActive}
+        onNavigate={(idx) => {
+          const rack = racks[idx];
+          if (rack) handleRackSelect(rack);
+        }}
+        onEnd={() => setGuidedTourActive(false)}
+      />
+      <WarehouseComparisonPanel
+        warehouses={allWarehouses}
+        isOpen={warehouseNavOpen}
+        onClose={() => setWarehouseNavOpen(false)}
+        onNavigate={(whId) => {
+          // Navigate to different warehouse page
+          window.location.href = `/almacenes?warehouse=${whId}`;
+        }}
+      />
+
+      {/* ── View Mode Toolbar (bottom center) ──────────── */}
+      <ViewModeToolbar
+        currentMode={viewMode}
+        onModeChange={setViewMode}
+        toggles={featureToggles}
+        onToggle={handleToggleFeature}
+      />
+
+      {/* ── Picking Path HUD ──────────── */}
+      {pickingPath.length > 0 && (
+        <div className="absolute left-1/2 top-3 -translate-x-1/2 flex items-center gap-2 rounded-lg bg-emerald-500/90 px-3 py-1.5 shadow-md backdrop-blur z-20">
+          <span className="text-[10px] font-semibold text-white">🗺 Ruta de Picking Activa · {pickingPath.length - 2} paradas</span>
+          <button onClick={() => setPickingPath([])} className="rounded bg-white/20 px-2 py-0.5 text-[9px] font-bold text-white hover:bg-white/30">✕ Cerrar</button>
+        </div>
+      )}
     </div>
   );
 }
+
