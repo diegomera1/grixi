@@ -9,9 +9,11 @@ import React, {
   Suspense,
 } from "react";
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
-import { OrbitControls, Text, Html } from "@react-three/drei";
+import { OrbitControls, Text, Html, Line } from "@react-three/drei";
 import * as THREE from "three";
 import { BoxDetailDrawer } from "./box-detail-drawer";
+import { WarehouseSearch } from "./warehouse-search";
+import type { SearchableItem } from "./warehouse-search";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -1205,6 +1207,139 @@ function MiniMap({ racks, visible }: { racks: Rack[]; visible: boolean }) {
   );
 }
 
+// ─── Distance Measurement Tool ──────────────────────────
+
+function DistanceTool({ active }: { active: boolean }) {
+  const [points, setPoints] = useState<THREE.Vector3[]>([]);
+
+  useEffect(() => {
+    if (!active) setPoints([]);
+  }, [active]);
+
+  const handleClick = useCallback(
+    (e: THREE.Event) => {
+      if (!active) return;
+      const pt = (e as unknown as { point: THREE.Vector3 }).point;
+      setPoints((prev) => {
+        if (prev.length >= 2) return [pt];
+        return [...prev, pt.clone()];
+      });
+    },
+    [active]
+  );
+
+  const distance = points.length === 2
+    ? points[0].distanceTo(points[1]).toFixed(2)
+    : null;
+
+  const midpoint = points.length === 2
+    ? new THREE.Vector3().addVectors(points[0], points[1]).multiplyScalar(0.5)
+    : null;
+
+  if (!active) return null;
+
+  return (
+    <group>
+      {/* Click plane (invisible) */}
+      <mesh
+        position={[0, 0.01, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onClick={handleClick}
+        visible={false}
+      >
+        <planeGeometry args={[60, 40]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
+      {/* Point markers */}
+      {points.map((pt, i) => (
+        <mesh key={`dp-${i}`} position={pt}>
+          <sphereGeometry args={[0.08, 12, 12]} />
+          <meshBasicMaterial color="#EF4444" />
+        </mesh>
+      ))}
+
+      {/* Line between points */}
+      {points.length === 2 && (
+        <Line
+          points={[points[0], points[1]]}
+          color="#EF4444"
+          lineWidth={2}
+        />
+      )}
+
+      {/* Distance label */}
+      {midpoint && distance && (
+        <Html position={midpoint} center style={{ pointerEvents: "none" }}>
+          <div className="rounded-md bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg whitespace-nowrap">
+            {distance}m
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+// ─── Floating 3D Dashboard ──────────────────────────────
+
+function FloatingDashboard({ racks }: { racks: Rack[] }) {
+  const total = racks.reduce((s, r) => s + r.rack_positions.length, 0);
+  const occupied = racks.reduce(
+    (s, r) => s + r.rack_positions.filter((p) => p.status !== "empty").length, 0
+  );
+  const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
+
+  return (
+    <group position={[14, 6.5, -8]}>
+      {/* Background panel */}
+      <mesh>
+        <planeGeometry args={[3.5, 2.2]} />
+        <meshBasicMaterial color="#0F172A" transparent opacity={0.7} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Title */}
+      <Text position={[0, 0.85, 0.01]} fontSize={0.14} color="#94A3B8" anchorX="center" anchorY="middle">
+        OCUPACIÓN POR RACK
+      </Text>
+
+      {/* Overall percentage */}
+      <Text position={[0, 0.6, 0.01]} fontSize={0.22} color={pct > 80 ? "#EF4444" : pct > 50 ? "#F59E0B" : "#10B981"} anchorX="center" anchorY="middle" font={undefined}>
+        {pct}% Ocupado
+      </Text>
+
+      {/* Mini rack bars */}
+      {racks.slice(0, 10).map((rack, i) => {
+        const rTotal = rack.rack_positions.length;
+        const rOcc = rack.rack_positions.filter((p) => p.status !== "empty").length;
+        const ratio = rTotal > 0 ? rOcc / rTotal : 0;
+        const y = 0.35 - i * 0.18;
+        const barW = 1.8;
+
+        return (
+          <group key={rack.id} position={[-0.6, y, 0.01]}>
+            <Text position={[-0.6, 0, 0]} fontSize={0.07} color="#94A3B8" anchorX="right" anchorY="middle">
+              {rack.code}
+            </Text>
+            {/* BG bar */}
+            <mesh position={[barW / 2 - 0.45, 0, 0]}>
+              <planeGeometry args={[barW, 0.08]} />
+              <meshBasicMaterial color="#1E293B" />
+            </mesh>
+            {/* Fill bar */}
+            <mesh position={[(barW * ratio) / 2 - 0.45, 0, 0.001]}>
+              <planeGeometry args={[barW * ratio, 0.08]} />
+              <meshBasicMaterial color={ratio > 0.8 ? "#EF4444" : ratio > 0.5 ? "#F59E0B" : "#10B981"} />
+            </mesh>
+            <Text position={[barW - 0.35, 0, 0]} fontSize={0.06} color="#CBD5E1" anchorX="left" anchorY="middle">
+              {Math.round(ratio * 100)}%
+            </Text>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 // ─── Scene Content ──────────────────────────────────────
 
 function SceneContent({
@@ -1215,6 +1350,7 @@ function SceneContent({
   simulating,
   onBoxClick,
   fpsMode,
+  distanceMeasuring,
 }: {
   racks: Rack[];
   selectedRackId: string | null;
@@ -1223,6 +1359,7 @@ function SceneContent({
   simulating: boolean;
   onBoxClick?: (pos: Position, rackCode: string) => void;
   fpsMode?: boolean;
+  distanceMeasuring?: boolean;
 }) {
   const textures = useWarehouseTextures();
 
@@ -1283,6 +1420,8 @@ function SceneContent({
         />
       )}
       {fpsMode && <FPSControls active={fpsMode} />}
+      <DistanceTool active={distanceMeasuring || false} />
+      <FloatingDashboard racks={racks} />
     </>
   );
 }
@@ -1335,6 +1474,8 @@ export function Warehouse3DScene({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fpsMode, setFpsMode] = useState(false);
   const [minimapHover, setMinimapHover] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [distanceMeasuring, setDistanceMeasuring] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1342,6 +1483,58 @@ export function Warehouse3DScene({
   useEffect(() => {
     setRacks(initialRacks);
   }, [initialRacks]);
+
+  // ⌘K / Ctrl+K shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+      if (e.key === "Escape" && fpsMode) setFpsMode(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [fpsMode]);
+
+  // Build searchable items from racks
+  const searchItems = useMemo<SearchableItem[]>(() => {
+    const items: SearchableItem[] = [];
+    racks.forEach((rack, i) => {
+      const racksPerAisle = Math.ceil(racks.length / 4);
+      const aisleIdx = Math.floor(i / racksPerAisle);
+      const posInAisle = i % racksPerAisle;
+      const side = posInAisle % 2 === 0 ? -1 : 1;
+      const col = Math.floor(posInAisle / 2);
+      const posX = col * 4 - 8 + side * 0.75;
+      const posZ = aisleIdx * 5 - 6;
+
+      rack.rack_positions.forEach((pos) => {
+        if (!pos.inventory) return;
+        items.push({
+          positionId: pos.id,
+          rackCode: rack.code,
+          rackId: rack.id,
+          row: pos.row_number,
+          col: pos.column_number,
+          productName: pos.inventory.product_name,
+          productSku: pos.inventory.product_sku,
+          category: pos.inventory.category,
+          quantity: pos.inventory.quantity,
+          status: pos.inventory.status || pos.status,
+          posX,
+          posY: 1.5,
+          posZ,
+        });
+      });
+    });
+    return items;
+  }, [racks]);
+
+  const handleSearchSelect = useCallback((item: SearchableItem) => {
+    setCameraTarget(new THREE.Vector3(item.posX, item.posY, item.posZ));
+    setSelectedRackId(item.rackId);
+  }, []);
 
   // Screenshot
   const takeScreenshot = useCallback(() => {
@@ -1525,6 +1718,7 @@ export function Warehouse3DScene({
                 });
               }}
               fpsMode={fpsMode}
+              distanceMeasuring={distanceMeasuring}
             />
           </Suspense>
         </Canvas>
@@ -1711,6 +1905,24 @@ export function Warehouse3DScene({
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
         </button>
+        {/* Distance Measure */}
+        <button
+          onClick={() => setDistanceMeasuring((p) => !p)}
+          title={distanceMeasuring ? "Desactivar medición" : "Medir distancia"}
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            distanceMeasuring ? "bg-red-500 text-white" : "bg-white/95 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+          }`}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.3 15.3a2.4 2.4 0 010 3.4l-2.6 2.6a2.4 2.4 0 01-3.4 0L2.7 8.7a2.4 2.4 0 010-3.4l2.6-2.6a2.4 2.4 0 013.4 0z" /><path d="M14.5 12.5l2-2" /><path d="M11.5 9.5l2-2" /></svg>
+        </button>
+        {/* Search */}
+        <button
+          onClick={() => setSearchOpen(true)}
+          title="Buscar inventario (⌘K)"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-slate-500 shadow-md ring-1 ring-black/5 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+        </button>
       </div>
 
       {/* ── FPS Mode HUD ──────────── */}
@@ -1739,6 +1951,21 @@ export function Warehouse3DScene({
           onClose={() => setSelectedBox(null)}
         />
       )}
+
+      {/* ── Distance Measuring HUD ──────── */}
+      {distanceMeasuring && (
+        <div className="absolute left-1/2 bottom-16 -translate-x-1/2 rounded-lg bg-red-500/90 px-3 py-1 text-[10px] font-semibold text-white shadow-md backdrop-blur">
+          📏 Haz clic en 2 puntos para medir distancia · Click para reiniciar
+        </div>
+      )}
+
+      {/* ── Search Overlay ──────────── */}
+      <WarehouseSearch
+        items={searchItems}
+        onSelect={handleSearchSelect}
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+      />
     </div>
   );
 }

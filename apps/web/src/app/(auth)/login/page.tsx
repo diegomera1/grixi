@@ -144,9 +144,25 @@ export default function LoginPage() {
           )}
         </button>
 
-        {/* Note */}
-        <p className="mt-6 text-center text-xs text-[var(--text-muted)]">
-          Al iniciar sesión, aceptas los términos de uso de la plataforma.
+        {/* Divider */}
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[var(--border)]" />
+          <span className="text-xs text-[var(--text-muted)]">o</span>
+          <div className="h-px flex-1 bg-[var(--border)]" />
+        </div>
+
+        {/* Demo admin access */}
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="group flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-[var(--border)] bg-transparent px-6 py-3 text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--brand)] hover:text-[var(--brand)] active:scale-[0.98]"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          Acceso Demo Admin
+        </button>
+        <p className="mt-2 text-center text-[10px] text-[var(--text-muted)]">
+          Acceso completo sin autenticación para demostración
         </p>
 
         {/* Footer */}
