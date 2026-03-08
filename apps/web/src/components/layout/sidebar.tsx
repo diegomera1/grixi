@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,6 +17,8 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 // Module-specific accent colors
 const navItems = [
@@ -64,12 +66,29 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUser(data.user);
+    });
   }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
+  // Extract user info from Google metadata
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuario";
+  const userAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  const userInitial = userName.charAt(0).toUpperCase();
 
   return (
     <motion.aside
@@ -185,16 +204,23 @@ export function Sidebar() {
           </AnimatePresence>
         </Link>
 
-        {/* User card — minimal */}
+        {/* User card — real auth data */}
         <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
           <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full ring-1 ring-[var(--border)]">
-            <Image
-              src="https://randomuser.me/api/portraits/women/20.jpg"
-              alt="Admin"
-              width={24}
-              height={24}
-              className="h-full w-full object-cover"
-            />
+            {userAvatar ? (
+              <Image
+                src={userAvatar}
+                alt={userName}
+                width={24}
+                height={24}
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-[var(--brand)] text-[10px] font-bold text-white">
+                {userInitial}
+              </div>
+            )}
           </div>
           <AnimatePresence>
             {!collapsed && (
@@ -206,7 +232,7 @@ export function Sidebar() {
                 className="flex-1 overflow-hidden"
               >
                 <p className="truncate text-[12px] font-medium text-[var(--text-primary)]">
-                  Mariana Solís
+                  {userName}
                 </p>
               </motion.div>
             )}
@@ -218,12 +244,13 @@ export function Sidebar() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <Link
-                  href="/login"
+                <button
+                  onClick={handleSignOut}
                   className="rounded p-1 text-[var(--text-muted)] transition-colors hover:text-[var(--error)]"
+                  title="Cerrar sesión"
                 >
                   <LogOut size={13} />
-                </Link>
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
