@@ -720,6 +720,7 @@ function Rack3D({
   onSelect,
   isSelected,
   textures,
+  onBoxClick,
 }: {
   rack: Rack;
   rackIndex: number;
@@ -727,6 +728,7 @@ function Rack3D({
   onSelect: () => void;
   isSelected: boolean;
   textures: ReturnType<typeof useWarehouseTextures>;
+  onBoxClick?: (pos: Position, rackCode: string) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
@@ -942,7 +944,15 @@ function Rack3D({
 
         return (
           <group key={pos.id} position={[cx, cy, 0]}>
-            <mesh castShadow>
+            <mesh
+              castShadow
+              onClick={(e) => {
+                e.stopPropagation();
+                onBoxClick?.(pos, rack.code);
+              }}
+              onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+              onPointerOut={() => { document.body.style.cursor = 'auto'; }}
+            >
               <boxGeometry args={[cw * 0.7, ch * 0.45, rD * 0.55]} />
               <meshStandardMaterial
                 map={boxTex}
@@ -1076,18 +1086,143 @@ function CameraController({ target }: { target: THREE.Vector3 | null }) {
 
 // ─── Scene ──────────────────────────────────────────────
 
+// ─── FPS Controls ───────────────────────────────────────
+
+function FPSControls({ active }: { active: boolean }) {
+  const { camera, gl } = useThree();
+  const euler = useRef(new THREE.Euler(0, 0, 0, "YXZ"));
+  const velocity = useRef(new THREE.Vector3());
+  const keys = useRef<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!active) return;
+    camera.position.set(0, 1.7, 8);
+    euler.current.setFromQuaternion(camera.quaternion);
+
+    const onKeyDown = (e: KeyboardEvent) => { keys.current[e.code] = true; };
+    const onKeyUp = (e: KeyboardEvent) => { keys.current[e.code] = false; };
+    const onMouseMove = (e: MouseEvent) => {
+      if (document.pointerLockElement !== gl.domElement) return;
+      euler.current.y -= e.movementX * 0.002;
+      euler.current.x -= e.movementY * 0.002;
+      euler.current.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.current.x));
+      camera.quaternion.setFromEuler(euler.current);
+    };
+    const onClick = () => { gl.domElement.requestPointerLock(); };
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    document.addEventListener("mousemove", onMouseMove);
+    gl.domElement.addEventListener("click", onClick);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      document.removeEventListener("mousemove", onMouseMove);
+      gl.domElement.removeEventListener("click", onClick);
+      if (document.pointerLockElement) document.exitPointerLock();
+      keys.current = {};
+    };
+  }, [active, camera, gl]);
+
+  useFrame((_, delta) => {
+    if (!active) return;
+    const speed = 5 * delta;
+    const dir = new THREE.Vector3();
+    const right = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    dir.y = 0; dir.normalize();
+    right.crossVectors(dir, new THREE.Vector3(0, 1, 0));
+
+    velocity.current.set(0, 0, 0);
+    if (keys.current["KeyW"]) velocity.current.add(dir.multiplyScalar(speed));
+    if (keys.current["KeyS"]) velocity.current.add(dir.multiplyScalar(-speed));
+    if (keys.current["KeyA"]) velocity.current.add(right.multiplyScalar(-speed));
+    if (keys.current["KeyD"]) velocity.current.add(right.multiplyScalar(speed));
+
+    camera.position.add(velocity.current);
+    camera.position.y = 1.7;
+  });
+
+  return null;
+}
+
+// ─── MiniMap (2D Canvas, outside Canvas) ────────────────
+
+function MiniMap({ racks, visible }: { racks: Rack[]; visible: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
+
+    const W = 140, H = 100;
+    cv.width = W; cv.height = H;
+    ctx.fillStyle = "#1E293B";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = "#475569";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(5, 5, W - 10, H - 10);
+
+    racks.forEach((rack, i) => {
+      const racksPerAisle = Math.ceil(racks.length / 4);
+      const aisleIdx = Math.floor(i / racksPerAisle);
+      const posInAisle = i % racksPerAisle;
+      const col = Math.floor(posInAisle / 2);
+      const side = posInAisle % 2 === 0 ? 0 : 8;
+
+      const mx = 20 + col * 18;
+      const my = 15 + aisleIdx * 22 + side;
+
+      const occ = rack.rack_positions.filter(p => p.status === "occupied").length;
+      const total = rack.rack_positions.length;
+      const ratio = total > 0 ? occ / total : 0;
+
+      ctx.fillStyle = ratio > 0.7 ? "#10B981" : ratio > 0.3 ? "#F59E0B" : "#94A3B8";
+      ctx.fillRect(mx, my, 12, 5);
+
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "4px sans-serif";
+      ctx.fillText(rack.code, mx, my - 1);
+    });
+
+    ctx.fillStyle = "#64748B";
+    ctx.font = "5px sans-serif";
+    ctx.fillText("MiniMapa", 5, H - 3);
+  }, [racks]);
+
+  return (
+    <div
+      className={`absolute right-3 top-3 overflow-hidden rounded-lg shadow-lg ring-1 ring-black/10 transition-all duration-200 ${
+        visible ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+      }`}
+    >
+      <canvas ref={canvasRef} style={{ width: 140, height: 100 }} />
+    </div>
+  );
+}
+
+// ─── Scene Content ──────────────────────────────────────
+
 function SceneContent({
   racks,
   selectedRackId,
   onRackSelect,
   cameraTarget,
   simulating,
+  onBoxClick,
+  fpsMode,
 }: {
   racks: Rack[];
   selectedRackId: string | null;
   onRackSelect: (rack: Rack) => void;
   cameraTarget: THREE.Vector3 | null;
   simulating: boolean;
+  onBoxClick?: (pos: Position, rackCode: string) => void;
+  fpsMode?: boolean;
 }) {
   const textures = useWarehouseTextures();
 
@@ -1130,21 +1265,24 @@ function SceneContent({
           isSelected={rack.id === selectedRackId}
           onSelect={() => onRackSelect(rack)}
           textures={textures}
+          onBoxClick={onBoxClick}
         />
       ))}
-
       {cameraTarget && <CameraController target={cameraTarget} />}
 
-      <OrbitControls
-        makeDefault
-        enableDamping
-        dampingFactor={0.06}
-        minPolarAngle={0.15}
-        maxPolarAngle={Math.PI / 2.15}
-        minDistance={3}
-        maxDistance={28}
-        target={[0, 1.5, 0]}
-      />
+      {!fpsMode && (
+        <OrbitControls
+          makeDefault
+          enableDamping
+          dampingFactor={0.06}
+          minPolarAngle={0.15}
+          maxPolarAngle={Math.PI / 2.15}
+          minDistance={3}
+          maxDistance={28}
+          target={[0, 1.5, 0]}
+        />
+      )}
+      {fpsMode && <FPSControls active={fpsMode} />}
     </>
   );
 }
@@ -1195,6 +1333,8 @@ export function Warehouse3DScene({
   const [simulating, setSimulating] = useState(false);
   const [selectedBox, setSelectedBox] = useState<SelectedBox>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fpsMode, setFpsMode] = useState(false);
+  const [minimapHover, setMinimapHover] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1376,6 +1516,15 @@ export function Warehouse3DScene({
               onRackSelect={handleRackSelect}
               cameraTarget={cameraTarget}
               simulating={simulating}
+              onBoxClick={(pos, rackCode) => {
+                setSelectedBox({
+                  inventory: pos.inventory,
+                  rackCode,
+                  row: pos.row_number,
+                  col: pos.column_number,
+                });
+              }}
+              fpsMode={fpsMode}
             />
           </Suspense>
         </Canvas>
@@ -1552,6 +1701,32 @@ export function Warehouse3DScene({
             )}
           </svg>
         </button>
+        {/* FPS Mode */}
+        <button
+          onClick={() => setFpsMode((p) => !p)}
+          title={fpsMode ? "Salir de primera persona (ESC)" : "Vista primera persona (WASD)"}
+          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
+            fpsMode ? "bg-indigo-500 text-white" : "bg-white/95 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+          }`}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+        </button>
+      </div>
+
+      {/* ── FPS Mode HUD ──────────── */}
+      {fpsMode && (
+        <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-lg bg-indigo-500/90 px-3 py-1 text-[10px] font-semibold text-white shadow-md backdrop-blur">
+          WASD para caminar · Mouse para mirar · ESC para salir
+        </div>
+      )}
+
+      {/* ── MiniMap hover zone + rendering ── */}
+      <div
+        className="absolute right-0 top-0 h-28 w-36"
+        onMouseEnter={() => setMinimapHover(true)}
+        onMouseLeave={() => setMinimapHover(false)}
+      >
+        <MiniMap racks={racks} visible={minimapHover || isFullscreen} />
       </div>
 
       {/* ── Box Detail Drawer ──────────── */}

@@ -41,11 +41,14 @@ export default function LoginPage() {
         },
       });
       if (error) {
+        console.error("Supabase OAuth error:", error);
         setError(error.message);
         setIsLoading(false);
       }
-    } catch {
-      setError("Error inesperado. Inténtalo de nuevo.");
+    } catch (err) {
+      console.error("Login catch error:", err);
+      const message = err instanceof Error ? err.message : "Error inesperado";
+      setError(message);
       setIsLoading(false);
     }
   };
