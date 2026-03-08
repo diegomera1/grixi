@@ -1,4 +1,4 @@
-// Finance module types
+// Finance module types — rich SAP-like data
 
 export type TransactionType =
   | "invoice_revenue"
@@ -18,6 +18,18 @@ export type TransactionCategory =
 
 export type CurrencyCode = "USD" | "EUR" | "GBP";
 
+export type PaymentMethod = "transfer" | "check" | "cash" | "credit_card" | "direct_debit";
+export type TransactionStatus = "draft" | "posted" | "cleared" | "reversed";
+
+export type LineItem = {
+  item: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  gl_account: string;
+};
+
 export type FinanceTransaction = {
   id: string;
   org_id: string;
@@ -33,6 +45,23 @@ export type FinanceTransaction = {
   sap_document_id: string;
   is_live: boolean;
   created_at: string;
+  // Rich SAP fields
+  invoice_number: string | null;
+  tax_rate: number;
+  tax_amount: number;
+  net_amount: number | null;
+  payment_terms: string;
+  due_date: string | null;
+  status: TransactionStatus;
+  cost_center_code: string | null;
+  gl_account: string | null;
+  profit_center: string | null;
+  posting_date: string | null;
+  document_date: string | null;
+  reference: string | null;
+  payment_method: PaymentMethod;
+  line_items: LineItem[];
+  notes: string | null;
 };
 
 export type ExchangeRate = {
@@ -62,12 +91,4 @@ export type FinanceKPIs = {
   ebitda: number;
   cashFlow: number;
   netBalance: number;
-};
-
-export type PnLLine = {
-  label: string;
-  amount: number;
-  type: "revenue" | "expense" | "subtotal" | "total";
-  children?: PnLLine[];
-  expanded?: boolean;
 };

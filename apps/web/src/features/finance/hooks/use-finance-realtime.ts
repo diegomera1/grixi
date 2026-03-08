@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { FinanceTransaction, FinanceKPIs } from "../types";
 
@@ -23,10 +23,8 @@ export function useFinanceRealtime(initialTransactions: FinanceTransaction[]) {
         },
         (payload) => {
           const newTx = payload.new as FinanceTransaction;
-          // Add to live transactions
           liveRef.current = [newTx, ...liveRef.current].slice(0, 200);
           setLiveTransactions([...liveRef.current]);
-          // Also add to all transactions
           setTransactions((prev) => [newTx, ...prev].slice(0, 5000));
         }
       )
@@ -38,7 +36,6 @@ export function useFinanceRealtime(initialTransactions: FinanceTransaction[]) {
           table: "finance_transactions",
         },
         () => {
-          // Hourly reset happened — clear live data
           liveRef.current = [];
           setLiveTransactions([]);
         }
@@ -50,7 +47,7 @@ export function useFinanceRealtime(initialTransactions: FinanceTransaction[]) {
     };
   }, [supabase]);
 
-  // Compute KPIs from all transactions
+  // Compute KPIs
   const computeKPIs = useCallback(
     (txs: FinanceTransaction[]): FinanceKPIs => {
       let totalRevenue = 0;
@@ -73,7 +70,6 @@ export function useFinanceRealtime(initialTransactions: FinanceTransaction[]) {
             cashOut += tx.amount_usd;
             break;
           case "adjustment":
-            // Can be positive or negative
             if (tx.amount_usd > 0) totalRevenue += tx.amount_usd;
             else totalExpenses += Math.abs(tx.amount_usd);
             break;
@@ -94,7 +90,6 @@ export function useFinanceRealtime(initialTransactions: FinanceTransaction[]) {
   const historicalKPIs = computeKPIs(initialTransactions);
   const liveKPIs = computeKPIs(liveTransactions);
 
-  // Combined KPIs (historical + live)
   const kpis: FinanceKPIs = {
     totalRevenue: historicalKPIs.totalRevenue + liveKPIs.totalRevenue,
     totalExpenses: historicalKPIs.totalExpenses + liveKPIs.totalExpenses,
@@ -103,23 +98,24 @@ export function useFinanceRealtime(initialTransactions: FinanceTransaction[]) {
     netBalance: historicalKPIs.netBalance + liveKPIs.netBalance,
   };
 
-  // Department breakdown from live data
-  const departmentBreakdown = useCallback(() => {
-    const depts = new Map<string, number>();
+  // Department breakdown — returns a Record<string, number>
+  const departmentBreakdown = useMemo(() => {
+    const depts: Record<string, number> = {};
     for (const tx of [...initialTransactions, ...liveTransactions]) {
       if (tx.category === "expense" || tx.category === "payment_out") {
-        const current = depts.get(tx.department) || 0;
-        depts.set(tx.department, current + tx.amount_usd);
+        depts[tx.department] = (depts[tx.department] || 0) + tx.amount_usd;
       }
     }
-    return Array.from(depts.entries())
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+    return depts;
   }, [initialTransactions, liveTransactions]);
+
+  // Historical transactions (for P&L and other calculations)
+  const historicalTransactions = useMemo(() => initialTransactions, [initialTransactions]);
 
   return {
     transactions,
     liveTransactions,
+    historicalTransactions,
     kpis,
     liveKPIs,
     historicalKPIs,

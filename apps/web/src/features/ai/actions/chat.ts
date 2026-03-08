@@ -1,10 +1,6 @@
 "use server";
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+import { GoogleGenAI } from "@google/genai";
 
 const SYSTEM_PROMPT = `Eres GRIXI AI, el asistente inteligente de la plataforma Grixi — una plataforma enterprise SaaS multi-tenant.
 
@@ -38,32 +34,36 @@ export async function sendChatMessage(
   messages: Message[],
   userMessage: string
 ): Promise<{ response: string; error?: string }> {
-  if (!GEMINI_API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
     return {
       response: "",
-      error: "GEMINI_API_KEY no está configurada. Agrega la variable GEMINI_API_KEY en tu archivo .env.local",
+      error: "GEMINI_API_KEY no está configurada.",
     };
   }
 
   try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.1-flash-lite-preview-06-17",
-      systemInstruction: SYSTEM_PROMPT,
+    const ai = new GoogleGenAI({ apiKey });
+
+    // Build conversation context from recent history
+    const recentHistory = messages.slice(-10);
+    const contextParts = recentHistory
+      .map((msg) => `${msg.role === "user" ? "Usuario" : "Asistente"}: ${msg.content}`)
+      .join("\n\n");
+
+    const fullPrompt = contextParts
+      ? `${SYSTEM_PROMPT}\n\nHistorial de conversación reciente:\n${contextParts}\n\nUsuario: ${userMessage}\n\nAsistente:`
+      : `${SYSTEM_PROMPT}\n\nUsuario: ${userMessage}\n\nAsistente:`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-lite-preview",
+      contents: fullPrompt,
     });
 
-    // Build conversation history for context (last 5 exchanges)
-    const recentHistory = messages.slice(-10);
-    const history = recentHistory.map((msg) => ({
-      role: msg.role === "assistant" ? "model" as const : "user" as const,
-      parts: [{ text: msg.content }],
-    }));
+    const text = response.text || "";
 
-    const chat = model.startChat({ history });
-
-    const result = await chat.sendMessage(userMessage);
-    const response = result.response.text();
-
-    return { response };
+    return { response: text };
   } catch (error: unknown) {
     console.error("Gemini AI error:", error);
     const errorMessage = error instanceof Error ? error.message : "Error desconocido";

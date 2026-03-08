@@ -80,7 +80,7 @@ REGLAS:
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite-preview-06-17",
+      model: "gemini-3.1-flash-lite-preview",
       contents: prompt,
     });
 
