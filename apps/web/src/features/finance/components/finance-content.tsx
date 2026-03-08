@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 import {
   DollarSign,
   TrendingUp,
@@ -905,8 +906,24 @@ function TransactionDrawer({
               <p className="text-xs font-semibold text-violet-500">Grixi AI — Análisis</p>
             </div>
             {aiAnalysis ? (
-              <div className="text-xs text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
-                {aiAnalysis}
+              <div className="prose-finance text-xs text-[var(--text-secondary)] leading-relaxed">
+                <ReactMarkdown
+                  components={{
+                    strong: ({ children }) => <strong className="font-bold text-[var(--text-primary)]">{children}</strong>,
+                    em: ({ children }) => <em className="italic text-violet-400">{children}</em>,
+                    ul: ({ children }) => <ul className="list-disc pl-4 space-y-1 my-2">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal pl-4 space-y-1 my-2">{children}</ol>,
+                    li: ({ children }) => <li className="text-xs leading-relaxed">{children}</li>,
+                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                    h1: ({ children }) => <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1 mt-3">{children}</h3>,
+                    h2: ({ children }) => <h4 className="text-xs font-bold text-[var(--text-primary)] mb-1 mt-2">{children}</h4>,
+                    h3: ({ children }) => <h5 className="text-xs font-semibold text-[var(--text-primary)] mb-1 mt-2">{children}</h5>,
+                    code: ({ children }) => <code className="px-1 py-0.5 rounded bg-violet-500/10 text-violet-400 font-mono text-[10px]">{children}</code>,
+                    hr: () => <hr className="border-[var(--border)] my-3" />,
+                  }}
+                >
+                  {aiAnalysis}
+                </ReactMarkdown>
               </div>
             ) : (
               <button
