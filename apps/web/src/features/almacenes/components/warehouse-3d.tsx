@@ -1289,48 +1289,71 @@ function FloatingDashboard({ racks }: { racks: Rack[] }) {
   );
   const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
+  // Wall-mounted on back wall, at eye-level
   return (
-    <group position={[14, 6.5, -8]}>
-      {/* Background panel */}
+    <group position={[-12.8, 2.2, 0]} rotation={[0, Math.PI / 2, 0]}>
+      {/* Metal frame */}
       <mesh>
-        <planeGeometry args={[3.5, 2.2]} />
-        <meshBasicMaterial color="#0F172A" transparent opacity={0.7} side={THREE.DoubleSide} />
+        <boxGeometry args={[2.6, 1.5, 0.06]} />
+        <meshStandardMaterial color="#374151" metalness={0.8} roughness={0.3} />
+      </mesh>
+      {/* Screen bezel */}
+      <mesh position={[0, 0, 0.031]}>
+        <planeGeometry args={[2.4, 1.3]} />
+        <meshBasicMaterial color="#0F172A" />
+      </mesh>
+
+      {/* LED indicator */}
+      <mesh position={[1.1, -0.65, 0.04]}>
+        <circleGeometry args={[0.02, 8]} />
+        <meshBasicMaterial color="#22C55E" />
       </mesh>
 
       {/* Title */}
-      <Text position={[0, 0.85, 0.01]} fontSize={0.14} color="#94A3B8" anchorX="center" anchorY="middle">
-        OCUPACIÓN POR RACK
+      <Text position={[0, 0.5, 0.04]} fontSize={0.09} color="#94A3B8" anchorX="center" anchorY="middle">
+        OCUPACIÓN EN TIEMPO REAL
       </Text>
 
-      {/* Overall percentage */}
-      <Text position={[0, 0.6, 0.01]} fontSize={0.22} color={pct > 80 ? "#EF4444" : pct > 50 ? "#F59E0B" : "#10B981"} anchorX="center" anchorY="middle" font={undefined}>
-        {pct}% Ocupado
+      {/* Overall percentage — big */}
+      <Text
+        position={[0, 0.32, 0.04]}
+        fontSize={0.16}
+        color={pct > 80 ? "#EF4444" : pct > 50 ? "#F59E0B" : "#10B981"}
+        anchorX="center"
+        anchorY="middle"
+        font={undefined}
+      >
+        {pct}% OCUPADO — {occupied}/{total}
       </Text>
 
-      {/* Mini rack bars */}
-      {racks.slice(0, 10).map((rack, i) => {
+      {/* Rack bars — horizontal, compact */}
+      {racks.slice(0, 6).map((rack, i) => {
         const rTotal = rack.rack_positions.length;
         const rOcc = rack.rack_positions.filter((p) => p.status !== "empty").length;
         const ratio = rTotal > 0 ? rOcc / rTotal : 0;
-        const y = 0.35 - i * 0.18;
-        const barW = 1.8;
+        const y = 0.14 - i * 0.14;
+        const barW = 1.4;
 
         return (
-          <group key={rack.id} position={[-0.6, y, 0.01]}>
-            <Text position={[-0.6, 0, 0]} fontSize={0.07} color="#94A3B8" anchorX="right" anchorY="middle">
+          <group key={rack.id} position={[-0.35, y, 0.04]}>
+            {/* Rack code */}
+            <Text position={[-0.55, 0, 0]} fontSize={0.055} color="#94A3B8" anchorX="right" anchorY="middle">
               {rack.code}
             </Text>
-            {/* BG bar */}
-            <mesh position={[barW / 2 - 0.45, 0, 0]}>
-              <planeGeometry args={[barW, 0.08]} />
+            {/* BG */}
+            <mesh position={[barW / 2, 0, 0]}>
+              <planeGeometry args={[barW, 0.06]} />
               <meshBasicMaterial color="#1E293B" />
             </mesh>
-            {/* Fill bar */}
-            <mesh position={[(barW * ratio) / 2 - 0.45, 0, 0.001]}>
-              <planeGeometry args={[barW * ratio, 0.08]} />
-              <meshBasicMaterial color={ratio > 0.8 ? "#EF4444" : ratio > 0.5 ? "#F59E0B" : "#10B981"} />
-            </mesh>
-            <Text position={[barW - 0.35, 0, 0]} fontSize={0.06} color="#CBD5E1" anchorX="left" anchorY="middle">
+            {/* Fill */}
+            {ratio > 0 && (
+              <mesh position={[(barW * ratio) / 2, 0, 0.001]}>
+                <planeGeometry args={[barW * ratio, 0.06]} />
+                <meshBasicMaterial color={ratio > 0.8 ? "#EF4444" : ratio > 0.5 ? "#F59E0B" : "#10B981"} />
+              </mesh>
+            )}
+            {/* % label */}
+            <Text position={[barW + 0.08, 0, 0]} fontSize={0.045} color="#CBD5E1" anchorX="left" anchorY="middle">
               {Math.round(ratio * 100)}%
             </Text>
           </group>
