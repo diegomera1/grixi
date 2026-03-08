@@ -2,6 +2,9 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { ActivityTrackerProvider } from "@/components/providers/activity-tracker-provider";
 
+// All platform pages require Supabase at runtime — prevent static prerendering
+export const dynamic = "force-dynamic";
+
 export default function PlatformLayout({
   children,
 }: {
