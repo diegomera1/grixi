@@ -125,6 +125,239 @@ function useWarehouseTextures() {
   return { concrete, metal, wall, cardboard, wood };
 }
 
+// ─── Animated Forklift ──────────────────────────────────
+
+const FORKLIFT_PATHS: [number, number][][] = [
+  // Forklift 1: patrols aisle 1 (z ≈ -7)
+  [[-10, -8.5], [-4, -8.5], [2, -8.5], [6, -8.5], [10, -8.5], [10, -5.5], [6, -5.5], [2, -5.5], [-4, -5.5], [-10, -5.5]],
+  // Forklift 2: patrols aisle 2 (z ≈ -2.5)
+  [[-10, -4], [-4, -4], [2, -4], [8, -4], [8, -1], [2, -1], [-4, -1], [-10, -1]],
+  // Forklift 3: patrols aisle 3 (z ≈ 2)
+  [[-10, 0.5], [-2, 0.5], [6, 0.5], [10, 0.5], [10, 3.5], [6, 3.5], [-2, 3.5], [-10, 3.5]],
+];
+
+const FORKLIFT_COLORS = ["#F59E0B", "#3B82F6", "#10B981"];
+const BOX_COLORS = [0x22c55e, 0x3b82f6, 0xf97316, 0xa855f7, 0xef4444];
+
+function AnimatedForklift({
+  pathIndex,
+  active,
+  metalTex,
+}: {
+  pathIndex: number;
+  active: boolean;
+  metalTex: THREE.Texture;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const progress = useRef(0);
+  const currentWaypoint = useRef(0);
+  const forkHeight = useRef(0.12);
+  const carryingBox = useRef(true);
+  const boxColor = useRef(BOX_COLORS[0]);
+  const beaconRef = useRef<THREE.Mesh>(null);
+
+  const path = FORKLIFT_PATHS[pathIndex % FORKLIFT_PATHS.length];
+  const color = FORKLIFT_COLORS[pathIndex % FORKLIFT_COLORS.length];
+
+  // Initial position
+  useEffect(() => {
+    if (groupRef.current) {
+      const start = path[0];
+      groupRef.current.position.set(start[0], 0, start[1]);
+    }
+  }, [path]);
+
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+
+    // Beacon rotation
+    if (beaconRef.current) {
+      beaconRef.current.rotation.y += delta * 6;
+    }
+
+    if (!active) {
+      // Park at starting position
+      const start = path[0];
+      groupRef.current.position.x += (start[0] - groupRef.current.position.x) * delta * 2;
+      groupRef.current.position.z += (start[1] - groupRef.current.position.z) * delta * 2;
+      forkHeight.current += (0.12 - forkHeight.current) * delta * 3;
+      return;
+    }
+
+    // Move along path
+    const speed = 1.5;
+    progress.current += delta * speed;
+
+    const fromIdx = currentWaypoint.current;
+    const toIdx = (fromIdx + 1) % path.length;
+    const from = path[fromIdx];
+    const to = path[toIdx];
+
+    const segLen = Math.sqrt(
+      (to[0] - from[0]) ** 2 + (to[1] - from[1]) ** 2
+    );
+    const t = Math.min(progress.current / segLen, 1);
+
+    // Interpolate position
+    const x = from[0] + (to[0] - from[0]) * t;
+    const z = from[1] + (to[1] - from[1]) * t;
+    groupRef.current.position.x = x;
+    groupRef.current.position.z = z;
+
+    // Face direction of travel
+    const angle = Math.atan2(to[0] - from[0], to[1] - from[1]);
+    const currentRot = groupRef.current.rotation.y;
+    groupRef.current.rotation.y += (angle - currentRot) * delta * 5;
+
+    // Fork animation: raise when moving, lower at waypoints
+    const targetForkH = t > 0.3 && t < 0.7 ? 0.5 : 0.12;
+    forkHeight.current += (targetForkH - forkHeight.current) * delta * 4;
+
+    // Toggle box at each waypoint
+    if (t >= 1) {
+      progress.current = 0;
+      currentWaypoint.current = toIdx;
+      carryingBox.current = !carryingBox.current;
+      boxColor.current = BOX_COLORS[Math.floor(Math.random() * BOX_COLORS.length)];
+    }
+  });
+
+  const fh = forkHeight.current;
+
+  return (
+    <group ref={groupRef}>
+      {/* ── Body / Engine compartment ────── */}
+      <mesh position={[0, 0.3, -0.2]} castShadow>
+        <boxGeometry args={[0.8, 0.35, 0.9]} />
+        <meshStandardMaterial color={color} roughness={0.6} />
+      </mesh>
+
+      {/* Counterweight (back) */}
+      <mesh position={[0, 0.25, -0.65]} castShadow>
+        <boxGeometry args={[0.75, 0.3, 0.15]} />
+        <meshStandardMaterial color="#374151" metalness={0.6} roughness={0.3} />
+      </mesh>
+
+      {/* ── Cab / overhead guard ────── */}
+      <mesh position={[0, 0.7, -0.25]} castShadow>
+        <boxGeometry args={[0.7, 0.05, 0.7]} />
+        <meshStandardMaterial color="#374151" metalness={0.5} roughness={0.3} />
+      </mesh>
+      {/* Cab pillars */}
+      {[[-0.3, -0.55], [0.3, -0.55], [-0.3, 0.05], [0.3, 0.05]].map(
+        ([px, pz], i) => (
+          <mesh key={`pillar-${i}`} position={[px, 0.55, pz]}>
+            <boxGeometry args={[0.03, 0.35, 0.03]} />
+            <meshStandardMaterial color="#374151" metalness={0.5} roughness={0.3} />
+          </mesh>
+        )
+      )}
+
+      {/* Seat */}
+      <mesh position={[0, 0.45, -0.3]}>
+        <boxGeometry args={[0.3, 0.08, 0.25]} />
+        <meshStandardMaterial color="#1F2937" roughness={0.9} />
+      </mesh>
+      {/* Seat back */}
+      <mesh position={[0, 0.55, -0.45]}>
+        <boxGeometry args={[0.28, 0.2, 0.05]} />
+        <meshStandardMaterial color="#1F2937" roughness={0.9} />
+      </mesh>
+
+      {/* ── Mast (vertical rails) ────── */}
+      {[-0.12, 0.12].map((px, i) => (
+        <mesh key={`mast-${i}`} position={[px, 0.55, 0.5]}>
+          <boxGeometry args={[0.035, 1.0, 0.035]} />
+          <meshStandardMaterial
+            map={metalTex}
+            color="#64748B"
+            metalness={0.75}
+            roughness={0.2}
+          />
+        </mesh>
+      ))}
+      {/* Mast crossbar */}
+      <mesh position={[0, 0.95, 0.5]}>
+        <boxGeometry args={[0.28, 0.025, 0.025]} />
+        <meshStandardMaterial color="#64748B" metalness={0.7} roughness={0.2} />
+      </mesh>
+
+      {/* ── Forks (move up/down) ────── */}
+      {[-0.12, 0.12].map((px, i) => (
+        <mesh key={`fk-${i}`} position={[px, fh, 0.85]}>
+          <boxGeometry args={[0.05, 0.03, 0.7]} />
+          <meshStandardMaterial
+            map={metalTex}
+            color="#6B7280"
+            metalness={0.75}
+            roughness={0.2}
+          />
+        </mesh>
+      ))}
+      {/* Fork backplate */}
+      <mesh position={[0, fh + 0.1, 0.5]}>
+        <boxGeometry args={[0.3, 0.22, 0.025]} />
+        <meshStandardMaterial color="#64748B" metalness={0.6} roughness={0.3} />
+      </mesh>
+
+      {/* ── Carried box ────── */}
+      {carryingBox.current && (
+        <mesh position={[0, fh + 0.15, 0.85]} castShadow>
+          <boxGeometry args={[0.3, 0.2, 0.35]} />
+          <meshStandardMaterial
+            color={boxColor.current}
+            roughness={0.7}
+          />
+        </mesh>
+      )}
+
+      {/* ── Wheels ────── */}
+      {/* Front (larger, steering) */}
+      {[-0.35, 0.35].map((px, i) => (
+        <mesh
+          key={`fw-${i}`}
+          position={[px, 0.1, 0.35]}
+          rotation={[0, 0, Math.PI / 2]}
+        >
+          <cylinderGeometry args={[0.1, 0.1, 0.07, 12]} />
+          <meshStandardMaterial color="#111827" roughness={0.95} />
+        </mesh>
+      ))}
+      {/* Rear (smaller) */}
+      {[-0.3, 0.3].map((px, i) => (
+        <mesh
+          key={`rw-${i}`}
+          position={[px, 0.08, -0.55]}
+          rotation={[0, 0, Math.PI / 2]}
+        >
+          <cylinderGeometry args={[0.08, 0.08, 0.06, 12]} />
+          <meshStandardMaterial color="#111827" roughness={0.95} />
+        </mesh>
+      ))}
+
+      {/* ── Warning beacon (flashing) ────── */}
+      <mesh ref={beaconRef} position={[0, 0.78, -0.25]}>
+        <cylinderGeometry args={[0.04, 0.04, 0.06, 8]} />
+        <meshStandardMaterial
+          color="#F59E0B"
+          emissive={active ? "#F59E0B" : "#000"}
+          emissiveIntensity={active ? 0.6 : 0}
+          toneMapped={false}
+        />
+      </mesh>
+      {active && (
+        <pointLight
+          position={[0, 0.85, -0.25]}
+          intensity={0.3}
+          distance={3}
+          color="#F59E0B"
+          decay={2}
+        />
+      )}
+    </group>
+  );
+}
+
 // ─── Warehouse Building ─────────────────────────────────
 
 function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWarehouseTextures> }) {
@@ -284,35 +517,7 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
         })
       )}
 
-      {/* ── Forklift ────── */}
-      <group position={[6, 0, 4]} rotation={[0, -0.3, 0]}>
-        <mesh position={[0, 0.35, 0]} castShadow>
-          <boxGeometry args={[0.8, 0.5, 1.2]} />
-          <meshStandardMaterial color="#F59E0B" roughness={0.7} />
-        </mesh>
-        <mesh position={[0, 0.75, -0.15]} castShadow>
-          <boxGeometry args={[0.7, 0.4, 0.6]} />
-          <meshStandardMaterial color="#FBBF24" roughness={0.6} />
-        </mesh>
-        {[[-0.15, 0.8], [0.15, 0.8]].map(([x, z], i) => (
-          <mesh key={`fork-${i}`} position={[x, 0.12, z]}>
-            <boxGeometry args={[0.06, 0.04, 0.8]} />
-            <meshStandardMaterial map={textures.metal} color="#71717A" metalness={0.7} roughness={0.25} />
-          </mesh>
-        ))}
-        <mesh position={[0, 0.7, 0.55]}>
-          <boxGeometry args={[0.06, 1.1, 0.06]} />
-          <meshStandardMaterial map={textures.metal} color="#71717A" metalness={0.7} roughness={0.25} />
-        </mesh>
-        {[[-0.35, -0.45], [0.35, -0.45], [-0.3, 0.4], [0.3, 0.4]].map(
-          ([x, z], i) => (
-            <mesh key={`wh-${i}`} position={[x, 0.1, z]} rotation={[0, 0, Math.PI / 2]}>
-              <cylinderGeometry args={[0.1, 0.1, 0.08, 12]} />
-              <meshStandardMaterial color="#1F2937" roughness={0.9} />
-            </mesh>
-          )
-        )}
-      </group>
+      {/* Forklifts are now animated — rendered separately */}
 
       {/* ── Pallet stacks with wood texture ────── */}
       {[
@@ -707,11 +912,13 @@ function SceneContent({
   selectedRackId,
   onRackSelect,
   cameraTarget,
+  simulating,
 }: {
   racks: Rack[];
   selectedRackId: string | null;
   onRackSelect: (rack: Rack) => void;
   cameraTarget: THREE.Vector3 | null;
+  simulating: boolean;
 }) {
   const textures = useWarehouseTextures();
 
@@ -734,6 +941,16 @@ function SceneContent({
       <hemisphereLight color="#F8FAFC" groundColor="#D1D5DB" intensity={0.35} />
 
       <WarehouseBuilding textures={textures} />
+
+      {/* Animated forklifts */}
+      {[0, 1, 2].map((i) => (
+        <AnimatedForklift
+          key={`forklift-${i}`}
+          pathIndex={i}
+          active={simulating}
+          metalTex={textures.metal}
+        />
+      ))}
 
       {racks.map((rack, i) => (
         <Rack3D
@@ -957,6 +1174,7 @@ export function Warehouse3DScene({
               selectedRackId={selectedRackId}
               onRackSelect={handleRackSelect}
               cameraTarget={cameraTarget}
+              simulating={simulating}
             />
           </Suspense>
         </Canvas>
