@@ -4,7 +4,31 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { FinanceTransaction, CurrencyCode, LineItem } from "../types";
 
-const ORG_ID = "a0000000-0000-0000-0000-000000000001";
+// ORG_ID is fetched dynamically — see getOrgId() below
+let cachedOrgId: string | null = null;
+
+async function getOrgId(supabase: ReturnType<typeof createClient>): Promise<string> {
+  if (cachedOrgId) return cachedOrgId;
+  // Try to get from current user's org membership
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: member } = await supabase
+      .from("organization_members")
+      .select("org_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+    if (member?.org_id) { cachedOrgId = member.org_id; return cachedOrgId as string; }
+  }
+  // Fallback: get demo-corp org
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("slug", "demo-corp")
+    .single();
+  cachedOrgId = org?.id ?? "";
+  return cachedOrgId as string;
+}
 
 const TRANSACTION_TYPES = [
   "invoice_revenue",
@@ -136,7 +160,7 @@ function generateLineItems(type: string, amount: number): LineItem[] {
   return items;
 }
 
-function generateTransaction(): Omit<FinanceTransaction, "id" | "created_at"> {
+function generateTransaction(orgId: string): Omit<FinanceTransaction, "id" | "created_at"> {
   const type = pick(TRANSACTION_TYPES);
   const category = CATEGORIES[type];
   const department = pick(DEPARTMENTS);
@@ -200,7 +224,7 @@ function generateTransaction(): Omit<FinanceTransaction, "id" | "created_at"> {
   };
 
   return {
-    org_id: ORG_ID,
+    org_id: orgId,
     transaction_type: type,
     category: category as FinanceTransaction["category"],
     department,
@@ -284,7 +308,9 @@ export function useFinanceSimulator() {
 
   const injectTransaction = useCallback(async () => {
     if (!isLeader.current) return;
-    const tx = generateTransaction();
+    const orgId = await getOrgId(supabase);
+    if (!orgId) return;
+    const tx = generateTransaction(orgId);
     await supabase.from("finance_transactions").insert(tx);
   }, [supabase]);
 
