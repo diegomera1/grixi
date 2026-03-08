@@ -20,10 +20,16 @@ type Position = {
   column_number: number;
   status: string;
   inventory: {
+    id: string;
     product_name: string;
     product_sku: string;
+    category: string;
     quantity: number;
     lot_number: string | null;
+    batch_code: string | null;
+    entry_date: string | null;
+    expiry_date: string | null;
+    supplier: string | null;
     status: string;
   } | null;
 };
@@ -81,10 +87,30 @@ const STATUS_LABELS: Record<string, string> = {
   quarantine: "Cuarentena",
 };
 
+// ─── Category texture mapping ───────────────────────────
+
+const CATEGORY_TEXTURE_MAP: Record<string, string> = {
+  "Componentes Electrónicos": "electronics",
+  "Material de Empaque": "packaging",
+  "Materias Primas": "raw",
+  "Productos Químicos": "chemical",
+  "Productos Terminados": "finished",
+  "Repuestos Mecánicos": "mechanical",
+};
+
+const CATEGORY_COLORS: Record<string, number> = {
+  electronics: 0x2563eb,
+  packaging: 0xe2e8f0,
+  raw: 0xc2956b,
+  chemical: 0xeab308,
+  finished: 0xd4a574,
+  mechanical: 0x94a3b8,
+};
+
 // ─── Texture Hook ───────────────────────────────────────
 
 function useWarehouseTextures() {
-  const [concrete, metal, wall, cardboard, wood] = useLoader(
+  const [concrete, metal, wall, cardboard, wood, electronics, packaging, raw, chemical, finished, mechanical] = useLoader(
     THREE.TextureLoader,
     [
       "/textures/concrete.png",
@@ -92,37 +118,37 @@ function useWarehouseTextures() {
       "/textures/wall.png",
       "/textures/cardboard.png",
       "/textures/wood.png",
+      "/textures/electronics.png",
+      "/textures/packaging.png",
+      "/textures/raw.png",
+      "/textures/chemical.png",
+      "/textures/finished.png",
+      "/textures/mechanical.png",
     ]
   );
 
   useMemo(() => {
-    // Floor tiling
     concrete.wrapS = THREE.RepeatWrapping;
     concrete.wrapT = THREE.RepeatWrapping;
     concrete.repeat.set(8, 5);
-
-    // Wall tiling
     wall.wrapS = THREE.RepeatWrapping;
     wall.wrapT = THREE.RepeatWrapping;
     wall.repeat.set(10, 2);
-
-    // Metal tiling
     metal.wrapS = THREE.RepeatWrapping;
     metal.wrapT = THREE.RepeatWrapping;
     metal.repeat.set(1, 3);
-
-    // Wood tiling
     wood.wrapS = THREE.RepeatWrapping;
     wood.wrapT = THREE.RepeatWrapping;
     wood.repeat.set(2, 2);
-
-    // Cardboard tiling
     cardboard.wrapS = THREE.RepeatWrapping;
     cardboard.wrapT = THREE.RepeatWrapping;
     cardboard.repeat.set(1, 1);
   }, [concrete, metal, wall, cardboard, wood]);
 
-  return { concrete, metal, wall, cardboard, wood };
+  return {
+    concrete, metal, wall, cardboard, wood,
+    categoryTextures: { electronics, packaging, raw, chemical, finished, mechanical } as Record<string, THREE.Texture>,
+  };
 }
 
 // ─── Animated Forklift ──────────────────────────────────
@@ -360,6 +386,51 @@ function AnimatedForklift({
 
 // ─── Warehouse Building ─────────────────────────────────
 
+// ─── Dust Particles ─────────────────────────────────────
+
+function DustParticles() {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const count = 150;
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const offsets = useMemo(
+    () =>
+      Array.from({ length: count }, () => ({
+        x: (Math.random() - 0.5) * 28,
+        y: Math.random() * 6 + 0.5,
+        z: (Math.random() - 0.5) * 18,
+        speed: Math.random() * 0.3 + 0.1,
+        phase: Math.random() * Math.PI * 2,
+      })),
+    []
+  );
+
+  useFrame((state) => {
+    if (!meshRef.current) return;
+    const t = state.clock.elapsedTime;
+    for (let i = 0; i < count; i++) {
+      const o = offsets[i];
+      dummy.position.set(
+        o.x + Math.sin(t * o.speed + o.phase) * 0.3,
+        o.y + Math.sin(t * o.speed * 0.5 + o.phase) * 0.15,
+        o.z + Math.cos(t * o.speed + o.phase) * 0.2
+      );
+      dummy.scale.setScalar(0.008 + Math.sin(t + o.phase) * 0.003);
+      dummy.updateMatrix();
+      meshRef.current.setMatrixAt(i, dummy.matrix);
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[1, 4, 4]} />
+      <meshBasicMaterial color="#D4D4D8" transparent opacity={0.3} depthWrite={false} />
+    </instancedMesh>
+  );
+}
+
+// ─── Warehouse Building ─────────────────────────────────
+
 function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWarehouseTextures> }) {
   const W = 32;
   const D = 20;
@@ -559,13 +630,75 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
         </mesh>
       </group>
 
-      {/* ── Barrel ────── */}
-      <group position={[-W / 2 + 1, 0, 5]}>
-        <mesh position={[0, 0.4, 0]}>
-          <cylinderGeometry args={[0.25, 0.22, 0.8, 16]} />
-          <meshStandardMaterial color="#1E40AF" roughness={0.6} metalness={0.3} />
+      {/* ── Industrial Gate (front wall, roller shutter) ────── */}
+      <group position={[0, 0, D / 2]}>
+        {/* Gate frame */}
+        <mesh position={[-2.2, H / 2 - 0.5, 0]}>
+          <boxGeometry args={[0.15, H - 1, 0.15]} />
+          <meshStandardMaterial color="#374151" metalness={0.6} roughness={0.3} />
         </mesh>
+        <mesh position={[2.2, H / 2 - 0.5, 0]}>
+          <boxGeometry args={[0.15, H - 1, 0.15]} />
+          <meshStandardMaterial color="#374151" metalness={0.6} roughness={0.3} />
+        </mesh>
+        {/* Roller shutter (half open) */}
+        {Array.from({ length: 8 }, (_, i) => (
+          <mesh key={`shutter-${i}`} position={[0, H - 1.5 - i * 0.15, 0]}>
+            <boxGeometry args={[4.2, 0.12, 0.03]} />
+            <meshStandardMaterial color="#9CA3AF" metalness={0.5} roughness={0.35} />
+          </mesh>
+        ))}
+        {/* PVC strip curtain (hanging) */}
+        {Array.from({ length: 12 }, (_, i) => (
+          <mesh key={`pvc-${i}`} position={[-2 + i * 0.36, 1.5, 0.05]}>
+            <boxGeometry args={[0.08, 3, 0.005]} />
+            <meshStandardMaterial color="#E0F2FE" transparent opacity={0.3} side={THREE.DoubleSide} />
+          </mesh>
+        ))}
       </group>
+
+      {/* ── Floor signage ────── */}
+      {/* CARGA zone */}
+      <mesh position={[-8, 0.005, D / 2 - 2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[3, 2.5]} />
+        <meshBasicMaterial color="#22C55E" transparent opacity={0.08} />
+      </mesh>
+      <Text position={[-8, 0.008, D / 2 - 2]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.3} color="#22C55E" anchorX="center" anchorY="middle">
+        CARGA
+      </Text>
+
+      {/* DESCARGA zone */}
+      <mesh position={[8, 0.005, D / 2 - 2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[3, 2.5]} />
+        <meshBasicMaterial color="#3B82F6" transparent opacity={0.08} />
+      </mesh>
+      <Text position={[8, 0.008, D / 2 - 2]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.3} color="#3B82F6" anchorX="center" anchorY="middle">
+        DESCARGA
+      </Text>
+
+      {/* Evacuation arrows on floor */}
+      {[[-14, 0], [-14, 4], [14, 0], [14, 4]].map(([x, z], i) => (
+        <Text key={`evac-${i}`} position={[x, 0.006, z]} rotation={[-Math.PI / 2, 0, z > 2 ? Math.PI : 0]} fontSize={0.2} color="#22C55E" anchorX="center" anchorY="middle">
+          ▶ SALIDA
+        </Text>
+      ))}
+
+      {/* ── Volumetric light cones from ceiling ────── */}
+      {Array.from({ length: 4 }, (_, row) =>
+        Array.from({ length: 3 }, (_, col) => {
+          const lx = -W / 3 + col * (W / 3);
+          const lz = -D / 2 + 3 + row * 5;
+          return (
+            <mesh key={`cone-${row}-${col}`} position={[lx, H / 2 - 0.2, lz]}>
+              <coneGeometry args={[1.2, H - 0.5, 8, 1, true]} />
+              <meshBasicMaterial color="#FFFDE7" transparent opacity={0.02} side={THREE.DoubleSide} depthWrite={false} />
+            </mesh>
+          );
+        })
+      )}
+
+      {/* ── Dust Particles ────── */}
+      <DustParticles />
     </group>
   );
 }
@@ -769,7 +902,7 @@ function Rack3D({
         <meshStandardMaterial color={0xf97316} metalness={0.4} roughness={0.4} />
       </mesh>
 
-      {/* Inventory boxes with cardboard texture */}
+      {/* Inventory boxes with category-based textures */}
       {rack.rack_positions.map((pos) => {
         const cw = rW / rack.columns;
         const ch = (rH - 0.03) / rack.rows;
@@ -785,19 +918,47 @@ function Rack3D({
 
         if (st === "empty") return null;
 
-        const color = STATUS_COLORS[st] || 0xd4d4d8;
-        const useCardboard = st === "occupied" || st === "active";
+        // Category-based texture selection
+        const category = pos.inventory?.category || "";
+        const texKey = CATEGORY_TEXTURE_MAP[category] || "finished";
+        const catTex = textures.categoryTextures[texKey];
+        const catColor = CATEGORY_COLORS[texKey] || 0xd4a574;
+
+        const isExpired = st === "expired";
+        const isQuarantine = st === "quarantine";
+        const isReserved = st === "reserved";
+        const baseColor = isExpired ? 0xef4444 : isQuarantine ? 0xa855f7 : isReserved ? 0x3b82f6 : catColor;
+
+        // Use category texture for normal items, no texture for status-colored items
+        const boxTex = (isExpired || isQuarantine || isReserved) ? undefined : catTex;
 
         return (
-          <mesh key={pos.id} position={[cx, cy, 0]} castShadow>
-            <boxGeometry args={[cw * 0.7, ch * 0.45, rD * 0.55]} />
-            <meshStandardMaterial
-              map={useCardboard ? textures.cardboard : undefined}
-              color={color}
-              roughness={0.75}
-              metalness={0.05}
-            />
-          </mesh>
+          <group key={pos.id} position={[cx, cy, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[cw * 0.7, ch * 0.45, rD * 0.55]} />
+              <meshStandardMaterial
+                map={boxTex}
+                color={baseColor}
+                roughness={0.75}
+                metalness={isExpired ? 0.1 : 0.05}
+                emissive={isExpired ? 0xef4444 : 0x000000}
+                emissiveIntensity={isExpired ? 0.3 : 0}
+              />
+            </mesh>
+            {/* SKU label on box face */}
+            {pos.inventory?.product_sku && (
+              <Text
+                position={[0, 0, rD * 0.28 + 0.001]}
+                fontSize={0.035}
+                color={isExpired ? "#FCA5A5" : "#1F2937"}
+                anchorX="center"
+                anchorY="middle"
+                maxWidth={cw * 0.6}
+              >
+                {pos.inventory.product_sku}
+              </Text>
+            )}
+          </group>
         );
       })}
 
@@ -1061,6 +1222,7 @@ export function Warehouse3DScene({
                 ...pos,
                 status: ns,
                 inventory: {
+                  ...pos.inventory,
                   product_name: `Producto ${Math.floor(Math.random() * 100)}`,
                   product_sku: `SKU-${Math.floor(
                     Math.random() * 9000 + 1000
@@ -1073,7 +1235,7 @@ export function Warehouse3DScene({
                       : ns === "quarantine"
                       ? "quarantine"
                       : "active",
-                },
+                } as Position["inventory"],
               };
             }),
           }))
