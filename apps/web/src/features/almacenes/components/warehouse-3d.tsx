@@ -11,6 +11,7 @@ import React, {
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls, Text, Html } from "@react-three/drei";
 import * as THREE from "three";
+import { BoxDetailDrawer } from "./box-detail-drawer";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -54,6 +55,13 @@ type Warehouse = {
   type: string;
   dimensions: { width: number; depth: number; height: number };
 };
+
+type SelectedBox = {
+  inventory: Position["inventory"];
+  rackCode: string;
+  row: number;
+  col: number;
+} | null;
 
 type Props = {
   racks: Rack[];
@@ -1185,11 +1193,42 @@ export function Warehouse3DScene({
   const [selectedRackId, setSelectedRackId] = useState<string | null>(null);
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
   const [simulating, setSimulating] = useState(false);
+  const [selectedBox, setSelectedBox] = useState<SelectedBox>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     setRacks(initialRacks);
   }, [initialRacks]);
+
+  // Screenshot
+  const takeScreenshot = useCallback(() => {
+    if (!canvasRef.current) return;
+    const link = document.createElement("a");
+    link.download = `almacen-${warehouse.name.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = canvasRef.current.toDataURL("image/png");
+    link.click();
+  }, [warehouse.name]);
+
+  // Fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   const toggleSimulation = useCallback(() => {
     if (simulating) {
@@ -1218,24 +1257,23 @@ export function Warehouse3DScene({
                 statuses[Math.floor(Math.random() * statuses.length)];
               if (ns === "empty")
                 return { ...pos, status: ns, inventory: null };
+              const categories = ["Componentes Electrónicos", "Material de Empaque", "Materias Primas", "Productos Químicos", "Productos Terminados", "Repuestos Mecánicos"];
               return {
                 ...pos,
                 status: ns,
                 inventory: {
-                  ...pos.inventory,
+                  id: pos.inventory?.id || `sim-${Math.random().toString(36).slice(2)}`,
                   product_name: `Producto ${Math.floor(Math.random() * 100)}`,
-                  product_sku: `SKU-${Math.floor(
-                    Math.random() * 9000 + 1000
-                  )}`,
+                  product_sku: `SKU-${Math.floor(Math.random() * 9000 + 1000)}`,
+                  category: categories[Math.floor(Math.random() * categories.length)],
                   quantity: Math.floor(Math.random() * 500 + 10),
                   lot_number: `LOT-${Math.floor(Math.random() * 900 + 100)}`,
-                  status:
-                    ns === "expired"
-                      ? "expired"
-                      : ns === "quarantine"
-                      ? "quarantine"
-                      : "active",
-                } as Position["inventory"],
+                  batch_code: `BATCH-${Math.floor(Math.random() * 99 + 1)}`,
+                  entry_date: new Date(Date.now() - Math.random() * 30 * 86400000).toISOString(),
+                  expiry_date: ns === "expired" ? new Date(Date.now() - 86400000).toISOString() : new Date(Date.now() + Math.random() * 180 * 86400000).toISOString(),
+                  supplier: `Proveedor ${Math.floor(Math.random() * 10 + 1)}`,
+                  status: ns === "expired" ? "expired" : ns === "quarantine" ? "quarantine" : "active",
+                },
               };
             }),
           }))
@@ -1298,7 +1336,7 @@ export function Warehouse3DScene({
       : 0;
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-xl border border-slate-200">
+    <div ref={containerRef} className={`relative w-full overflow-hidden rounded-xl border border-slate-200 ${isFullscreen ? 'h-screen' : 'h-full'}`}>
       <ErrorBoundary
         fallback={
           <div className="flex h-full items-center justify-center bg-slate-50 p-8">
@@ -1323,6 +1361,7 @@ export function Warehouse3DScene({
           style={{ background: "#E8EDF3" }}
           onCreated={({ gl }) => {
             gl.setClearColor(0xe8edf3);
+            canvasRef.current = gl.domElement;
           }}
           fallback={
             <div className="flex h-full items-center justify-center">
@@ -1488,6 +1527,43 @@ export function Warehouse3DScene({
           </div>
         ))}
       </div>
+
+      {/* ── Tool buttons ──────────── */}
+      <div className="absolute left-3 bottom-14 flex flex-col gap-1">
+        {/* Screenshot */}
+        <button
+          onClick={takeScreenshot}
+          title="Exportar captura HD"
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-slate-500 shadow-md ring-1 ring-black/5 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="12" cy="13" r="3" /><path d="M9 3h6" /></svg>
+        </button>
+        {/* Fullscreen */}
+        <button
+          onClick={toggleFullscreen}
+          title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-slate-500 shadow-md ring-1 ring-black/5 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {isFullscreen ? (
+              <><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></>
+            ) : (
+              <><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></>
+            )}
+          </svg>
+        </button>
+      </div>
+
+      {/* ── Box Detail Drawer ──────────── */}
+      {selectedBox?.inventory && (
+        <BoxDetailDrawer
+          inventory={selectedBox.inventory}
+          rackCode={selectedBox.rackCode}
+          posRow={selectedBox.row}
+          posCol={selectedBox.col}
+          onClose={() => setSelectedBox(null)}
+        />
+      )}
     </div>
   );
 }

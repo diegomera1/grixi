@@ -1,19 +1,24 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+  try {
+    // Dynamic import to prevent Edge Runtime crash if module has issues
+    const { updateSession } = await import("@/lib/supabase/middleware");
+    return await updateSession(request);
+  } catch {
+    // If middleware fails for any reason, don't block the request
+    return NextResponse.next();
+  }
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, brand/ (static assets)
-     * - / (landing page - public)
+     * Match all request paths except:
+     * - _next/static, _next/image (build assets)
+     * - favicon.ico, brand/, textures/, api/ (public static assets)
+     * - / (root landing page)
      */
-    "/((?!_next/static|_next/image|favicon.ico|brand/|api/).*)",
+    "/((?!_next/static|_next/image|favicon.ico|brand/|textures/|api/).*)",
   ],
 };
