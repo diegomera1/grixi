@@ -76,7 +76,7 @@ export function GrixiOrb() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const { theme, toggleTheme } = useThemeTransition();
-  const collapseTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const collapseTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   // AI Chat states
   const [aiOpen, setAiOpen] = useState(false);

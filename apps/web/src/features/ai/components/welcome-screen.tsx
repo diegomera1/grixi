@@ -14,7 +14,10 @@ import {
   Shield,
   Layers,
   FileText,
+  ShoppingCart,
+  Truck,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { GrixiAiLogo } from "./grixi-ai-logo";
 import type { AiModule } from "../types";
 
@@ -28,7 +31,7 @@ type WelcomeScreenProps = {
 type QuickPrompt = {
   label: string;
   prompt: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
 };
 
 const MODULE_PROMPTS: Record<AiModule, QuickPrompt[]> = {
@@ -74,6 +77,28 @@ const MODULE_PROMPTS: Record<AiModule, QuickPrompt[]> = {
       label: "Análisis de movimientos",
       prompt: "Analiza los movimientos de inventario recientes. ¿Hay patrones inusuales o tendencias?",
       icon: BarChart3,
+    },
+  ],
+  compras: [
+    {
+      label: "Estado de compras",
+      prompt: "Dame un resumen del estado actual de las órdenes de compra: abiertas, pendientes, recibidas y su monto total.",
+      icon: ShoppingCart,
+    },
+    {
+      label: "Top proveedores",
+      prompt: "¿Cuáles son los proveedores con mejor cumplimiento y calidad? ¿Hay alguno con problemas recurrentes?",
+      icon: Users,
+    },
+    {
+      label: "Entregas pendientes",
+      prompt: "¿Qué órdenes de compra tienen entregas pendientes? ¿Hay retrasos de proveedores?",
+      icon: Truck,
+    },
+    {
+      label: "Análisis de costos",
+      prompt: "Analiza las tendencias de precios de los materiales más comprados. ¿Hay oportunidades de ahorro?",
+      icon: TrendingUp,
     },
   ],
   finanzas: [
@@ -169,6 +194,7 @@ const MODULE_PROMPTS: Record<AiModule, QuickPrompt[]> = {
 const MODULE_DESCRIPTIONS: Record<AiModule, string> = {
   general: "Tu asistente inteligente para toda la empresa. Pregunta sobre inventario, finanzas, usuarios, o cualquier otro aspecto de tu organización.",
   almacenes: "Asistente especializado en gestión de almacenes, inventario, rack positions y movimientos de productos.",
+  compras: "Asistente especializado en compras, proveedores, órdenes de compra, solicitudes de pedido y recepciones de mercancía.",
   finanzas: "Asistente especializado en análisis financiero, transacciones, centros de costo y tendencias de gastos.",
   usuarios: "Asistente especializado en gestión de usuarios, roles, permisos y actividad del equipo.",
   dashboard: "Asistente especializado en métricas clave, KPIs, resúmenes ejecutivos y análisis de tendencias.",
