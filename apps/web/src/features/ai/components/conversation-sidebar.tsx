@@ -32,6 +32,7 @@ type ConversationSidebarProps = {
 const MODULE_COLORS: Record<AiModule, string> = {
   general: "#7C3AED",
   almacenes: "#10B981",
+  compras: "#F97316",
   finanzas: "#8B5CF6",
   usuarios: "#F59E0B",
   dashboard: "#06B6D4",
@@ -41,6 +42,7 @@ const MODULE_COLORS: Record<AiModule, string> = {
 const MODULE_LABELS: Record<AiModule, string> = {
   general: "General",
   almacenes: "Almacenes",
+  compras: "Compras",
   finanzas: "Finanzas",
   usuarios: "Usuarios",
   dashboard: "Dashboard",

@@ -20,14 +20,18 @@ async function buildSystemPrompt(module: string): Promise<string> {
     { count: productCount },
     { data: warehouses },
     { count: transactionCount },
+    { count: vendorCount },
+    { count: poCount },
+    { count: prCount },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("warehouses").select("*", { count: "exact", head: true }),
     supabase.from("products").select("*", { count: "exact", head: true }),
     supabase.from("warehouses").select("name, type, location"),
-    supabase
-      .from("finance_transactions")
-      .select("*", { count: "exact", head: true }),
+    supabase.from("finance_transactions").select("*", { count: "exact", head: true }),
+    supabase.from("vendors").select("*", { count: "exact", head: true }),
+    supabase.from("purchase_orders").select("*", { count: "exact", head: true }),
+    supabase.from("purchase_requisitions").select("*", { count: "exact", head: true }),
   ]);
 
   // Module-specific data enrichment
@@ -73,6 +77,36 @@ async function buildSystemPrompt(module: string): Promise<string> {
 `;
   }
 
+  if (module === "compras" || module === "general") {
+    const { data: topVendors } = await supabase
+      .from("vendors")
+      .select("name, code, category, compliance_score, quality_score")
+      .eq("is_active", true)
+      .order("compliance_score", { ascending: false })
+      .limit(5);
+
+    const { data: recentPOs } = await supabase
+      .from("purchase_orders")
+      .select("po_number, status, total")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    const { count: openPOCount } = await supabase
+      .from("purchase_orders")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["draft", "pending_approval", "approved", "sent"]);
+
+    moduleContext += `
+## Datos de Compras & Aprovisionamiento
+- Total proveedores activos: ${vendorCount || 0}
+- Total órdenes de compra: ${poCount || 0}
+- OC abiertas: ${openPOCount || 0}
+- Solicitudes de pedido: ${prCount || 0}
+- Top proveedores: ${topVendors?.map((v) => `${v.name} (${v.category}, cumplimiento: ${v.compliance_score}%)`).join("; ") || "N/A"}
+- Últimas OC: ${recentPOs?.map((p) => `${p.po_number} [${p.status}] $${p.total}`).join("; ") || "N/A"}
+`;
+  }
+
   if (module === "usuarios" || module === "general") {
     const { data: roles } = await supabase
       .from("roles")
@@ -88,7 +122,7 @@ async function buildSystemPrompt(module: string): Promise<string> {
   return `Eres GRIXI AI, el asistente inteligente de la plataforma Grixi — una plataforma enterprise SaaS multi-tenant.
 
 Tu rol:
-- Ayudar a los usuarios con TODOS los módulos de la empresa: almacenes, finanzas, usuarios, administración, dashboard
+- Ayudar a los usuarios con TODOS los módulos de la empresa: almacenes, compras, finanzas, usuarios, administración, dashboard
 - Responder en español de manera profesional pero amigable
 - Proporcionar insights sobre datos del sistema con la información real proporcionada
 - Sugerir optimizaciones y mejoras basadas en los datos

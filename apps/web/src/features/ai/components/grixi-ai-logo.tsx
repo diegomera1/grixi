@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { motion } from "framer-motion";
 
 type GrixiAiLogoProps = {
@@ -17,6 +18,10 @@ export function GrixiAiLogo({
   showText = true,
   animate = true,
 }: GrixiAiLogoProps) {
+  const uid = useId().replace(/:/g, "");
+  const gradientId = `ai-grad-${uid}`;
+  const glowId = `ai-glow-${uid}`;
+
   const brandColor = "#7C3AED";
   const brandLight = "#A78BFA";
   const aiGlow = "#C4B5FD";
@@ -62,11 +67,11 @@ export function GrixiAiLogo({
           className="relative"
         >
           <defs>
-            <linearGradient id="ai-brand-gradient" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stopColor={brandColor} />
               <stop offset="100%" stopColor={brandLight} />
             </linearGradient>
-            <filter id="ai-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="2" result="blur" />
               <feFlood floodColor={brandLight} floodOpacity="0.3" result="color" />
               <feComposite in="color" in2="blur" operator="in" result="glow" />
@@ -96,16 +101,16 @@ export function GrixiAiLogo({
           </g>
 
           {/* Nodes */}
-          <circle cx="30" cy="25" r="5" fill="url(#ai-brand-gradient)" filter="url(#ai-glow)" />
-          <circle cx="55" cy="15" r="5" fill="url(#ai-brand-gradient)" filter="url(#ai-glow)" />
-          <circle cx="72" cy="35" r="5" fill="url(#ai-brand-gradient)" filter="url(#ai-glow)" />
-          <circle cx="68" cy="62" r="5" fill="url(#ai-brand-gradient)" filter="url(#ai-glow)" />
-          <circle cx="45" cy="78" r="5" fill="url(#ai-brand-gradient)" filter="url(#ai-glow)" />
-          <circle cx="20" cy="68" r="5" fill="url(#ai-brand-gradient)" filter="url(#ai-glow)" />
-          <circle cx="18" cy="44" r="5" fill="url(#ai-brand-gradient)" filter="url(#ai-glow)" />
+          <circle cx="30" cy="25" r="5" fill={`url(#${gradientId})`} filter={`url(#${glowId})`} />
+          <circle cx="55" cy="15" r="5" fill={`url(#${gradientId})`} filter={`url(#${glowId})`} />
+          <circle cx="72" cy="35" r="5" fill={`url(#${gradientId})`} filter={`url(#${glowId})`} />
+          <circle cx="68" cy="62" r="5" fill={`url(#${gradientId})`} filter={`url(#${glowId})`} />
+          <circle cx="45" cy="78" r="5" fill={`url(#${gradientId})`} filter={`url(#${glowId})`} />
+          <circle cx="20" cy="68" r="5" fill={`url(#${gradientId})`} filter={`url(#${glowId})`} />
+          <circle cx="18" cy="44" r="5" fill={`url(#${gradientId})`} filter={`url(#${glowId})`} />
 
           {/* Center node — AI brain, larger with glow */}
-          <circle cx="45" cy="45" r="7" fill="url(#ai-brand-gradient)" filter="url(#ai-glow)" />
+          <circle cx="45" cy="45" r="7" fill={`url(#${gradientId})`} filter={`url(#${glowId})`} />
           <circle cx="45" cy="45" r="4" fill="white" opacity="0.3" />
 
           {/* Center connections */}
@@ -119,7 +124,7 @@ export function GrixiAiLogo({
           </g>
 
           {/* AI Sparkle — top right */}
-          <g transform="translate(75, 8)" filter="url(#ai-glow)">
+          <g transform="translate(75, 8)" filter={`url(#${glowId})`}>
             <path
               d="M8 0L9.5 5.5L15 7L9.5 8.5L8 14L6.5 8.5L1 7L6.5 5.5Z"
               fill={brandLight}

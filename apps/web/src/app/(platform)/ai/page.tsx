@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { AiChatContent } from "@/features/ai/components/ai-chat-content";
 import type { Conversation } from "@/features/ai/types";
@@ -36,10 +37,13 @@ export default async function AiChatPage() {
     null;
 
   return (
-    <AiChatContent
-      initialConversations={conversations}
-      userAvatar={userAvatar}
-      userName={userName}
-    />
+    <Suspense fallback={null}>
+      <AiChatContent
+        initialConversations={conversations}
+        userAvatar={userAvatar}
+        userName={userName}
+      />
+    </Suspense>
   );
 }
+

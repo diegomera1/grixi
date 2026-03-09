@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Bot, User, Copy, Check, RefreshCw } from "lucide-react";
+import { Bot, User, Copy, Check, RefreshCw, Star } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { ChatMessage as ChatMessageType } from "../types";
 
 type ChatMessageProps = {
@@ -13,7 +15,91 @@ type ChatMessageProps = {
   userName?: string;
   onRegenerate?: () => void;
   isLatestAssistant?: boolean;
+  isStreaming?: boolean;
 };
+
+/** Parse suggestions block from AI response */
+function parseSuggestions(content: string): {
+  cleanContent: string;
+  suggestions: string[];
+} {
+  const match = content.match(
+    /<!--SUGGESTIONS-->\s*\n?\s*(\[[\s\S]*?\])\s*\n?\s*<!--\/SUGGESTIONS-->/
+  );
+  if (!match) return { cleanContent: content, suggestions: [] };
+
+  try {
+    const suggestions = JSON.parse(match[1]) as string[];
+    const cleanContent = content.replace(match[0], "").trim();
+    return { cleanContent, suggestions };
+  } catch {
+    return { cleanContent: content, suggestions: [] };
+  }
+}
+
+/** Code block component with syntax highlighting and copy button */
+function CodeBlock({
+  language,
+  children,
+}: {
+  language: string | undefined;
+  children: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const lang = language || "text";
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(children);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="group/code relative my-3 overflow-hidden rounded-xl border border-[var(--border)]">
+      {/* Header bar */}
+      <div className="flex items-center justify-between bg-[var(--bg-muted)] px-4 py-1.5">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+          {lang}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] text-[var(--text-muted)] transition-all hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]"
+        >
+          {copied ? (
+            <>
+              <Check size={10} className="text-[var(--success)]" /> Copiado
+            </>
+          ) : (
+            <>
+              <Copy size={10} /> Copiar
+            </>
+          )}
+        </button>
+      </div>
+      <SyntaxHighlighter
+        language={lang}
+        style={oneDark}
+        customStyle={{
+          margin: 0,
+          padding: "1rem",
+          fontSize: "0.75rem",
+          lineHeight: "1.5",
+          background: "var(--bg-primary)",
+          borderRadius: 0,
+        }}
+        showLineNumbers={children.split("\n").length > 3}
+        lineNumberStyle={{
+          minWidth: "2em",
+          paddingRight: "1em",
+          color: "var(--text-muted)",
+          opacity: 0.5,
+        }}
+      >
+        {children.trim()}
+      </SyntaxHighlighter>
+    </div>
+  );
+}
 
 export function ChatMessage({
   message,
@@ -21,12 +107,19 @@ export function ChatMessage({
   userName = "Tú",
   onRegenerate,
   isLatestAssistant = false,
+  isStreaming = false,
 }: ChatMessageProps) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
 
+  // Parse suggestions from AI content
+  const { cleanContent, suggestions } = useMemo(
+    () => (isUser ? { cleanContent: message.content, suggestions: [] } : parseSuggestions(message.content)),
+    [message.content, isUser]
+  );
+
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(message.content);
+    await navigator.clipboard.writeText(cleanContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -59,7 +152,7 @@ export function ChatMessage({
       )}
 
       {/* Content */}
-      <div className={cn("max-w-[75%]", isUser ? "text-right" : "")}>
+      <div className={cn("max-w-[75%] min-w-0", isUser ? "text-right" : "")}>
         {/* Name */}
         <p className="mb-1 text-[10px] font-medium text-[var(--text-muted)]">
           {isUser ? userName : "Grixi AI"}
@@ -96,13 +189,82 @@ export function ChatMessage({
 
           {/* Content */}
           {isUser ? (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {message.content}
+            </p>
           ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_li]:text-[var(--text-primary)] [&_p]:text-[var(--text-primary)] [&_strong]:text-[var(--text-primary)] [&_code]:rounded [&_code]:bg-[var(--bg-muted)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-xs [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-[var(--border)] [&_pre]:bg-[var(--bg-primary)] [&_table]:border-collapse [&_th]:border [&_th]:border-[var(--border)] [&_th]:bg-[var(--bg-muted)] [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-xs [&_td]:border [&_td]:border-[var(--border)] [&_td]:px-3 [&_td]:py-1.5 [&_td]:text-xs">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
+            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_li]:text-[var(--text-primary)] [&_p]:text-[var(--text-primary)] [&_strong]:text-[var(--text-primary)] [&_table]:border-collapse [&_th]:border [&_th]:border-[var(--border)] [&_th]:bg-[var(--bg-muted)] [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-xs [&_td]:border [&_td]:border-[var(--border)] [&_td]:px-3 [&_td]:py-1.5 [&_td]:text-xs">
+              <ReactMarkdown
+                components={{
+                  code({ className, children, ...props }) {
+                    const match = /language-(\w+)/.exec(className || "");
+                    const codeString = String(children).replace(/\n$/, "");
+
+                    // Block code with language
+                    if (match) {
+                      return (
+                        <CodeBlock language={match[1]}>{codeString}</CodeBlock>
+                      );
+                    }
+
+                    // Inline code
+                    return (
+                      <code
+                        className="rounded bg-[var(--bg-muted)] px-1.5 py-0.5 text-xs font-mono"
+                        {...props}
+                      >
+                        {children}
+                      </code>
+                    );
+                  },
+                  pre({ children }) {
+                    // Let the code component handle everything
+                    return <>{children}</>;
+                  },
+                }}
+              >
+                {cleanContent}
+              </ReactMarkdown>
+              {/* Streaming cursor */}
+              {isStreaming && (
+                <motion.span
+                  animate={{ opacity: [1, 0] }}
+                  transition={{
+                    duration: 0.7,
+                    repeat: Infinity,
+                    repeatType: "reverse",
+                  }}
+                  className="ml-0.5 inline-block h-4 w-0.5 bg-[var(--brand)]"
+                />
+              )}
             </div>
           )}
         </div>
+
+        {/* Follow-up suggestions */}
+        {!isUser &&
+          !isStreaming &&
+          suggestions.length > 0 &&
+          isLatestAssistant && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    // Fire custom event to send this as a message
+                    window.dispatchEvent(
+                      new CustomEvent("grixi-ai:quick-prompt", {
+                        detail: { prompt: s },
+                      })
+                    );
+                  }}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--text-secondary)] transition-all hover:border-[var(--brand)]/30 hover:bg-[var(--brand)]/5 hover:text-[var(--text-primary)]"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
 
         {/* Timestamp + actions */}
         <div
@@ -131,6 +293,16 @@ export function ChatMessage({
               <Copy size={11} />
             )}
           </button>
+
+          {/* Favorite */}
+          {!isUser && (
+            <button
+              className="rounded p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-amber-500"
+              title="Guardar como favorito"
+            >
+              <Star size={11} />
+            </button>
+          )}
 
           {/* Regenerate (only for latest assistant message) */}
           {!isUser && isLatestAssistant && onRegenerate && (

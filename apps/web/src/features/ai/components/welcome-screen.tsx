@@ -21,6 +21,8 @@ import type { AiModule } from "../types";
 type WelcomeScreenProps = {
   module: AiModule;
   onPrompt: (prompt: string) => void;
+  userName?: string;
+  greeting?: string;
 };
 
 type QuickPrompt = {
@@ -173,12 +175,27 @@ const MODULE_DESCRIPTIONS: Record<AiModule, string> = {
   administracion: "Asistente especializado en auditoría, configuración del sistema, permisos y seguridad.",
 };
 
-export function WelcomeScreen({ module, onPrompt }: WelcomeScreenProps) {
+export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeScreenProps) {
   const prompts = MODULE_PROMPTS[module] || MODULE_PROMPTS.general;
   const description = MODULE_DESCRIPTIONS[module] || MODULE_DESCRIPTIONS.general;
 
   return (
     <div className="flex h-full flex-col items-center justify-center px-4">
+      {/* Personalized greeting */}
+      {userName && greeting && (
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-6 text-2xl font-bold text-[var(--text-primary)]"
+        >
+          {greeting},{" "}
+          <span className="bg-gradient-to-r from-[#7C3AED] to-[#A78BFA] bg-clip-text text-transparent">
+            {userName.split(" ")[0]}
+          </span>
+        </motion.h1>
+      )}
+
       {/* Logo */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

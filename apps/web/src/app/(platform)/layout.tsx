@@ -1,5 +1,6 @@
-import { Sidebar } from "@/components/layout/sidebar";
-import { Topbar } from "@/components/layout/topbar";
+import { Suspense } from "react";
+import { GrixiOrb } from "@/components/layout/grixi-orb";
+import { CommandPalette } from "@/components/layout/command-palette";
 import { ActivityTrackerProvider } from "@/components/providers/activity-tracker-provider";
 
 // All platform pages require Supabase at runtime — prevent static prerendering
@@ -11,14 +12,16 @@ export default function PlatformLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-primary)]">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar />
-        <main className="flex-1 overflow-y-auto p-4">
+    <div className="relative h-screen overflow-hidden bg-[var(--bg-primary)]">
+      <main className="platform-dot-grid relative h-full overflow-y-auto p-6 pl-8">
+        <div className="relative z-10">
           <ActivityTrackerProvider>{children}</ActivityTrackerProvider>
-        </main>
-      </div>
+        </div>
+      </main>
+      <CommandPalette />
+      <Suspense fallback={null}>
+        <GrixiOrb />
+      </Suspense>
     </div>
   );
 }

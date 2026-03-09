@@ -145,7 +145,7 @@ export function DashboardContent({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="group rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3.5 transition-all hover:border-[var(--border-hover)] hover:shadow-sm"
+            className="group rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3.5 card-elevated"
           >
             <div className="flex items-start justify-between">
               <div

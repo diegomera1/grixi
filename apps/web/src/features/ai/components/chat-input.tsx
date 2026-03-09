@@ -24,6 +24,7 @@ type ChatInputProps = {
 const MODULES: { value: AiModule; label: string; color: string }[] = [
   { value: "general", label: "General", color: "#7C3AED" },
   { value: "almacenes", label: "Almacenes", color: "#10B981" },
+  { value: "compras", label: "Compras", color: "#F97316" },
   { value: "finanzas", label: "Finanzas", color: "#8B5CF6" },
   { value: "usuarios", label: "Usuarios", color: "#F59E0B" },
   { value: "dashboard", label: "Dashboard", color: "#06B6D4" },

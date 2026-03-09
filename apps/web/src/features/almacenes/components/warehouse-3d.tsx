@@ -651,37 +651,7 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
         ))
       )}
 
-      {/* ── Ceiling Lights ────── */}
-      {Array.from({ length: 4 }, (_, row) =>
-        Array.from({ length: 3 }, (_, col) => {
-          const lx = -W / 3 + col * (W / 3);
-          const lz = -D / 2 + 3 + row * 5;
-          return (
-            <group key={`light-${row}-${col}`}>
-              <mesh position={[lx, H - 0.35, lz]}>
-                <boxGeometry args={[1.8, 0.06, 0.25]} />
-                <meshStandardMaterial color="#6B7280" metalness={0.7} roughness={0.2} />
-              </mesh>
-              <mesh position={[lx, H - 0.39, lz]}>
-                <boxGeometry args={[1.5, 0.015, 0.12]} />
-                <meshStandardMaterial
-                  color="#FEFEFE"
-                  emissive="#FEFEFE"
-                  emissiveIntensity={0.6}
-                  toneMapped={false}
-                />
-              </mesh>
-              <pointLight
-                position={[lx, H - 0.6, lz]}
-                intensity={0.5}
-                distance={10}
-                color="#FFF8F0"
-                decay={2}
-              />
-            </group>
-          );
-        })
-      )}
+      {/* Ceiling lights removed — open-top warehouse with ambient + directional lighting only */}
 
       {/* Forklifts are now animated — rendered separately */}
 
@@ -1206,19 +1176,32 @@ function FPSControls({ active }: { active: boolean }) {
   const euler = useRef(new THREE.Euler(0, 0, 0, "YXZ"));
   const velocity = useRef(new THREE.Vector3());
   const keys = useRef<Record<string, boolean>>({});
+  const savedPos = useRef(new THREE.Vector3());
+  const savedQuat = useRef(new THREE.Quaternion());
 
   useEffect(() => {
     if (!active) return;
-    camera.position.set(0, 1.7, 8);
+    // Save original camera state to restore on exit
+    savedPos.current.copy(camera.position);
+    savedQuat.current.copy(camera.quaternion);
+    // Start at a nice fly position
+    camera.position.set(0, 6, 14);
+    camera.lookAt(0, 2, 0);
     euler.current.setFromQuaternion(camera.quaternion);
 
-    const onKeyDown = (e: KeyboardEvent) => { keys.current[e.code] = true; };
+    const onKeyDown = (e: KeyboardEvent) => {
+      keys.current[e.code] = true;
+      // Prevent page scroll on arrow keys / space
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) {
+        e.preventDefault();
+      }
+    };
     const onKeyUp = (e: KeyboardEvent) => { keys.current[e.code] = false; };
     const onMouseMove = (e: MouseEvent) => {
       if (document.pointerLockElement !== gl.domElement) return;
       euler.current.y -= e.movementX * 0.002;
       euler.current.x -= e.movementY * 0.002;
-      euler.current.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.current.x));
+      euler.current.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, euler.current.x));
       camera.quaternion.setFromEuler(euler.current);
     };
     const onClick = () => { gl.domElement.requestPointerLock(); };
@@ -1235,26 +1218,44 @@ function FPSControls({ active }: { active: boolean }) {
       gl.domElement.removeEventListener("click", onClick);
       if (document.pointerLockElement) document.exitPointerLock();
       keys.current = {};
+      // Restore original camera
+      camera.position.copy(savedPos.current);
+      camera.quaternion.copy(savedQuat.current);
     };
   }, [active, camera, gl]);
 
   useFrame((_, delta) => {
     if (!active) return;
-    const speed = 5 * delta;
-    const dir = new THREE.Vector3();
+    const speed = 8 * delta;
+
+    // Get camera directions for fly movement
+    const forward = new THREE.Vector3();
     const right = new THREE.Vector3();
-    camera.getWorldDirection(dir);
-    dir.y = 0; dir.normalize();
-    right.crossVectors(dir, new THREE.Vector3(0, 1, 0));
+    const up = new THREE.Vector3(0, 1, 0);
+
+    camera.getWorldDirection(forward);
+    right.crossVectors(forward, up).normalize();
 
     velocity.current.set(0, 0, 0);
-    if (keys.current["KeyW"]) velocity.current.add(dir.multiplyScalar(speed));
-    if (keys.current["KeyS"]) velocity.current.add(dir.multiplyScalar(-speed));
-    if (keys.current["KeyA"]) velocity.current.add(right.multiplyScalar(-speed));
-    if (keys.current["KeyD"]) velocity.current.add(right.multiplyScalar(speed));
+
+    // WASD + Arrow keys — fly in the direction you're looking
+    if (keys.current["KeyW"] || keys.current["ArrowUp"]) velocity.current.addScaledVector(forward, speed);
+    if (keys.current["KeyS"] || keys.current["ArrowDown"]) velocity.current.addScaledVector(forward, -speed);
+    if (keys.current["KeyA"] || keys.current["ArrowLeft"]) velocity.current.addScaledVector(right, -speed);
+    if (keys.current["KeyD"] || keys.current["ArrowRight"]) velocity.current.addScaledVector(right, speed);
+
+    // Q/E or Space/Shift for vertical movement
+    if (keys.current["KeyE"] || keys.current["Space"]) velocity.current.y += speed;
+    if (keys.current["KeyQ"] || keys.current["ShiftLeft"] || keys.current["ShiftRight"]) velocity.current.y -= speed;
+
+    // Shift = boost speed
+    if (keys.current["ShiftLeft"] || keys.current["ShiftRight"]) {
+      velocity.current.multiplyScalar(1.8);
+    }
 
     camera.position.add(velocity.current);
-    camera.position.y = 1.7;
+    // Clamp minimum height to prevent going underground
+    camera.position.y = Math.max(0.3, camera.position.y);
   });
 
   return null;
@@ -1522,10 +1523,10 @@ function SceneContent({
 
   return (
     <>
-      <ambientLight intensity={0.3} color="#F0F4FF" />
+      <ambientLight intensity={0.5} color="#F0F4FF" />
       <directionalLight
         position={[12, 18, 10]}
-        intensity={0.8}
+        intensity={1.2}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -1535,8 +1536,8 @@ function SceneContent({
         shadow-camera-top={14}
         shadow-camera-bottom={-14}
       />
-      <directionalLight position={[-8, 10, -8]} intensity={0.25} color="#E0E7FF" />
-      <hemisphereLight color="#F8FAFC" groundColor="#D1D5DB" intensity={0.35} />
+      <directionalLight position={[-8, 14, -8]} intensity={0.4} color="#E0E7FF" />
+      <hemisphereLight color="#F8FAFC" groundColor="#D1D5DB" intensity={0.5} />
 
       <WarehouseBuilding textures={textures} />
 
@@ -1659,7 +1660,7 @@ export function Warehouse3DScene({
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   // Advanced features state
   const [viewMode, setViewMode] = useState<"normal" | "heatmap" | "aging" | "abc" | "hazardous" | "cycle_count">("normal");
-  const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>({ alerts: true, iot: false, operators: false, labels: false, dock: false, crossdock: false, coldFog: false });
+  const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>({ alerts: false, iot: false, operators: false, labels: false, dock: false, crossdock: false, coldFog: false });
   const [sensors, setSensors] = useState<{ id: string; sensor_type: string; label: string; position_x: number; position_y: number; position_z: number; current_value: number; unit: string; status: string; min_threshold: number | null; max_threshold: number | null }[]>([]);
   const [operators, setOperators] = useState<{ id: string; name: string; role: string; avatar_color: string; current_zone: string | null; current_task: string | null; position_x: number; position_z: number; tasks_completed_today: number; items_picked_today: number }[]>([]);
   const [pickingOrders, setPickingOrders] = useState<{ id: string; order_number: string; wave_id: string | null; status: string; priority: string; total_items: number; picked_items: number; estimated_time_min: number | null; items: { sku: string; qty: number; picked: boolean }[] }[]>([]);
@@ -1674,6 +1675,7 @@ export function Warehouse3DScene({
   const [guidedTourActive, setGuidedTourActive] = useState(false);
   const [warehouseNavOpen, setWarehouseNavOpen] = useState(false);
   const [countedRacks, setCountedRacks] = useState<Set<string>>(new Set());
+  const [toolsExpanded, setToolsExpanded] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -2289,92 +2291,100 @@ export function Warehouse3DScene({
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1.27c.35-.6 1-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1H20a7 7 0 01-7 7v1.27c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73V23a7 7 0 01-7-7H2.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1H4a7 7 0 017-7V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z" /></svg>
         </button>
-        {/* IoT Dashboard */}
+        {/* Expand / collapse advanced tools */}
         <button
-          onClick={() => { setIotPanelOpen((p) => !p); setFeatureToggles((p) => ({ ...p, iot: true })); }}
-          title="IoT Sensores"
+          onClick={() => setToolsExpanded((p) => !p)}
+          title="Más herramientas"
           className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            iotPanelOpen ? "bg-emerald-500 text-white" : "bg-white/95 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600"
+            toolsExpanded ? "bg-slate-700 text-white" : "bg-white/95 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
           }`}
         >
-          <span className="text-[11px]">📡</span>
-        </button>
-        {/* Labor Panel */}
-        <button
-          onClick={() => { setLaborPanelOpen((p) => !p); setFeatureToggles((p) => ({ ...p, operators: true })); }}
-          title="Personal y Operarios"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            laborPanelOpen ? "bg-blue-500 text-white" : "bg-white/95 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-          }`}
-        >
-          <span className="text-[11px]">👷</span>
-        </button>
-        {/* Wave Management */}
-        <button
-          onClick={() => setWavePanelOpen((p) => !p)}
-          title="Wave Management"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            wavePanelOpen ? "bg-amber-500 text-white" : "bg-white/95 text-slate-500 hover:bg-amber-50 hover:text-amber-600"
-          }`}
-        >
-          <span className="text-[11px]">📋</span>
-        </button>
-        {/* Alert Feed */}
-        <button
-          onClick={() => setAlertFeedOpen((p) => !p)}
-          title="Alertas en Tiempo Real"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            alertFeedOpen ? "bg-red-500 text-white" : "bg-white/95 text-slate-500 hover:bg-red-50 hover:text-red-600"
-          }`}
-        >
-          <span className="text-[11px]">🔔</span>
-        </button>
-        {/* Capacity Planning */}
-        <button
-          onClick={() => setCapacityPanelOpen((p) => !p)}
-          title="Planeación de Capacidad"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            capacityPanelOpen ? "bg-purple-500 text-white" : "bg-white/95 text-slate-500 hover:bg-purple-50 hover:text-purple-600"
-          }`}
-        >
-          <span className="text-[11px]">📐</span>
-        </button>
-        {/* Slotting Optimizer */}
-        <button
-          onClick={() => setSlottingPanelOpen((p) => !p)}
-          title="Optimizador de Slotting (AI)"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            slottingPanelOpen ? "bg-fuchsia-500 text-white" : "bg-white/95 text-slate-500 hover:bg-fuchsia-50 hover:text-fuchsia-600"
-          }`}
-        >
-          <span className="text-[11px]">🧩</span>
-        </button>
-        {/* Guided Tour */}
-        <button
-          onClick={() => setGuidedTourActive((p) => !p)}
-          title="Recorrido Guiado"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            guidedTourActive ? "bg-teal-500 text-white" : "bg-white/95 text-slate-500 hover:bg-teal-50 hover:text-teal-600"
-          }`}
-        >
-          <span className="text-[11px]">🎯</span>
-        </button>
-        {/* Multi-warehouse Nav */}
-        <button
-          onClick={() => setWarehouseNavOpen((p) => !p)}
-          title="Navegación Multi-Almacén"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            warehouseNavOpen ? "bg-cyan-500 text-white" : "bg-white/95 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600"
-          }`}
-        >
-          <span className="text-[11px]">🏗</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {toolsExpanded ? (
+              <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+            ) : (
+              <><circle cx="12" cy="5" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="19" r="1" fill="currentColor" /></>
+            )}
+          </svg>
         </button>
       </div>
+
+      {/* ── Expandable Advanced Tools Popover ──────── */}
+      {toolsExpanded && (
+        <div className="absolute left-12 bottom-14 z-30 rounded-xl bg-white/98 p-3 shadow-2xl ring-1 ring-black/10 backdrop-blur-xl" style={{ width: 220 }}>
+          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-2">Herramientas Avanzadas</p>
+          <div className="grid grid-cols-4 gap-1.5 mb-3">
+            {[
+              { key: "iot", icon: "📡", label: "IoT", action: () => { setIotPanelOpen((p) => !p); setFeatureToggles((p) => ({ ...p, iot: !p.iot })); } },
+              { key: "labor", icon: "👷", label: "Personal", action: () => { setLaborPanelOpen((p) => !p); setFeatureToggles((p) => ({ ...p, operators: !p.operators })); } },
+              { key: "waves", icon: "📋", label: "Waves", action: () => setWavePanelOpen((p) => !p) },
+              { key: "alerts", icon: "🔔", label: "Alertas", action: () => { setAlertFeedOpen((p) => !p); setFeatureToggles((p) => ({ ...p, alerts: !p.alerts })); } },
+              { key: "capacity", icon: "📐", label: "Capacidad", action: () => setCapacityPanelOpen((p) => !p) },
+              { key: "slotting", icon: "🧩", label: "Slotting", action: () => setSlottingPanelOpen((p) => !p) },
+              { key: "tour", icon: "🎯", label: "Tour", action: () => { setGuidedTourActive((p) => !p); setToolsExpanded(false); } },
+              { key: "nav", icon: "🏗", label: "Almacenes", action: () => { setWarehouseNavOpen((p) => !p); setToolsExpanded(false); } },
+            ].map((tool) => (
+              <button
+                key={tool.key}
+                onClick={tool.action}
+                className="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900"
+              >
+                <span className="text-base">{tool.icon}</span>
+                <span className="text-[7px] font-medium">{tool.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="border-t border-slate-100 pt-2">
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Modo de Vista</p>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { id: "normal" as const, label: "Normal", icon: "🏭" },
+                { id: "heatmap" as const, label: "Calor", icon: "🔥" },
+                { id: "aging" as const, label: "Antigüedad", icon: "📅" },
+                { id: "abc" as const, label: "ABC", icon: "🏷" },
+                { id: "hazardous" as const, label: "Peligros", icon: "☣" },
+                { id: "cycle_count" as const, label: "Conteo", icon: "🔢" },
+              ].map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => setViewMode(mode.id)}
+                  className={`flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold transition-all ${
+                    viewMode === mode.id ? "bg-indigo-500 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  }`}
+                >
+                  {mode.icon} {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="border-t border-slate-100 pt-2 mt-2">
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Capas 3D</p>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { key: "labels", label: "Labels AR", icon: "🏷" },
+                { key: "dock", label: "Muelle", icon: "🚚" },
+                { key: "crossdock", label: "Cross-Dock", icon: "🔄" },
+                { key: "coldFog", label: "Frío", icon: "❄" },
+              ].map((layer) => (
+                <button
+                  key={layer.key}
+                  onClick={() => handleToggleFeature(layer.key)}
+                  className={`flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold transition-all ${
+                    featureToggles[layer.key] ? "bg-indigo-500 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  }`}
+                >
+                  {layer.icon} {layer.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── FPS Mode HUD ──────────── */}
       {fpsMode && (
         <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-lg bg-indigo-500/90 px-3 py-1 text-[10px] font-semibold text-white shadow-md backdrop-blur">
-          WASD para caminar · Mouse para mirar · ESC para salir
+          WASD / Flechas para volar · Mouse para mirar · E/Space subir · Q bajar · ESC para salir
         </div>
       )}
 
@@ -2550,13 +2560,7 @@ export function Warehouse3DScene({
         }}
       />
 
-      {/* ── View Mode Toolbar (bottom center) ──────────── */}
-      <ViewModeToolbar
-        currentMode={viewMode}
-        onModeChange={setViewMode}
-        toggles={featureToggles}
-        onToggle={handleToggleFeature}
-      />
+      {/* ViewModeToolbar removed — integrated into expandable tools menu */}
 
       {/* ── Picking Path HUD ──────────── */}
       {pickingPath.length > 0 && (

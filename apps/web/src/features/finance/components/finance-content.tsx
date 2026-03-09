@@ -646,7 +646,7 @@ function KPICard({
 
   return (
     <motion.div
-      className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 relative overflow-hidden group hover:bg-[var(--bg-muted)]/30 transition-colors"
+      className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 relative overflow-hidden group card-elevated"
       layout
     >
       {/* Background icon */}

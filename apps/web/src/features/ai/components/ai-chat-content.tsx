@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Square } from "lucide-react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 
 // Actions
-import { sendChatMessage } from "@/features/ai/actions/chat";
 import {
   listConversations,
   createConversation,
@@ -24,7 +24,12 @@ import { ChatMessage, TypingIndicator } from "./chat-message";
 import { WelcomeScreen } from "./welcome-screen";
 
 // Types
-import type { Conversation, ChatMessage as ChatMessageType, AiModule, Attachment } from "../types";
+import type {
+  Conversation,
+  ChatMessage as ChatMessageType,
+  AiModule,
+  Attachment,
+} from "../types";
 
 type AiChatContentProps = {
   initialConversations?: Conversation[];
@@ -32,47 +37,122 @@ type AiChatContentProps = {
   userName?: string;
 };
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Buenos días";
+  if (hour < 18) return "Buenas tardes";
+  return "Buenas noches";
+}
+
 export function AiChatContent({
   initialConversations = [],
   userAvatar,
   userName = "Tú",
 }: AiChatContentProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   // State
-  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
-  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [conversations, setConversations] =
+    useState<Conversation[]>(initialConversations);
+  const [activeConvId, setActiveConvId] = useState<string | null>(
+    searchParams.get("c")
+  );
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [module, setModule] = useState<AiModule>("general");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, isStreaming]);
 
   // Refresh conversations on mount
   useEffect(() => {
     refreshConversations();
   }, []);
 
+  // Load conversation from URL param on mount
+  useEffect(() => {
+    const convId = searchParams.get("c");
+    if (convId && convId !== activeConvId) {
+      handleSelect(convId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Listen for quick prompt events from suggestions
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.prompt) {
+        handleSend(detail.prompt, []);
+      }
+    };
+    window.addEventListener("grixi-ai:quick-prompt", handler);
+    return () => window.removeEventListener("grixi-ai:quick-prompt", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Cmd+N — New conversation
+      if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+        e.preventDefault();
+        handleNew();
+      }
+      // Escape — Stop generation
+      if (e.key === "Escape" && isStreaming) {
+        e.preventDefault();
+        handleStopGeneration();
+      }
+      // Cmd+Shift+S — Toggle sidebar
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "s") {
+        e.preventDefault();
+        setSidebarOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStreaming]);
+
   const refreshConversations = async () => {
     const { conversations: convs } = await listConversations();
     setConversations(convs);
   };
 
-  // Select a conversation and load its messages
-  const handleSelect = useCallback(async (id: string) => {
-    setActiveConvId(id);
-    const { messages: msgs } = await getConversationMessages(id);
-    setMessages(msgs);
+  // Update URL when conversation changes
+  const updateUrl = (convId: string | null) => {
+    if (convId) {
+      router.replace(`${pathname}?c=${convId}`, { scroll: false });
+    } else {
+      router.replace(pathname, { scroll: false });
+    }
+  };
 
-    // Set module from conversation
-    const conv = conversations.find((c) => c.id === id);
-    if (conv) setModule(conv.module as AiModule);
-  }, [conversations]);
+  // Select a conversation and load its messages
+  const handleSelect = useCallback(
+    async (id: string) => {
+      setActiveConvId(id);
+      updateUrl(id);
+      const { messages: msgs } = await getConversationMessages(id);
+      setMessages(msgs);
+
+      const conv = conversations.find((c) => c.id === id);
+      if (conv) setModule(conv.module as AiModule);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [conversations, pathname]
+  );
 
   // Create a new conversation
   const handleNew = useCallback(async () => {
@@ -81,18 +161,25 @@ export function AiChatContent({
       setConversations((prev) => [conversation, ...prev]);
       setActiveConvId(conversation.id);
       setMessages([]);
+      updateUrl(conversation.id);
     }
-  }, [module]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [module, pathname]);
 
   // Delete a conversation
-  const handleDelete = useCallback(async (id: string) => {
-    await deleteConversation(id);
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    if (activeConvId === id) {
-      setActiveConvId(null);
-      setMessages([]);
-    }
-  }, [activeConvId]);
+  const handleDelete = useCallback(
+    async (id: string) => {
+      await deleteConversation(id);
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      if (activeConvId === id) {
+        setActiveConvId(null);
+        setMessages([]);
+        updateUrl(null);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeConvId, pathname]
+  );
 
   // Rename a conversation
   const handleRename = useCallback(async (id: string, title: string) => {
@@ -113,19 +200,33 @@ export function AiChatContent({
   }, []);
 
   // Upload file
-  const handleUpload = useCallback(async (file: File): Promise<Attachment | null> => {
-    if (!activeConvId) return null;
-    const formData = new FormData();
-    formData.append("file", file);
-    const { attachment, error } = await uploadAttachment(formData, activeConvId);
-    if (error) {
-      console.error("Upload error:", error);
-      return null;
-    }
-    return attachment;
-  }, [activeConvId]);
+  const handleUpload = useCallback(
+    async (file: File): Promise<Attachment | null> => {
+      if (!activeConvId) return null;
+      const formData = new FormData();
+      formData.append("file", file);
+      const { attachment, error } = await uploadAttachment(
+        formData,
+        activeConvId
+      );
+      if (error) {
+        console.error("Upload error:", error);
+        return null;
+      }
+      return attachment;
+    },
+    [activeConvId]
+  );
 
-  // Send a message
+  // Stop generation
+  const handleStopGeneration = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsStreaming(false);
+    setIsLoading(false);
+  }, []);
+
+  // Send a message with streaming
   const handleSend = useCallback(
     async (text: string, attachments: Attachment[] = []) => {
       if ((!text.trim() && attachments.length === 0) || isLoading) return;
@@ -134,11 +235,27 @@ export function AiChatContent({
 
       // Auto-create conversation if needed
       if (!convId) {
-        const { conversation } = await createConversation(module);
-        if (!conversation) return;
+        const { conversation, error: convError } = await createConversation(module);
+        if (!conversation || convError) {
+          console.error("Failed to create conversation:", convError);
+          // Show error as a visible message
+          const errMsg: ChatMessageType = {
+            id: crypto.randomUUID(),
+            conversation_id: "error",
+            role: "assistant",
+            content: `Error al crear la conversación: ${convError || "Error desconocido"}. Por favor recarga la página.`,
+            attachments: [],
+            model_used: "system",
+            tokens_used: 0,
+            created_at: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, errMsg]);
+          return;
+        }
         convId = conversation.id;
         setConversations((prev) => [conversation, ...prev]);
         setActiveConvId(convId);
+        updateUrl(convId);
       }
 
       // Optimistically add user message
@@ -155,33 +272,126 @@ export function AiChatContent({
 
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
+      setIsStreaming(true);
 
-      // Call server action
-      const { response, error } = await sendChatMessage(
-        convId,
-        text,
-        module,
-        attachments
-      );
-
+      // Create streaming AI message placeholder
+      const aiMsgId = crypto.randomUUID();
       const aiMsg: ChatMessageType = {
-        id: crypto.randomUUID(),
+        id: aiMsgId,
         conversation_id: convId,
         role: "assistant",
-        content: error || response,
+        content: "",
         attachments: [],
         model_used: "gemini-3.1-flash-lite-preview",
         tokens_used: 0,
         created_at: new Date().toISOString(),
       };
-
       setMessages((prev) => [...prev, aiMsg]);
-      setIsLoading(false);
 
-      // Refresh conversations to update title and timestamp
-      refreshConversations();
+      // Create AbortController for stop generation
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        const res = await fetch("/api/ai/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversationId: convId,
+            message: text,
+            module,
+            attachments,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error("No response body");
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Parse SSE events
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || ""; // Keep incomplete line
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr) continue;
+
+            try {
+              const data = JSON.parse(jsonStr);
+
+              if (data.error) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === aiMsgId
+                      ? { ...m, content: `Error: ${data.error}` }
+                      : m
+                  )
+                );
+                break;
+              }
+
+              if (data.done) {
+                break;
+              }
+
+              if (data.text) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === aiMsgId
+                      ? { ...m, content: m.content + data.text }
+                      : m
+                  )
+                );
+              }
+            } catch {
+              // Skip malformed JSON
+            }
+          }
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") {
+          // User stopped generation
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiMsgId && !m.content
+                ? { ...m, content: "*(Generación detenida por el usuario)*" }
+                : m
+            )
+          );
+        } else {
+          const errMsg = err instanceof Error ? err.message : "Error desconocido";
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiMsgId
+                ? { ...m, content: `Error: ${errMsg}` }
+                : m
+            )
+          );
+        }
+      } finally {
+        setIsStreaming(false);
+        setIsLoading(false);
+        abortControllerRef.current = null;
+        refreshConversations();
+      }
     },
-    [activeConvId, isLoading, module]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeConvId, isLoading, module, pathname]
   );
 
   // Handle quick prompt from welcome screen
@@ -192,7 +402,7 @@ export function AiChatContent({
     [handleSend]
   );
 
-  // Find the latest assistant message index for the regenerate button
+  // Find the latest assistant message for the regenerate button
   const lastAssistantIdx = [...messages]
     .reverse()
     .findIndex((m) => m.role === "assistant");
@@ -200,6 +410,9 @@ export function AiChatContent({
     lastAssistantIdx >= 0
       ? messages[messages.length - 1 - lastAssistantIdx]?.id
       : null;
+
+  const greeting = getGreeting();
+  const activeConv = conversations.find((c) => c.id === activeConvId);
 
   return (
     <div className="flex h-[calc(100vh-6.5rem)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)]">
@@ -239,19 +452,27 @@ export function AiChatContent({
             <div>
               <h2 className="text-sm font-semibold text-[var(--text-primary)]">
                 {activeConvId
-                  ? conversations.find((c) => c.id === activeConvId)?.title ||
-                    "Nueva conversación"
-                  : "Grixi AI"}
+                  ? activeConv?.title || "Nueva conversación"
+                  : `${greeting}, ${userName.split(" ")[0]}`}
               </h2>
               {activeConvId && (
                 <p className="text-[10px] text-[var(--text-muted)]">
-                  {conversations.find((c) => c.id === activeConvId)
-                    ?.message_count || 0}{" "}
-                  mensajes
+                  {activeConv?.message_count || 0} mensajes
                 </p>
               )}
             </div>
           </div>
+
+          {/* Stop generation button */}
+          {isStreaming && (
+            <button
+              onClick={handleStopGeneration}
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--error)]/30 bg-[var(--error)]/5 px-3 py-1.5 text-xs font-medium text-[var(--error)] transition-all hover:bg-[var(--error)]/10"
+            >
+              <Square size={10} fill="currentColor" />
+              Detener
+            </button>
+          )}
         </div>
 
         {/* Messages area */}
@@ -262,10 +483,13 @@ export function AiChatContent({
             messages.length === 0 ? "" : "px-4 py-6"
           )}
         >
-          {messages.length === 0 && !activeConvId ? (
-            <WelcomeScreen module={module} onPrompt={handleQuickPrompt} />
-          ) : messages.length === 0 ? (
-            <WelcomeScreen module={module} onPrompt={handleQuickPrompt} />
+          {messages.length === 0 ? (
+            <WelcomeScreen
+              module={module}
+              onPrompt={handleQuickPrompt}
+              userName={userName}
+              greeting={greeting}
+            />
           ) : (
             <div className="mx-auto max-w-3xl space-y-6">
               {messages.map((msg) => (
@@ -277,13 +501,13 @@ export function AiChatContent({
                   isLatestAssistant={
                     msg.role === "assistant" && msg.id === lastAssistantId
                   }
+                  isStreaming={
+                    isStreaming &&
+                    msg.role === "assistant" &&
+                    msg.id === lastAssistantId
+                  }
                 />
               ))}
-
-              {/* Typing indicator */}
-              <AnimatePresence>
-                {isLoading && <TypingIndicator />}
-              </AnimatePresence>
 
               <div ref={messagesEndRef} />
             </div>
