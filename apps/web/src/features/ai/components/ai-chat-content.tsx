@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
-import { PanelLeftClose, PanelLeftOpen, Square } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Square, PanelRightOpen, PanelRightClose } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 
@@ -22,6 +22,8 @@ import { ConversationSidebar } from "./conversation-sidebar";
 import { ChatInput } from "./chat-input";
 import { ChatMessage, TypingIndicator } from "./chat-message";
 import { WelcomeScreen } from "./welcome-screen";
+import { AiCanvasPanel, type CanvasArtifact } from "./ai-canvas-panel";
+import { parseChartBlocks, parseImageBlocks } from "./ai-chart-block";
 
 // Types
 import type {
@@ -63,7 +65,9 @@ export function AiChatContent({
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [module, setModule] = useState<AiModule>("general");
+  const [modules, setModules] = useState<AiModule[]>(["general"]);
+  const [canvasOpen, setCanvasOpen] = useState(false);
+  const [canvasArtifacts, setCanvasArtifacts] = useState<CanvasArtifact[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -148,7 +152,7 @@ export function AiChatContent({
       setMessages(msgs);
 
       const conv = conversations.find((c) => c.id === id);
-      if (conv) setModule(conv.module as AiModule);
+      if (conv) setModules([conv.module as AiModule]);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [conversations, pathname]
@@ -156,7 +160,7 @@ export function AiChatContent({
 
   // Create a new conversation
   const handleNew = useCallback(async () => {
-    const { conversation } = await createConversation(module);
+    const { conversation } = await createConversation(modules[0] || "general");
     if (conversation) {
       setConversations((prev) => [conversation, ...prev]);
       setActiveConvId(conversation.id);
@@ -164,7 +168,7 @@ export function AiChatContent({
       updateUrl(conversation.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [module, pathname]);
+  }, [modules, pathname]);
 
   // Delete a conversation
   const handleDelete = useCallback(
@@ -202,12 +206,26 @@ export function AiChatContent({
   // Upload file
   const handleUpload = useCallback(
     async (file: File): Promise<Attachment | null> => {
-      if (!activeConvId) return null;
+      let convId = activeConvId;
+
+      // Auto-create conversation if needed
+      if (!convId) {
+        const { conversation, error: convError } = await createConversation(modules[0] || "general");
+        if (!conversation || convError) {
+          console.error("Failed to create conversation for upload:", convError);
+          return null;
+        }
+        convId = conversation.id;
+        setConversations((prev) => [conversation, ...prev]);
+        setActiveConvId(convId);
+        updateUrl(convId);
+      }
+
       const formData = new FormData();
       formData.append("file", file);
       const { attachment, error } = await uploadAttachment(
         formData,
-        activeConvId
+        convId
       );
       if (error) {
         console.error("Upload error:", error);
@@ -215,7 +233,7 @@ export function AiChatContent({
       }
       return attachment;
     },
-    [activeConvId]
+    [activeConvId, modules]
   );
 
   // Stop generation
@@ -235,7 +253,7 @@ export function AiChatContent({
 
       // Auto-create conversation if needed
       if (!convId) {
-        const { conversation, error: convError } = await createConversation(module);
+        const { conversation, error: convError } = await createConversation(modules[0] || "general");
         if (!conversation || convError) {
           console.error("Failed to create conversation:", convError);
           // Show error as a visible message
@@ -299,7 +317,7 @@ export function AiChatContent({
           body: JSON.stringify({
             conversationId: convId,
             message: text,
-            module,
+            modules,
             attachments,
           }),
           signal: controller.signal,
@@ -391,7 +409,7 @@ export function AiChatContent({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeConvId, isLoading, module, pathname]
+    [activeConvId, isLoading, modules, pathname]
   );
 
   // Handle quick prompt from welcome screen
@@ -413,6 +431,38 @@ export function AiChatContent({
 
   const greeting = getGreeting();
   const activeConv = conversations.find((c) => c.id === activeConvId);
+
+  // Extract canvas artifacts from messages
+  useMemo(() => {
+    const artifacts: CanvasArtifact[] = [];
+    for (const msg of messages) {
+      if (msg.role !== "assistant") continue;
+      const { charts } = parseChartBlocks(msg.content);
+      const { imagePrompts } = parseImageBlocks(msg.content);
+      for (const chart of charts) {
+        artifacts.push({
+          id: `chart-${msg.id}-${chart.title}`,
+          type: "chart",
+          title: chart.title,
+          data: chart,
+          createdAt: msg.created_at,
+        });
+      }
+      for (const prompt of imagePrompts) {
+        artifacts.push({
+          id: `img-${msg.id}-${prompt.slice(0, 20)}`,
+          type: "image",
+          title: prompt.slice(0, 40) + (prompt.length > 40 ? "..." : ""),
+          data: prompt,
+          createdAt: msg.created_at,
+        });
+      }
+    }
+    setCanvasArtifacts(artifacts);
+    if (artifacts.length > 0 && !canvasOpen) {
+      setCanvasOpen(true);
+    }
+  }, [messages]);
 
   return (
     <div className="flex h-[calc(100vh-6.5rem)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)]">
@@ -473,6 +523,20 @@ export function AiChatContent({
               Detener
             </button>
           )}
+
+          {/* Canvas toggle */}
+          <button
+            onClick={() => setCanvasOpen(!canvasOpen)}
+            className={cn(
+              "rounded-lg p-1.5 transition-colors",
+              canvasOpen
+                ? "bg-[var(--brand)]/10 text-[var(--brand)]"
+                : "text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+            )}
+            title={canvasOpen ? "Cerrar Canvas" : "Abrir Canvas"}
+          >
+            {canvasOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+          </button>
         </div>
 
         {/* Messages area */}
@@ -485,7 +549,7 @@ export function AiChatContent({
         >
           {messages.length === 0 ? (
             <WelcomeScreen
-              module={module}
+              module={modules[0] || "general"}
               onPrompt={handleQuickPrompt}
               userName={userName}
               greeting={greeting}
@@ -519,10 +583,17 @@ export function AiChatContent({
           onSend={handleSend}
           onUpload={handleUpload}
           isLoading={isLoading}
-          module={module}
-          onModuleChange={setModule}
+          modules={modules}
+          onModulesChange={setModules}
         />
       </div>
+
+      {/* Canvas Panel */}
+      <AiCanvasPanel
+        artifacts={canvasArtifacts}
+        isOpen={canvasOpen}
+        onClose={() => setCanvasOpen(false)}
+      />
     </div>
   );
 }

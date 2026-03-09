@@ -3,7 +3,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
 
-const FINANCE_SYSTEM_PROMPT = `Eres GRIXI Finance AI, el asistente financiero inteligente de la plataforma Grixi.
+const FINANCE_SYSTEM_PROMPT = `Eres GRIXI Finance AI, el asistente financiero inteligente de la plataforma GRIXI.
 
 Tu rol:
 - Analizar transacciones financieras y generar insights accionables

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Bot, User, Copy, Check, RefreshCw, Star } from "lucide-react";
+import { Bot, User, Copy, Check, RefreshCw, Star, ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { AiChartBlock, parseChartBlocks, parseImageBlocks } from "./ai-chart-block";
 import type { ChatMessage as ChatMessageType } from "../types";
 
 type ChatMessageProps = {
@@ -35,6 +37,69 @@ function parseSuggestions(content: string): {
   } catch {
     return { cleanContent: content, suggestions: [] };
   }
+}
+
+/** AI Image Block — fetches and renders generated image */
+function AiImageBlock({ prompt }: { prompt: string }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function generate() {
+      try {
+        const res = await fetch("/api/ai/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+        if (!res.ok) throw new Error("Failed to generate");
+        const data = await res.json();
+        if (!cancelled) setImageUrl(data.image);
+      } catch {
+        if (!cancelled) setError("Error generando imagen");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    generate();
+    return () => { cancelled = true; };
+  }, [prompt]);
+
+  if (loading) {
+    return (
+      <div className="my-3 flex h-48 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]">
+        <div className="flex flex-col items-center gap-2 text-[var(--text-muted)]">
+          <Loader2 size={20} className="animate-spin" />
+          <span className="text-[10px]">Generando imagen...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="my-3 flex h-24 items-center justify-center rounded-xl border border-[var(--error)]/20 bg-[var(--error)]/5">
+        <div className="flex items-center gap-2 text-xs text-[var(--error)]">
+          <ImageIcon size={14} />
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="my-3 overflow-hidden rounded-xl border border-[var(--border)]">
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt={prompt}
+          className="w-full max-h-80 object-contain bg-[var(--bg-muted)]"
+        />
+      )}
+    </div>
+  );
 }
 
 /** Code block component with syntax highlighting and copy button */
@@ -112,11 +177,14 @@ export function ChatMessage({
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
 
-  // Parse suggestions from AI content
-  const { cleanContent, suggestions } = useMemo(
-    () => (isUser ? { cleanContent: message.content, suggestions: [] } : parseSuggestions(message.content)),
-    [message.content, isUser]
-  );
+  // Parse rich content: suggestions, charts, images
+  const { cleanContent, suggestions, charts, imagePrompts } = useMemo(() => {
+    if (isUser) return { cleanContent: message.content, suggestions: [], charts: [], imagePrompts: [] };
+    const { cleanContent: c1, suggestions } = parseSuggestions(message.content);
+    const { cleanContent: c2, charts } = parseChartBlocks(c1);
+    const { cleanContent: c3, imagePrompts } = parseImageBlocks(c2);
+    return { cleanContent: c3, suggestions, charts, imagePrompts };
+  }, [message.content, isUser]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(cleanContent);
@@ -155,7 +223,7 @@ export function ChatMessage({
       <div className={cn("max-w-[75%] min-w-0", isUser ? "text-right" : "")}>
         {/* Name */}
         <p className="mb-1 text-[10px] font-medium text-[var(--text-muted)]">
-          {isUser ? userName : "Grixi AI"}
+          {isUser ? userName : "GRIXI AI"}
         </p>
 
         {/* Bubble */}
@@ -193,38 +261,75 @@ export function ChatMessage({
               {message.content}
             </p>
           ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_li]:text-[var(--text-primary)] [&_p]:text-[var(--text-primary)] [&_strong]:text-[var(--text-primary)] [&_table]:border-collapse [&_th]:border [&_th]:border-[var(--border)] [&_th]:bg-[var(--bg-muted)] [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-xs [&_td]:border [&_td]:border-[var(--border)] [&_td]:px-3 [&_td]:py-1.5 [&_td]:text-xs">
+            <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_li]:text-[var(--text-primary)] [&_p]:text-[var(--text-primary)] [&_strong]:text-[var(--text-primary)]">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   code({ className, children, ...props }) {
                     const match = /language-(\w+)/.exec(className || "");
                     const codeString = String(children).replace(/\n$/, "");
-
-                    // Block code with language
                     if (match) {
-                      return (
-                        <CodeBlock language={match[1]}>{codeString}</CodeBlock>
-                      );
+                      return <CodeBlock language={match[1]}>{codeString}</CodeBlock>;
                     }
-
-                    // Inline code
                     return (
-                      <code
-                        className="rounded bg-[var(--bg-muted)] px-1.5 py-0.5 text-xs font-mono"
-                        {...props}
-                      >
+                      <code className="rounded bg-[var(--bg-muted)] px-1.5 py-0.5 text-xs font-mono" {...props}>
                         {children}
                       </code>
                     );
                   },
                   pre({ children }) {
-                    // Let the code component handle everything
                     return <>{children}</>;
+                  },
+                  // Premium table components
+                  table({ children }) {
+                    return (
+                      <div className="my-3 overflow-x-auto rounded-xl border border-[var(--border)]">
+                        <table className="w-full border-collapse text-xs">{children}</table>
+                      </div>
+                    );
+                  },
+                  thead({ children }) {
+                    return <thead className="bg-[var(--bg-muted)] text-[var(--text-muted)]">{children}</thead>;
+                  },
+                  th({ children }) {
+                    return (
+                      <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] first:rounded-tl-xl last:rounded-tr-xl">
+                        {children}
+                      </th>
+                    );
+                  },
+                  td({ children }) {
+                    return (
+                      <td className="border-t border-[var(--border)] px-3 py-2 text-xs text-[var(--text-primary)]">
+                        {children}
+                      </td>
+                    );
+                  },
+                  tr({ children }) {
+                    return <tr className="transition-colors hover:bg-[var(--bg-muted)]/50">{children}</tr>;
+                  },
+                  blockquote({ children }) {
+                    return (
+                      <blockquote className="my-3 border-l-3 border-[var(--brand)] bg-[var(--brand)]/5 pl-4 py-2 rounded-r-lg text-[var(--text-secondary)] italic">
+                        {children}
+                      </blockquote>
+                    );
+                  },
+                  hr() {
+                    return <hr className="my-4 border-[var(--border)]" />;
                   },
                 }}
               >
                 {cleanContent}
               </ReactMarkdown>
+              {/* Inline charts */}
+              {charts.length > 0 && charts.map((chart, i) => (
+                <AiChartBlock key={`chart-${i}`} config={chart} />
+              ))}
+              {/* Inline generated images */}
+              {imagePrompts.length > 0 && !isStreaming && imagePrompts.map((prompt, i) => (
+                <AiImageBlock key={`img-${i}`} prompt={prompt} />
+              ))}
               {/* Streaming cursor */}
               {isStreaming && (
                 <motion.span
@@ -334,7 +439,7 @@ export function TypingIndicator() {
       </div>
       <div className="flex flex-col">
         <p className="mb-1 text-[10px] font-medium text-[var(--text-muted)]">
-          Grixi AI
+          GRIXI AI
         </p>
         <div className="flex items-center gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3">
           <motion.span

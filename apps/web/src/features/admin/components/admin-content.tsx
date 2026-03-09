@@ -119,7 +119,7 @@ const pageLabels: Record<string, string> = {
   "/almacenes/3": "Cámara Fría",
   "/administracion": "Administración",
   "/usuarios/roles": "Roles",
-  "/ai": "Grixi AI",
+  "/ai": "GRIXI AI",
 };
 
 // ─── Helpers ────────────────────────────────────────────
@@ -266,10 +266,10 @@ export function AdminContent({
             </div>
             <div>
               <h2 className="text-sm font-bold text-[var(--text-primary)]">
-                Centro de Control
+                Administración
               </h2>
               <p className="text-[11px] text-[var(--text-secondary)]">
-                Monitoreo, auditoría y análisis inteligente en tiempo real
+                Monitoreo, auditoría y análisis en tiempo real
               </p>
             </div>
           </div>
@@ -305,29 +305,36 @@ export function AdminContent({
       </motion.div>
 
       {/* ── Tabs ─────────────── */}
-      <div className="flex gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-1">
+      <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
         {tabsWithCounts.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "group flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all duration-150",
+              "flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-all relative shrink-0",
               activeTab === tab.id
-                ? "border border-[var(--text-muted)]/20 bg-[var(--bg-muted)] text-[var(--text-primary)] shadow-sm"
-                : "border border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                ? "text-[var(--brand)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             )}
           >
-            <tab.icon size={13} />
+            <tab.icon size={14} />
             <span className="hidden sm:inline">{tab.label}</span>
             {tab.count !== null && (
               <span className={cn(
                 "rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums",
                 activeTab === tab.id
-                  ? "bg-[var(--text-primary)]/10 text-[var(--text-primary)]"
+                  ? "bg-[var(--brand)]/10 text-[var(--brand)]"
                   : "bg-[var(--bg-muted)] text-[var(--text-muted)]"
               )}>
                 {tab.count}
               </span>
+            )}
+            {activeTab === tab.id && (
+              <motion.div
+                layoutId="admin-tab-indicator"
+                className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--brand)] rounded-full"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
             )}
           </button>
         ))}
@@ -890,14 +897,14 @@ export function AdminContent({
                 ¿Quieres un análisis más profundo?
               </h4>
               <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                Usa Grixi AI para hacer preguntas específicas sobre la actividad del sistema
+                Usa GRIXI AI para hacer preguntas específicas sobre la actividad del sistema
               </p>
               <button
                 onClick={() => window.location.href = "/ai"}
                 className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--brand)] px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-[var(--brand)]/20 transition-all hover:shadow-xl hover:shadow-[var(--brand)]/30"
               >
                 <Sparkles size={14} />
-                Abrir Grixi AI
+                Abrir GRIXI AI
               </button>
             </div>
           </motion.div>

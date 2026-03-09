@@ -13,6 +13,7 @@ type Position = {
     product_name: string;
     product_sku: string;
     category: string;
+    image_url: string | null;
     quantity: number;
     lot_number: string | null;
     batch_code: string | null;

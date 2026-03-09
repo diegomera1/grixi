@@ -25,7 +25,7 @@ const showcaseItems: ShowcaseItem[] = [
     description:
       "KPIs, gráficos interactivos y métricas de negocio en un solo dashboard. Conecta con SAP, ERPs y cualquier fuente de datos. Cada número se actualiza al instante con Supabase Realtime.",
     image: "/brand/preview-dashboard.png",
-    imageAlt: "Dashboard principal de Grixi con KPIs y gráficos",
+    imageAlt: "Dashboard principal de GRIXI con KPIs y gráficos",
   },
   {
     label: "Almacenes 3D",
@@ -44,7 +44,7 @@ const showcaseItems: ShowcaseItem[] = [
     description:
       "Chat con Gemini 3.1 integrado con function calling. Pregunta por un producto y te muestra su ubicación. Analiza tendencias, detecta anomalías y sugiere acciones — todo en lenguaje natural.",
     image: "/brand/preview-ai-chat.png",
-    imageAlt: "Chat de IA de Grixi con respuesta de inventario",
+    imageAlt: "Chat de IA de GRIXI con respuesta de inventario",
   },
 ];
 

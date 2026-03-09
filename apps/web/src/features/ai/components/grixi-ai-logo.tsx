@@ -150,7 +150,7 @@ export function GrixiAiLogo({
           className="flex flex-col"
         >
           <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">
-            Grixi{" "}
+            GRIXI{" "}
             <span className="bg-gradient-to-r from-[#7C3AED] to-[#A78BFA] bg-clip-text text-transparent">
               AI
             </span>

@@ -97,7 +97,7 @@ export default function LoginPage() {
         {/* Heading */}
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
-            Bienvenido a Grixi
+            Bienvenido a GRIXI
           </h1>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
             Inicia sesión para acceder a la plataforma
@@ -168,7 +168,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="mt-12 text-center">
           <p className="text-xs text-[var(--text-muted)]">
-            © {new Date().getFullYear()} Grixi · La interconexión inteligente
+            © {new Date().getFullYear()} GRIXI · La interconexión inteligente
           </p>
         </div>
       </motion.div>

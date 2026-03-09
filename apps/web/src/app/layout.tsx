@@ -22,8 +22,8 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: "Grixi — La interconexión inteligente de toda la empresa",
-    template: "%s | Grixi",
+    default: "GRIXI — La interconexión inteligente de toda la empresa",
+    template: "%s | GRIXI",
   },
   description:
     "Plataforma enterprise que conecta, visualiza y gestiona la información de tu empresa de manera inteligente. Multi-tenant, IA integrada, visualización 3D.",
@@ -38,13 +38,13 @@ export const metadata: Metadata = {
     "Supabase",
     "interconexión",
   ],
-  authors: [{ name: "Grixi" }],
+  authors: [{ name: "GRIXI" }],
   openGraph: {
     type: "website",
     locale: "es_ES",
     url: "https://grixi.vercel.app",
-    siteName: "Grixi",
-    title: "Grixi — La interconexión inteligente de toda la empresa",
+    siteName: "GRIXI",
+    title: "GRIXI — La interconexión inteligente de toda la empresa",
     description:
       "Plataforma enterprise que conecta, visualiza y gestiona la información de tu empresa de manera inteligente.",
     images: [
@@ -52,13 +52,13 @@ export const metadata: Metadata = {
         url: "/brand/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Grixi Platform",
+        alt: "GRIXI Platform",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Grixi — La interconexión inteligente",
+    title: "GRIXI — La interconexión inteligente",
     description:
       "Plataforma enterprise multi-tenant con IA, visualización 3D de almacenes, y auditoría inteligente.",
     images: ["/brand/og-image.png"],

@@ -27,7 +27,7 @@ export function GrixiLogo({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="Grixi"
+      aria-label="GRIXI"
     >
       {/* ── Network icon (G-shaped nodes + connections) ── */}
       <g>
@@ -101,7 +101,7 @@ export function GrixiIcon({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="Grixi icon"
+      aria-label="GRIXI icon"
     >
       {/* Connection lines */}
       <line x1="30" y1="25" x2="55" y2="15" stroke={brandColor} strokeWidth="3" strokeLinecap="round" />

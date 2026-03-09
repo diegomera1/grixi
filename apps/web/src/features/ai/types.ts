@@ -3,8 +3,8 @@
 export type AiModule =
   | "general"
   | "almacenes"
-  | "compras"
   | "finanzas"
+  | "compras"
   | "usuarios"
   | "dashboard"
   | "administracion";

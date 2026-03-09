@@ -249,7 +249,7 @@ export function AiFloatingWidget() {
                 <GrixiAiLogo size={24} showText={false} animate={false} />
                 <div>
                   <p className="text-xs font-semibold text-[var(--text-primary)]">
-                    Grixi AI
+                    GRIXI AI
                   </p>
                   <div className="flex items-center gap-1">
                     <div
@@ -286,7 +286,7 @@ export function AiFloatingWidget() {
                   <GrixiAiLogo size={40} showText={false} animate />
                   <div>
                     <p className="text-xs font-semibold text-[var(--text-primary)]">
-                      Grixi{" "}
+                      GRIXI{" "}
                       <span className="bg-gradient-to-r from-[#7C3AED] to-[#A78BFA] bg-clip-text text-transparent">
                         AI
                       </span>

@@ -45,6 +45,7 @@ type Position = {
     product_name: string;
     product_sku: string;
     category: string;
+    image_url: string | null;
     lot_number: string | null;
     batch_code: string | null;
     quantity: number;
@@ -150,29 +151,29 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
           </div>
 
           {/* View mode toggle */}
-          <div className="flex gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-0.5">
+          <div className="flex gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-0.5">
             <button
               onClick={() => setViewMode("2d")}
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1 text-[12px] font-medium transition-all",
+                "flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all",
                 viewMode === "2d"
                   ? "bg-[var(--bg-muted)] text-[var(--text-primary)] shadow-sm"
                   : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               )}
             >
-              <Grid3x3 size={13} />
+              <Grid3x3 size={14} />
               Vista 2D
             </button>
             <button
               onClick={() => setViewMode("3d")}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+                "flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all",
                 viewMode === "3d"
                   ? "bg-[var(--brand)] text-white shadow-sm"
                   : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               )}
             >
-              <Cuboid size={13} />
+              <Cuboid size={14} />
               Vista 3D
             </button>
           </div>
@@ -233,13 +234,11 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                       <motion.button
                         key={rack.id}
                         onClick={() => setSelectedRack(rack)}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                         className={cn(
-                          "group rounded-lg border p-2 text-left transition-all",
+                          "group rounded-xl border p-3 text-left transition-all",
                           selectedRack?.id === rack.id
-                            ? "border-[var(--text-muted)]/30 bg-[var(--bg-muted)] shadow-sm"
-                            : "border-[var(--border)] bg-[var(--bg-primary)] hover:border-[var(--text-muted)]/20 hover:shadow-sm"
+                            ? "border-[var(--brand)]/30 bg-[var(--brand)]/5 shadow-md ring-1 ring-[var(--brand)]/10"
+                            : "border-[var(--border)] bg-[var(--bg-primary)] hover:border-[var(--brand)]/15 hover:shadow-sm"
                         )}
                       >
                         <div className="mb-2 flex items-center justify-between">

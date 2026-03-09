@@ -27,6 +27,11 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
+  BarChart3,
+  BookOpen,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Target,
 } from "lucide-react";
 import {
   AreaChart,
@@ -63,12 +68,12 @@ import { BudgetsTab } from "./budgets-tab";
 
 type FinanceTab = "resumen" | "libro_mayor" | "cxc" | "cxp" | "presupuestos";
 
-const TABS: { id: FinanceTab; label: string; icon: string }[] = [
-  { id: "resumen", label: "Resumen", icon: "📊" },
-  { id: "libro_mayor", label: "Libro Mayor", icon: "📖" },
-  { id: "cxc", label: "Ctas × Cobrar", icon: "💰" },
-  { id: "cxp", label: "Ctas × Pagar", icon: "💳" },
-  { id: "presupuestos", label: "Presupuestos", icon: "🎯" },
+const TABS: { id: FinanceTab; label: string; icon: typeof DollarSign }[] = [
+  { id: "resumen", label: "Resumen", icon: BarChart3 },
+  { id: "libro_mayor", label: "Libro Mayor", icon: BookOpen },
+  { id: "cxc", label: "Ctas × Cobrar", icon: ArrowDownToLine },
+  { id: "cxp", label: "Ctas × Pagar", icon: ArrowUpFromLine },
+  { id: "presupuestos", label: "Presupuestos", icon: Target },
 ];
 
 // ── Transaction config ─────────────────────────
@@ -204,8 +209,8 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
       {/* ── Header ──────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Finanzas</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">Finanzas</h2>
+          <p className="text-[11px] text-[var(--text-secondary)]">
             Centro financiero en tiempo real — datos tipo SAP
           </p>
         </div>
@@ -250,16 +255,16 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
             className={cn(
               "flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-all relative shrink-0",
               activeTab === tab.id
-                ? "text-violet-500"
+                ? "text-[var(--brand)]"
                 : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             )}
           >
-            <span>{tab.icon}</span>
+            <tab.icon size={14} />
             <span>{tab.label}</span>
             {activeTab === tab.id && (
               <motion.div
                 layoutId="finance-tab-indicator"
-                className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-500 rounded-full"
+                className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--brand)] rounded-full"
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
@@ -321,7 +326,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-sm">Flujo de Caja</h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[var(--text-muted)]">
                 Ingresos vs egresos acumulados
               </p>
             </div>
@@ -364,7 +369,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground gap-2">
+              <div className="flex items-center justify-center h-full text-sm text-[var(--text-muted)] gap-2">
                 <Activity className="w-5 h-5 animate-pulse" />
                 Esperando datos en vivo...
               </div>
@@ -383,7 +388,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
             <AnimatePresence initial={false}>
               {recentTransactions.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm gap-2 py-6">
+                <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] text-sm gap-2 py-6">
                   <Clock className="w-5 h-5 animate-pulse" />
                   Esperando transacciones...
                 </div>
@@ -423,7 +428,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                         {formatCurrencyCompact(c(tx.amount_usd), currency)}
                       </p>
                     </div>
-                    <ChevronsRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    <ChevronsRight className="w-3.5 h-3.5 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </motion.button>
                 );
               })}
@@ -437,7 +442,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
         {/* Expenses Donut */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <h3 className="font-semibold text-sm mb-1">Gastos por Departamento</h3>
-          <p className="text-xs text-muted-foreground mb-4">Distribución proporcional</p>
+          <p className="text-xs text-[var(--text-muted)] mb-4">Distribución proporcional</p>
           <div className="h-[200px]">
             {donutData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -463,7 +468,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                 </RechartsPie>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+              <div className="flex items-center justify-center h-full text-sm text-[var(--text-muted)]">
                 Esperando datos...
               </div>
             )}
@@ -471,7 +476,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           {/* Legend */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
             {donutData.slice(0, 6).map((d, i) => (
-              <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: DEPT_COLORS[i] }} />
                 <span className="truncate">{d.name}</span>
               </div>
@@ -482,7 +487,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
         {/* Mini P&L */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <h3 className="font-semibold text-sm mb-1">Estado de Resultados</h3>
-          <p className="text-xs text-muted-foreground mb-4">P&L resumido — {CURRENCY_CONFIG[currency].flag} {currency}</p>
+          <p className="text-xs text-[var(--text-muted)] mb-4">P&L resumido — {CURRENCY_CONFIG[currency].flag} {currency}</p>
           <div className="space-y-3">
             <PnLRow label="Ingresos Totales" amount={pnlData.revenue} currency={currency} type="revenue" />
             <div className="border-t border-[var(--border)] pt-2">
@@ -501,7 +506,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
         {/* AR Aging */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <h3 className="font-semibold text-sm mb-1">Aging de Cartera</h3>
-          <p className="text-xs text-muted-foreground mb-4">Cuentas por cobrar por antigüedad</p>
+          <p className="text-xs text-[var(--text-muted)] mb-4">Cuentas por cobrar por antigüedad</p>
           <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={agingData} layout="vertical" barCategoryGap={8}>
@@ -522,7 +527,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           {/* Balance sheet mini */}
           <div className="mt-4 pt-4 border-t border-[var(--border)]">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Balance General</span>
+              <span className="text-xs text-[var(--text-muted)]">Balance General</span>
             </div>
             <div className="space-y-2">
               <BalanceRow label="Activos" amount={c(kpis.totalRevenue * 1.4)} currency={currency} color="emerald" />
@@ -536,7 +541,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
       {costCenters.length > 0 && (
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <h3 className="font-semibold text-sm mb-1">Centros de Costo</h3>
-          <p className="text-xs text-muted-foreground mb-4">Presupuesto anual vs ejecutado por departamento</p>
+          <p className="text-xs text-[var(--text-muted)] mb-4">Presupuesto anual vs ejecutado por departamento</p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {costCenters.slice(0, 10).map((cc) => {
               const spent = departmentBreakdown[cc.department] || 0;
@@ -545,7 +550,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
               const pct = budgetConverted > 0 ? Math.min((spentConverted / budgetConverted) * 100, 100) : 0;
               return (
                 <div key={cc.id} className="p-3 rounded-lg bg-[var(--bg-muted)]/30 border border-[var(--border)]">
-                  <p className="text-[10px] font-mono text-muted-foreground mb-1">{cc.code}</p>
+                  <p className="text-[10px] font-mono text-[var(--text-muted)] mb-1">{cc.code}</p>
                   <p className="text-xs font-medium truncate mb-2">{cc.department}</p>
                   <div className="h-1.5 bg-[var(--bg-muted)] rounded-full overflow-hidden">
                     <motion.div
@@ -557,10 +562,10 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                     />
                   </div>
                   <div className="flex items-center justify-between mt-1.5">
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] text-[var(--text-muted)]">
                       {formatCurrencyCompact(spentConverted, currency)}
                     </span>
-                    <span className="text-[10px] font-mono text-muted-foreground">
+                    <span className="text-[10px] font-mono text-[var(--text-muted)]">
                       {pct.toFixed(0)}%
                     </span>
                   </div>
@@ -667,7 +672,7 @@ function KPICard({
         </motion.p>
       </AnimatePresence>
       <div className="flex items-center justify-between mt-1">
-        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-xs text-[var(--text-muted)]">{label}</span>
         <span className={cn("text-[11px] font-semibold", c.text)}>+{trend}%</span>
       </div>
     </motion.div>
@@ -700,7 +705,7 @@ function PnLRow({
           expandable && "cursor-pointer hover:bg-[var(--bg-muted)]/30 rounded-md px-2 -mx-2",
         )}
       >
-        <span className={cn("text-xs", bold ? "font-bold" : indent ? "text-muted-foreground" : "font-medium")}>
+        <span className={cn("text-xs", bold ? "font-bold" : indent ? "text-[var(--text-muted)]" : "font-medium")}>
           {expandable && (expanded ? <ChevronDown className="inline w-3 h-3 mr-1" /> : <ChevronRight className="inline w-3 h-3 mr-1" />)}
           {label}
         </span>
@@ -741,7 +746,7 @@ function BalanceRow({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs w-14 text-muted-foreground">{label}</span>
+      <span className="text-xs w-14 text-[var(--text-muted)]">{label}</span>
       <div className="flex-1 h-2 bg-[var(--bg-muted)] rounded-full overflow-hidden">
         <motion.div
           className={cn("h-full rounded-full", colorClass)}
@@ -1000,7 +1005,7 @@ function TransactionDrawer({
           <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-4">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="w-4 h-4 text-violet-500" />
-              <p className="text-xs font-semibold text-violet-500">Grixi AI — Análisis</p>
+              <p className="text-xs font-semibold text-violet-500">GRIXI AI — Análisis</p>
             </div>
             {aiAnalysis ? (
               <div className="prose-finance text-xs text-[var(--text-secondary)] leading-relaxed">
@@ -1059,7 +1064,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
-      <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="flex items-center gap-2 text-[var(--text-muted)]">
         <Icon className="w-3.5 h-3.5" />
         <span className="text-xs">{label}</span>
       </div>

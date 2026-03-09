@@ -83,11 +83,11 @@ export function RolesContent({ roles, permissions }: RolesContentProps) {
         className="flex items-center justify-between"
       >
         <div>
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">
             Roles y Permisos
           </h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Gestiona los roles y permisos de Grixi Industrial S.A.
+          <p className="text-[11px] text-[var(--text-secondary)]">
+            Gestiona los roles y permisos de GRIXI Industrial S.A.
           </p>
         </div>
         <button className="flex items-center gap-2 rounded-full bg-[var(--brand)] px-5 py-2.5 text-sm font-medium text-white transition-all hover:shadow-lg hover:shadow-[var(--brand)]/20 active:scale-[0.98]">

@@ -8,27 +8,34 @@ import {
   X,
   Image as ImageIcon,
   FileText,
-  ChevronDown,
+  Sparkles,
+  Warehouse,
+  ShoppingCart,
+  DollarSign,
+  Users,
+  LayoutDashboard,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { AiModule, Attachment } from "../types";
+import type { LucideIcon } from "lucide-react";
 
 type ChatInputProps = {
   onSend: (message: string, attachments: Attachment[]) => void;
   onUpload: (file: File) => Promise<Attachment | null>;
   isLoading: boolean;
-  module: AiModule;
-  onModuleChange: (module: AiModule) => void;
+  modules: AiModule[];
+  onModulesChange: (modules: AiModule[]) => void;
 };
 
-const MODULES: { value: AiModule; label: string; color: string }[] = [
-  { value: "general", label: "General", color: "#7C3AED" },
-  { value: "almacenes", label: "Almacenes", color: "#10B981" },
-  { value: "compras", label: "Compras", color: "#F97316" },
-  { value: "finanzas", label: "Finanzas", color: "#8B5CF6" },
-  { value: "usuarios", label: "Usuarios", color: "#F59E0B" },
-  { value: "dashboard", label: "Dashboard", color: "#06B6D4" },
-  { value: "administracion", label: "Administración", color: "#F43F5E" },
+const MODULES: { value: AiModule; label: string; icon: LucideIcon; color: string }[] = [
+  { value: "general", label: "General", icon: Sparkles, color: "#7C3AED" },
+  { value: "almacenes", label: "Almacenes", icon: Warehouse, color: "#10B981" },
+  { value: "compras", label: "Compras", icon: ShoppingCart, color: "#F97316" },
+  { value: "finanzas", label: "Finanzas", icon: DollarSign, color: "#8B5CF6" },
+  { value: "usuarios", label: "Usuarios", icon: Users, color: "#F59E0B" },
+  { value: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "#06B6D4" },
+  { value: "administracion", label: "Admin", icon: Shield, color: "#F43F5E" },
 ];
 
 function formatFileSize(bytes: number): string {
@@ -41,8 +48,8 @@ export function ChatInput({
   onSend,
   onUpload,
   isLoading,
-  module,
-  onModuleChange,
+  modules,
+  onModulesChange,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -110,7 +117,32 @@ export function ChatInput({
     handleFileSelect(e.dataTransfer.files);
   };
 
-  const currentModule = MODULES.find((m) => m.value === module) || MODULES[0];
+  // Toggle a module on/off
+  const toggleModule = (mod: AiModule) => {
+    if (mod === "general") {
+      // If general is selected, deselect all others
+      onModulesChange(["general"]);
+      return;
+    }
+    let next = modules.filter((m) => m !== "general"); // remove general if present
+    if (next.includes(mod)) {
+      next = next.filter((m) => m !== mod);
+    } else {
+      next = [...next, mod];
+    }
+    // If nothing selected, fall back to general
+    if (next.length === 0) next = ["general"];
+    onModulesChange(next);
+  };
+
+  // Get display info for active modules
+  const activeModules = MODULES.filter((m) => modules.includes(m.value));
+  const displayLabel =
+    modules.includes("general")
+      ? "General"
+      : activeModules.length === 1
+        ? activeModules[0].label
+        : `${activeModules.length} módulos`;
 
   return (
     <div className="shrink-0 px-4 pb-4">
@@ -230,47 +262,69 @@ export function ChatInput({
                 onClick={() => setShowModules(!showModules)}
                 className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
               >
-                <div
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: currentModule.color }}
-                />
-                <span>{currentModule.label}</span>
-                <ChevronDown size={12} />
+                {/* Show icons of active modules */}
+                <div className="flex -space-x-1">
+                  {activeModules.slice(0, 3).map((m) => (
+                    <m.icon
+                      key={m.value}
+                      size={13}
+                      style={{ color: m.color }}
+                    />
+                  ))}
+                </div>
+                <span>{displayLabel}</span>
               </button>
 
               <AnimatePresence>
                 {showModules && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 5, scale: 0.95 }}
-                    className="absolute bottom-full left-0 z-50 mb-2 w-44 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-xl"
-                  >
-                    <p className="border-b border-[var(--border)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                      Contexto del módulo
-                    </p>
-                    {MODULES.map((m) => (
-                      <button
-                        key={m.value}
-                        onClick={() => {
-                          onModuleChange(m.value);
-                          setShowModules(false);
-                        }}
-                        className={cn(
-                          "flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors",
-                          module === m.value
-                            ? "bg-[var(--brand)]/8 text-[var(--text-primary)]"
-                            : "text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]"
-                        )}
-                      >
-                        <div
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: m.color }}
-                        />
-                        {m.label}
-                      </button>
-                    ))}
-                  </motion.div>
+                  <>
+                    {/* Backdrop to close */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowModules(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                      className="absolute bottom-full left-0 z-50 mb-2 w-48 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-xl"
+                    >
+                      <p className="border-b border-[var(--border)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                        Contexto de módulos
+                      </p>
+                      {MODULES.map((m) => {
+                        const isActive = modules.includes(m.value);
+                        const Icon = m.icon;
+                        return (
+                          <button
+                            key={m.value}
+                            onClick={() => toggleModule(m.value)}
+                            className={cn(
+                              "flex w-full items-center gap-2.5 px-3 py-2 text-xs transition-all",
+                              isActive
+                                ? "bg-[var(--brand)]/8 text-[var(--text-primary)]"
+                                : "text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]"
+                            )}
+                          >
+                            <Icon
+                              size={14}
+                              style={{ color: isActive ? m.color : undefined }}
+                              className={cn(!isActive && "opacity-40")}
+                            />
+                            <span className="flex-1 text-left">{m.label}</span>
+                            {isActive && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="h-1.5 w-1.5 rounded-full"
+                                style={{ backgroundColor: m.color }}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  </>
                 )}
               </AnimatePresence>
             </div>
@@ -303,7 +357,7 @@ export function ChatInput({
       </div>
 
       <p className="mt-2 text-center text-[10px] text-[var(--text-muted)]">
-        Grixi AI puede cometer errores. Verifica la información importante.
+        GRIXI AI puede cometer errores. Verifica la información importante.
       </p>
     </div>
   );

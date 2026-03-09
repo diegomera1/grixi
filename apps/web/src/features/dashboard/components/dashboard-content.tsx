@@ -130,10 +130,10 @@ export function DashboardContent({
         transition={{ duration: 0.5 }}
       >
         <h2 className="text-sm font-bold text-[var(--text-primary)]">
-          {getGreeting()}, Mariana 👋
+          Dashboard
         </h2>
         <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
-          Resumen de Grixi Industrial S.A.
+          {getGreeting()}, Mariana — Resumen de GRIXI Industrial S.A.
         </p>
       </motion.div>
 

@@ -72,34 +72,34 @@ export function ComprasContent({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-bold italic text-[var(--text-primary)]">
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">
             Compras & Aprovisionamiento
-          </h1>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">
+          </h2>
+          <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
             Gestión de órdenes, proveedores y materiales — SAP MM
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full bg-[var(--bg-surface)] px-1 py-1 border border-[var(--border)]">
+        <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200",
+                "flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-all relative shrink-0",
                 activeTab === tab.id
-                  ? "text-white"
+                  ? "text-[var(--brand)]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               )}
             >
+              <tab.icon size={14} />
+              <span className="hidden sm:inline">{tab.label}</span>
               {activeTab === tab.id && (
                 <motion.div
-                  layoutId="compras-tab"
-                  className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 to-amber-500"
+                  layoutId="compras-tab-indicator"
+                  className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--brand)] rounded-full"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-              <tab.icon size={13} className="relative z-10" />
-              <span className="relative z-10 hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </div>

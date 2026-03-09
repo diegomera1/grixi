@@ -119,7 +119,7 @@ async function buildSystemPrompt(module: string): Promise<string> {
 `;
   }
 
-  return `Eres GRIXI AI, el asistente inteligente de la plataforma Grixi — una plataforma enterprise SaaS multi-tenant.
+  return `Eres GRIXI AI, el asistente inteligente de la plataforma GRIXI — una plataforma enterprise SaaS multi-tenant.
 
 Tu rol:
 - Ayudar a los usuarios con TODOS los módulos de la empresa: almacenes, compras, finanzas, usuarios, administración, dashboard

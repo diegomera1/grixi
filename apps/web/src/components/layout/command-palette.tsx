@@ -33,7 +33,7 @@ const COMMANDS: CommandItem[] = [
   { id: "usuarios", label: "Usuarios", description: "Gestión de equipo", icon: Users, href: "/usuarios", category: "Páginas", color: "#F59E0B" },
   { id: "admin", label: "Administración", description: "Auditoría y control", icon: Shield, href: "/administracion", category: "Páginas", color: "#F43F5E" },
   { id: "almacenes", label: "Almacenes", description: "Inventario 3D", icon: Warehouse, href: "/almacenes", category: "Páginas", color: "#10B981" },
-  { id: "ai", label: "Grixi AI", description: "Asistente inteligente", icon: Sparkles, href: "/ai", category: "Páginas", color: "#8B5CF6" },
+  { id: "ai", label: "GRIXI AI", description: "Asistente inteligente", icon: Sparkles, href: "/ai", category: "Páginas", color: "#8B5CF6" },
   // Actions
   { id: "config", label: "Configuración", description: "Ajustes del sistema", icon: Settings, href: "/dashboard", category: "Acciones", color: "#71717A" },
 ];
@@ -231,7 +231,7 @@ export function CommandPalette() {
                   </span>
                 </div>
                 <span className="text-[10px] text-[var(--text-muted)]">
-                  Grixi Command
+                  GRIXI Command
                 </span>
               </div>
             </div>

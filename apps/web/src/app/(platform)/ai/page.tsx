@@ -4,7 +4,7 @@ import { AiChatContent } from "@/features/ai/components/ai-chat-content";
 import type { Conversation } from "@/features/ai/types";
 
 export const metadata = {
-  title: "Grixi AI",
+  title: "GRIXI AI",
 };
 
 export default async function AiChatPage() {

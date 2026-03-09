@@ -90,7 +90,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-16 flex items-center justify-between border-t border-[var(--border)] pt-6">
           <span className="text-[11px] text-[var(--text-muted)]">
-            © {new Date().getFullYear()} Grixi
+            © {new Date().getFullYear()} GRIXI
           </span>
           <span className="text-[11px] text-[var(--text-muted)]">
             Supabase · Next.js · Gemini AI

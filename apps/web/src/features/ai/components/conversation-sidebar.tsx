@@ -191,10 +191,13 @@ export function ConversationSidebar({
                     exit={{ opacity: 0, x: -10 }}
                     className="relative"
                   >
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => onSelect(conv.id)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect(conv.id); }}
                       className={cn(
-                        "group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-all",
+                        "group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-all cursor-pointer",
                         activeId === conv.id
                           ? "bg-[var(--brand)]/8 text-[var(--text-primary)]"
                           : "text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]/60"
@@ -261,7 +264,7 @@ export function ConversationSidebar({
                           </div>
                         </>
                       )}
-                    </button>
+                    </div>
 
                     {/* Context menu */}
                     <AnimatePresence>

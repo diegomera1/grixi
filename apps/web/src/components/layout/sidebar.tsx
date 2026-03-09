@@ -95,7 +95,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "INTELIGENCIA",
     items: [
       {
-        label: "Grixi AI",
+        label: "GRIXI AI",
         href: "/ai",
         icon: Sparkles,
         color: "#8B5CF6",
@@ -150,7 +150,7 @@ export function Sidebar() {
             <div className="absolute inset-0 rounded-lg bg-[var(--brand)] opacity-10 blur-md" />
             <Image
               src="/brand/icon.png"
-              alt="Grixi"
+              alt="GRIXI"
               width={28}
               height={28}
               className="relative h-7 w-7"
@@ -166,7 +166,7 @@ export function Sidebar() {
                 className="overflow-hidden"
               >
                 <span className="whitespace-nowrap font-serif text-base font-semibold italic text-[var(--text-primary)]">
-                  Grixi
+                  GRIXI
                 </span>
                 <p className="text-[9px] font-medium text-[var(--text-muted)]">
                   Enterprise Platform

@@ -45,7 +45,7 @@ export default async function WarehouseDetailPage({
 
   const { data: inventory } = await supabase
     .from("inventory")
-    .select("*, products(sku, name, category, unit_of_measure)")
+    .select("*, products(sku, name, category, unit_of_measure, image_url)")
     .in("position_id", positionIds.length > 0 ? positionIds : ["00000000-0000-0000-0000-000000000000"]);
 
   // Build position map with inventory data
@@ -72,6 +72,7 @@ export default async function WarehouseDetailPage({
               product_name: inv.products?.name || "—",
               product_sku: inv.products?.sku || "—",
               category: inv.products?.category || "—",
+              image_url: inv.products?.image_url || null,
               lot_number: inv.lot_number,
               batch_code: inv.batch_code,
               quantity: inv.quantity,

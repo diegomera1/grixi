@@ -11,7 +11,7 @@ const routeTitles: Record<string, string> = {
   "/usuarios/roles": "Roles y Permisos",
   "/administracion": "Administración",
   "/almacenes": "Almacenes",
-  "/ai": "Grixi AI",
+  "/ai": "GRIXI AI",
 };
 
 function getBreadcrumbs(pathname: string) {
@@ -36,7 +36,7 @@ export function Topbar() {
   }, []);
 
   const breadcrumbs = getBreadcrumbs(pathname);
-  const pageTitle = routeTitles[pathname] || breadcrumbs[breadcrumbs.length - 1]?.label || "Grixi";
+  const pageTitle = routeTitles[pathname] || breadcrumbs[breadcrumbs.length - 1]?.label || "GRIXI";
 
   return (
     <header className="flex h-10 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-surface)] px-4">

@@ -12,6 +12,8 @@ export const metadata = {
   title: "Compras",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ComprasPage() {
   const [orders, vendors, requisitions, receipts, kpis] = await Promise.all([
     fetchPurchaseOrders(),

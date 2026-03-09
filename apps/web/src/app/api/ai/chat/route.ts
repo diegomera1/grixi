@@ -10,7 +10,7 @@ type HistoryMsg = {
 };
 
 /** Build the system prompt with real data from the current module context */
-async function buildSystemPrompt(module: string): Promise<string> {
+async function buildSystemPrompt(modules: string[]): Promise<string> {
   const supabase = await createClient();
 
   const [
@@ -31,7 +31,9 @@ async function buildSystemPrompt(module: string): Promise<string> {
 
   let moduleContext = "";
 
-  if (module === "almacenes" || module === "general") {
+  const isGeneral = modules.includes("general");
+
+  if (modules.includes("almacenes") || isGeneral) {
     const { data: products } = await supabase
       .from("products")
       .select("name, category, sku, min_stock")
@@ -52,7 +54,7 @@ async function buildSystemPrompt(module: string): Promise<string> {
 `;
   }
 
-  if (module === "finanzas" || module === "general") {
+  if (modules.includes("finanzas") || isGeneral) {
     const { data: recentTx } = await supabase
       .from("finance_transactions")
       .select("transaction_type, category, amount_usd, currency, counterparty")
@@ -71,7 +73,7 @@ async function buildSystemPrompt(module: string): Promise<string> {
 `;
   }
 
-  if (module === "usuarios" || module === "general") {
+  if (modules.includes("usuarios") || isGeneral) {
     const { data: roles } = await supabase
       .from("roles")
       .select("name, description");
@@ -83,10 +85,10 @@ async function buildSystemPrompt(module: string): Promise<string> {
 `;
   }
 
-  return `Eres GRIXI AI, el asistente inteligente de la plataforma Grixi — una plataforma enterprise SaaS multi-tenant.
+  return `Eres GRIXI AI, el asistente inteligente de la plataforma GRIXI — una plataforma enterprise SaaS multi-tenant.
 
 Tu rol:
-- Ayudar a los usuarios con TODOS los módulos de la empresa: almacenes, finanzas, usuarios, administración, dashboard
+- Ayudar a los usuarios con TODOS los módulos de la empresa: almacenes, finanzas, compras, usuarios, administración, dashboard
 - Responder en español de manera profesional pero amigable
 - Proporcionar insights sobre datos del sistema con la información real proporcionada
 - Sugerir optimizaciones y mejoras basadas en los datos
@@ -99,7 +101,30 @@ Datos del sistema en tiempo real:
 - ${transactionCount || 0} transacciones financieras registradas
 ${moduleContext}
 
-Módulo activo actual: ${module === "general" ? "Vista general (todos los módulos)" : module}
+Módulo(s) activo(s): ${isGeneral ? "Vista general (todos los módulos)" : modules.join(", ")}
+
+## Capacidades Especiales de Visualización
+
+### Gráficos Interactivos
+Cuando el usuario pida gráficos, dashboards, o visualizaciones de datos, genera un bloque especial con este formato EXACTO:
+<!--CHART:{"type":"bar","title":"Título del gráfico","description":"Descripción breve","data":[{"name":"Ene","valor":100},{"name":"Feb","valor":200}],"xKey":"name","yKeys":[{"key":"valor","label":"Valor","color":"#7C3AED"}]}-->
+
+Tipos disponibles: "bar", "line", "area", "pie"
+- Para "pie": usa un solo yKey y el xKey para las etiquetas
+- Siempre usa data real del sistema cuando esté disponible
+- Si no tienes datos exactos, genera datos de ejemplo realistas basados en el contexto
+- Puedes generar MÚLTIPLES gráficos en una misma respuesta
+- Los colores disponibles: #7C3AED (morado), #06B6D4 (cyan), #10B981 (verde), #F59E0B (ámbar), #F43F5E (rosa), #8B5CF6 (violeta), #F97316 (naranja)
+
+### Generación de Imágenes
+Cuando el usuario pida una imagen, diagrama visual, o ilustración, genera:
+<!--IMAGE:descripción detallada en inglés de la imagen a generar-->
+
+### Tablas
+Usa tablas markdown estándar cuando necesites mostrar datos tabulares:
+| Columna 1 | Columna 2 |
+|-----------|-----------|
+| dato 1    | dato 2    |
 
 Reglas:
 - Siempre responde en español
@@ -107,7 +132,7 @@ Reglas:
 - Usa formato Markdown cuando sea apropiado (listas, negritas, tablas, headers)
 - Si el usuario pregunta sobre datos específicos que tienes, responde con precisión
 - Si no tienes información suficiente, sugiere dónde encontrarla en la plataforma
-- No inventes datos que no se te hayan proporcionado
+- No inventes datos que no se te hayan proporcionado (excepto para gráficos de ejemplo)
 - Puedes analizar imágenes y archivos adjuntos si el usuario los envía
 - Al final de cada respuesta, genera EXACTAMENTE 3 sugerencias de seguimiento relevantes en un bloque JSON especial con este formato:
 <!--SUGGESTIONS-->
@@ -151,14 +176,19 @@ export async function POST(req: Request) {
   const {
     conversationId,
     message,
-    module = "general",
+    module,
+    modules: modulesRaw,
     attachments = [],
   } = body as {
     conversationId: string;
     message: string;
-    module: string;
+    module?: string;
+    modules?: string[];
     attachments: { id: string; name: string; url: string; type: string; size: number }[];
   };
+
+  // Support both legacy single module and new modules array
+  const modules: string[] = modulesRaw || (module ? [module] : ["general"]);
 
   if (!conversationId || !message) {
     return Response.json({ error: "Missing conversationId or message" }, { status: 400 });
@@ -188,7 +218,7 @@ export async function POST(req: Request) {
   }));
 
   // 3. Build system prompt with real data
-  const systemPrompt = await buildSystemPrompt(module);
+  const systemPrompt = await buildSystemPrompt(modules);
 
   // 4. Build full prompt
   const contextParts = history

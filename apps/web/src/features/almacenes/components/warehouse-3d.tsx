@@ -57,6 +57,7 @@ type Position = {
     product_name: string;
     product_sku: string;
     category: string;
+    image_url: string | null;
     quantity: number;
     lot_number: string | null;
     batch_code: string | null;
@@ -139,12 +140,12 @@ const CATEGORY_TEXTURE_MAP: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, number> = {
-  electronics: 0x2563eb,
-  packaging: 0xe2e8f0,
-  raw: 0xc2956b,
-  chemical: 0xeab308,
-  finished: 0xd4a574,
-  mechanical: 0x94a3b8,
+  electronics: 0x22c55e,
+  packaging: 0xfbbf24,
+  raw: 0xef4444,
+  chemical: 0xfbbf24,
+  finished: 0x22c55e,
+  mechanical: 0x9ca3af,
 };
 
 // ─── Texture Hook ───────────────────────────────────────
@@ -426,59 +427,33 @@ function AnimatedForklift({
 
 // ─── Warehouse Building ─────────────────────────────────
 
-// ─── Dust Particles ─────────────────────────────────────
+// ─── Dust Particles (disabled for performance) ──────────
 
 function DustParticles() {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const count = 150;
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  const offsets = useMemo(
-    () =>
-      Array.from({ length: count }, () => ({
-        x: (Math.random() - 0.5) * 28,
-        y: Math.random() * 6 + 0.5,
-        z: (Math.random() - 0.5) * 18,
-        speed: Math.random() * 0.3 + 0.1,
-        phase: Math.random() * Math.PI * 2,
-      })),
-    []
-  );
-
-  useFrame((state) => {
-    if (!meshRef.current) return;
-    const t = state.clock.elapsedTime;
-    for (let i = 0; i < count; i++) {
-      const o = offsets[i];
-      dummy.position.set(
-        o.x + Math.sin(t * o.speed + o.phase) * 0.3,
-        o.y + Math.sin(t * o.speed * 0.5 + o.phase) * 0.15,
-        o.z + Math.cos(t * o.speed + o.phase) * 0.2
-      );
-      dummy.scale.setScalar(0.008 + Math.sin(t + o.phase) * 0.003);
-      dummy.updateMatrix();
-      meshRef.current.setMatrixAt(i, dummy.matrix);
-    }
-    meshRef.current.instanceMatrix.needsUpdate = true;
-  });
-
-  return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-      <sphereGeometry args={[1, 4, 4]} />
-      <meshBasicMaterial color="#D4D4D8" transparent opacity={0.3} depthWrite={false} />
-    </instancedMesh>
-  );
+  return null;
 }
 
 // ─── Warehouse Building ─────────────────────────────────
 
-function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWarehouseTextures> }) {
-  const W = 32;
-  const D = 20;
-  const H = 7;
+function WarehouseBuilding({ textures, rackCount = 16, maxRackWidth = 2.5 }: { textures: ReturnType<typeof useWarehouseTextures>; rackCount?: number; maxRackWidth?: number }) {
+  // ── Calculate building size FROM the actual rack grid footprint ──
+  // Mirror the exact same spacing formula used by getRackPosition
+  const xSpacing = maxRackWidth + 0.5;  // rack width + 0.5m walkway  
+  const zSpacing = 0.5 + 1.8;           // rack depth (0.5) + 1.8m aisle
+  const cols = Math.ceil(Math.sqrt(rackCount * 1.5));
+  const rows = Math.ceil(rackCount / cols);
+  const gridW = (cols - 1) * xSpacing;
+  const gridD = (rows - 1) * zSpacing;
+  
+  // Building = grid footprint + margin each side
+  const margin = 2.5;
+  const W = gridW + margin * 2;
+  const D = gridD + margin * 2;
+  const H = 5.5;
 
   return (
     <group>
-      {/* ── Floor with concrete texture ────── */}
+      {/* ── Floor ────── */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[W, D]} />
         <meshStandardMaterial
@@ -488,119 +463,7 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
         />
       </mesh>
 
-      {/* ── Traffic arrows in aisles (yellow directional) ────── */}
-      {[-7, -2.5, 2, 6.5].map((z, ai) =>
-        Array.from({ length: 8 }, (_, j) => (
-          <group key={`traf-${ai}-${j}`}>
-            {/* Dashed center line */}
-            <mesh position={[-10 + j * 3, 0.004, z]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[1.5, 0.06]} />
-              <meshBasicMaterial color="#EAB308" transparent opacity={0.5} />
-            </mesh>
-            {/* Directional arrow every 3rd segment */}
-            {j % 3 === 0 && (
-              <Text
-                position={[-10 + j * 3, 0.006, z]}
-                rotation={[-Math.PI / 2, 0, ai % 2 === 0 ? 0 : Math.PI]}
-                fontSize={0.2}
-                color="#EAB308"
-                anchorX="center"
-                anchorY="middle"
-              >
-                ▶
-              </Text>
-            )}
-          </group>
-        ))
-      )}
-
-      {/* ── Red pedestrian zones along walls ────── */}
-      {[[-W / 2 + 0.6, 0], [W / 2 - 0.6, 0]].map(([x, z], i) => (
-        <group key={`ped-${i}`}>
-          <mesh position={[x, 0.003, z]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[0.8, D - 2]} />
-            <meshBasicMaterial color="#EF4444" transparent opacity={0.06} />
-          </mesh>
-          {/* Striped border */}
-          {Array.from({ length: Math.floor(D / 0.8) }, (_, j) => (
-            <mesh key={`ps-${i}-${j}`} position={[x + (i === 0 ? 0.45 : -0.45), 0.004, -D / 2 + 1 + j * 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[0.05, 0.4]} />
-              <meshBasicMaterial color="#EF4444" transparent opacity={0.3} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-
-      {/* ── Green vehicle zones in center aisles ────── */}
-      {[-7, -2.5, 2, 6.5].map((z, i) => (
-        <mesh key={`vz-${i}`} position={[0, 0.002, z]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[22, 1.4]} />
-          <meshBasicMaterial color="#22C55E" transparent opacity={0.03} />
-        </mesh>
-      ))}
-
-      {/* ── Yellow crossing hatches at front ────── */}
-      {[-4, 0, 4].map((x, i) => (
-        <group key={`cross-${i}`}>
-          {Array.from({ length: 6 }, (_, j) => (
-            <mesh key={`ch-${i}-${j}`} position={[x - 0.5 + j * 0.2, 0.005, D / 2 - 4]} rotation={[-Math.PI / 2, 0, Math.PI / 4]}>
-              <planeGeometry args={[0.04, 0.6]} />
-              <meshBasicMaterial color="#EAB308" transparent opacity={0.3} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-
-      {/* ── Staging areas at front (RECEPCIÓN / DESPACHO) ────── */}
-      <group position={[0, 0, D / 2 - 1.5]}>
-        {/* RECEPCIÓN */}
-        <mesh position={[-6, 0.003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[5, 2]} />
-          <meshBasicMaterial color="#3B82F6" transparent opacity={0.06} />
-        </mesh>
-        <Text position={[-6, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.2} color="#3B82F6" anchorX="center" anchorY="middle">
-          📥 RECEPCIÓN
-        </Text>
-        {/* DESPACHO */}
-        <mesh position={[6, 0.003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[5, 2]} />
-          <meshBasicMaterial color="#F59E0B" transparent opacity={0.06} />
-        </mesh>
-        <Text position={[6, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.2} color="#F59E0B" anchorX="center" anchorY="middle">
-          📤 DESPACHO
-        </Text>
-      </group>
-
-      {/* ── Aisle labels on floor ────── */}
-      {['A', 'B', 'C', 'D', 'E', 'F'].map((label, i) => (
-        <Text
-          key={`aisle-${label}`}
-          position={[-13.5, 0.006, -7 + i * 2.3]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          fontSize={0.2}
-          color="#94A3B8"
-          anchorX="center"
-          anchorY="middle"
-        >
-          Pasillo {label}
-        </Text>
-      ))}
-
-      {/* Epoxy zone rectangles */}
-      {[[-13, -5, 4, 3], [-13, 4, 4, 3], [11, -5, 4, 3], [11, 4, 4, 3]].map(
-        ([x, z, w, d], i) => (
-          <mesh
-            key={`zone-${i}`}
-            position={[x, 0.003, z]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          >
-            <planeGeometry args={[w, d]} />
-            <meshBasicMaterial color="#3B82F6" transparent opacity={0.05} />
-          </mesh>
-        )
-      )}
-
-      {/* ── Back wall with corrugated texture ────── */}
+      {/* ── Back wall ────── */}
       <mesh position={[0, H / 2, -D / 2]} receiveShadow>
         <planeGeometry args={[W, H]} />
         <meshStandardMaterial
@@ -614,90 +477,25 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
       {/* ── Side walls ────── */}
       <mesh position={[-W / 2, H / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
         <planeGeometry args={[D, H]} />
-        <meshStandardMaterial
-          map={textures.wall}
-          roughness={0.8}
-          metalness={0.15}
-          side={THREE.DoubleSide}
-        />
+        <meshStandardMaterial map={textures.wall} roughness={0.8} metalness={0.15} side={THREE.DoubleSide} />
       </mesh>
       <mesh position={[W / 2, H / 2, 0]} rotation={[0, -Math.PI / 2, 0]}>
         <planeGeometry args={[D, H]} />
-        <meshStandardMaterial
-          map={textures.wall}
-          roughness={0.8}
-          metalness={0.15}
-          side={THREE.DoubleSide}
-        />
+        <meshStandardMaterial map={textures.wall} roughness={0.8} metalness={0.15} side={THREE.DoubleSide} />
       </mesh>
-
-      {/* NO CEILING / NO ROOF — fully open top for clean visibility */}
 
       {/* ── Columns ────── */}
       {[-W / 2 + 0.2, W / 2 - 0.2].map((x) =>
         Array.from({ length: 3 }, (_, j) => (
-          <mesh
-            key={`col-${x}-${j}`}
-            position={[x, H / 2, -D / 2 + 3 + j * (D / 3)]}
-          >
+          <mesh key={`col-${x}-${j}`} position={[x, H / 2, -D / 2 + 3 + j * (D / 3)]}>
             <boxGeometry args={[0.3, H, 0.3]} />
-            <meshStandardMaterial
-              map={textures.metal}
-              color="#78716C"
-              metalness={0.5}
-              roughness={0.35}
-            />
+            <meshStandardMaterial color="#78716C" metalness={0.5} roughness={0.35} />
           </mesh>
         ))
       )}
 
-      {/* Ceiling lights removed — open-top warehouse with ambient + directional lighting only */}
-
-      {/* Forklifts are now animated — rendered separately */}
-
-      {/* ── Pallet stacks with wood texture ────── */}
-      {[
-        [-12, 2],
-        [-12, 5],
-        [12, -3],
-        [12, 6],
-        [-13, -7],
-      ].map(([x, z], i) => (
-        <group key={`pallet-${i}`} position={[x, 0, z]}>
-          {Array.from({ length: 3 }, (_, j) => (
-            <mesh key={`pw-${j}`} position={[0, j * 0.15, 0]}>
-              <boxGeometry args={[1.2, 0.12, 1.0]} />
-              <meshStandardMaterial map={textures.wood} roughness={0.85} />
-            </mesh>
-          ))}
-          <mesh position={[0, 0.6, 0]} castShadow>
-            <boxGeometry args={[1.0, 0.6, 0.8]} />
-            <meshStandardMaterial map={textures.cardboard} roughness={0.8} />
-          </mesh>
-          {i % 2 === 0 && (
-            <mesh position={[0, 1.1, 0]} castShadow>
-              <boxGeometry args={[0.9, 0.4, 0.75]} />
-              <meshStandardMaterial map={textures.cardboard} color="#D4A574" roughness={0.8} />
-            </mesh>
-          )}
-        </group>
-      ))}
-
-      {/* ── Fire extinguisher ────── */}
-      <group position={[-W / 2 + 0.3, 0, -2]}>
-        <mesh position={[0, 0.5, 0]}>
-          <cylinderGeometry args={[0.06, 0.06, 0.5, 12]} />
-          <meshStandardMaterial color="#DC2626" roughness={0.6} metalness={0.2} />
-        </mesh>
-        <mesh position={[0, 0.78, 0]}>
-          <cylinderGeometry args={[0.02, 0.025, 0.08, 8]} />
-          <meshStandardMaterial color="#1F2937" metalness={0.7} roughness={0.3} />
-        </mesh>
-      </group>
-
-      {/* ── Industrial Gate (front wall, roller shutter) ────── */}
+      {/* ── Industrial Gate ────── */}
       <group position={[0, 0, D / 2]}>
-        {/* Gate frame */}
         <mesh position={[-2.2, H / 2 - 0.5, 0]}>
           <boxGeometry args={[0.15, H - 1, 0.15]} />
           <meshStandardMaterial color="#374151" metalness={0.6} roughness={0.3} />
@@ -706,100 +504,45 @@ function WarehouseBuilding({ textures }: { textures: ReturnType<typeof useWareho
           <boxGeometry args={[0.15, H - 1, 0.15]} />
           <meshStandardMaterial color="#374151" metalness={0.6} roughness={0.3} />
         </mesh>
-        {/* Roller shutter (half open) */}
-        {Array.from({ length: 8 }, (_, i) => (
-          <mesh key={`shutter-${i}`} position={[0, H - 1.5 - i * 0.15, 0]}>
-            <boxGeometry args={[4.2, 0.12, 0.03]} />
-            <meshStandardMaterial color="#9CA3AF" metalness={0.5} roughness={0.35} />
-          </mesh>
-        ))}
-        {/* PVC strip curtain (hanging) */}
-        {Array.from({ length: 12 }, (_, i) => (
-          <mesh key={`pvc-${i}`} position={[-2 + i * 0.36, 1.5, 0.05]}>
-            <boxGeometry args={[0.08, 3, 0.005]} />
-            <meshStandardMaterial color="#E0F2FE" transparent opacity={0.3} side={THREE.DoubleSide} />
-          </mesh>
-        ))}
+        <mesh position={[0, H - 1.5, 0]}>
+          <boxGeometry args={[4.2, 0.15, 0.03]} />
+          <meshStandardMaterial color="#9CA3AF" metalness={0.5} roughness={0.35} />
+        </mesh>
       </group>
-
-      {/* ── Floor signage ────── */}
-      {/* CARGA zone */}
-      <mesh position={[-8, 0.005, D / 2 - 2]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[3, 2.5]} />
-        <meshBasicMaterial color="#22C55E" transparent opacity={0.08} />
-      </mesh>
-      <Text position={[-8, 0.008, D / 2 - 2]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.3} color="#22C55E" anchorX="center" anchorY="middle">
-        CARGA
-      </Text>
-
-      {/* DESCARGA zone */}
-      <mesh position={[8, 0.005, D / 2 - 2]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[3, 2.5]} />
-        <meshBasicMaterial color="#3B82F6" transparent opacity={0.08} />
-      </mesh>
-      <Text position={[8, 0.008, D / 2 - 2]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.3} color="#3B82F6" anchorX="center" anchorY="middle">
-        DESCARGA
-      </Text>
-
-      {/* Evacuation arrows on floor */}
-      {[[-14, 0], [-14, 4], [14, 0], [14, 4]].map(([x, z], i) => (
-        <Text key={`evac-${i}`} position={[x, 0.006, z]} rotation={[-Math.PI / 2, 0, z > 2 ? Math.PI : 0]} fontSize={0.2} color="#22C55E" anchorX="center" anchorY="middle">
-          ▶ SALIDA
-        </Text>
-      ))}
-
-      {/* Volumetric light cones removed for clean open-top view */}
-
-      {/* ── Dust Particles ────── */}
-      <DustParticles />
     </group>
   );
 }
 
+
+
+
 // ─── Single Rack (textured) ─────────────────────────────
 
-function Rack3D({
+const Rack3D = React.memo(function Rack3D({
   rack,
-  rackIndex,
-  totalRacks,
   onSelect,
   isSelected,
-  textures,
   onBoxClick,
+  position: rackPosition,
 }: {
   rack: Rack;
-  rackIndex: number;
-  totalRacks: number;
   onSelect: () => void;
   isSelected: boolean;
-  textures: ReturnType<typeof useWarehouseTextures>;
   onBoxClick?: (pos: Position, rackCode: string) => void;
+  position: [number, number, number];
 }) {
-  const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
 
-  // Layout in aisles
-  const racksPerAisle = Math.ceil(totalRacks / 4);
-  const aisleIdx = Math.floor(rackIndex / racksPerAisle);
-  const posInAisle = rackIndex % racksPerAisle;
-  const aisleZ = -7 + aisleIdx * 4.5;
-  const side = posInAisle % 2 === 0 ? -1 : 1;
-  const col = Math.floor(posInAisle / 2);
-  const px = -10 + col * 3.2;
-  const pz = aisleZ + side * 1.2;
+  const [px, , pz] = rackPosition;
 
+  // Consistent sizing: 5 cols × 4 rows standard
   const rW = rack.columns * 0.5;
   const rH = rack.rows * 0.45 + 0.3;
   const rD = 0.5;
 
   const isActive = hovered || isSelected;
 
-  useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    const targetY = hovered ? 0.03 : 0;
-    groupRef.current.position.y +=
-      (targetY - groupRef.current.position.y) * delta * 10;
-  });
+  // No useFrame — static rack for performance
 
   const occupiedCount = rack.rack_positions.filter(
     (p) => p.status === "occupied"
@@ -809,7 +552,6 @@ function Rack3D({
 
   return (
     <group
-      ref={groupRef}
       position={[px, 0, pz]}
       onClick={(e) => {
         e.stopPropagation();
@@ -837,146 +579,72 @@ function Rack3D({
         </mesh>
       )}
 
-      {/* Base plate with metal texture */}
-      <mesh position={[0, 0.015, 0]} castShadow>
+      {/* Base plate */}
+      <mesh position={[0, 0.015, 0]}>
         <boxGeometry args={[rW + 0.1, 0.03, rD + 0.1]} />
         <meshStandardMaterial
-          map={textures.metal}
           color={isActive ? 0x818cf8 : 0x94a3b8}
           metalness={0.6}
           roughness={0.25}
         />
       </mesh>
 
-      {/* 4 upright posts with metal texture */}
+      {/* 4 upright posts — NO bolt holes */}
       {[-1, 1].map((xD) =>
         [-1, 1].map((zD) => (
-          <group
+          <mesh
             key={`post-${xD}-${zD}`}
-            position={[(xD * rW) / 2, 0, (zD * rD) / 2]}
+            position={[(xD * rW) / 2, rH / 2, (zD * rD) / 2]}
           >
-            <mesh position={[0, rH / 2, 0]} castShadow>
-              <boxGeometry args={[0.04, rH, 0.04]} />
-              <meshStandardMaterial
-                map={textures.metal}
-                color={isActive ? 0x6366f1 : 0x64748b}
-                metalness={0.75}
-                roughness={0.2}
-              />
-            </mesh>
-            {/* Footing */}
-            <mesh position={[0, 0.01, 0]}>
-              <boxGeometry args={[0.1, 0.02, 0.1]} />
-              <meshStandardMaterial
-                map={textures.metal}
-                color={0x475569}
-                metalness={0.65}
-                roughness={0.25}
-              />
-            </mesh>
-            {/* Bolt holes (decorative dots) */}
-            {Array.from({ length: Math.floor(rH / 0.3) }, (_, k) => (
-              <mesh
-                key={`bolt-${k}`}
-                position={[0.022, 0.15 + k * 0.3, 0]}
-              >
-                <sphereGeometry args={[0.006, 6, 6]} />
-                <meshStandardMaterial color={0x374151} metalness={0.8} roughness={0.2} />
-              </mesh>
-            ))}
-          </group>
+            <boxGeometry args={[0.04, rH, 0.04]} />
+            <meshStandardMaterial
+              color={isActive ? 0x818cf8 : 0x3730a3}
+              metalness={0.6}
+              roughness={0.25}
+            />
+          </mesh>
         ))
       )}
 
-      {/* Horizontal beams per level with metal texture */}
+      {/* Shelves — simple beams + flat shelf, NO wire grids */}
       {Array.from({ length: rack.rows + 1 }, (_, i) => {
         const y = 0.03 + (i / rack.rows) * (rH - 0.03);
         return (
           <group key={`lvl-${i}`}>
-            {/* Front beam (orange like real warehouse) */}
-            <mesh position={[0, y, rD / 2]} castShadow>
+            <mesh position={[0, y, rD / 2]}>
               <boxGeometry args={[rW + 0.04, 0.04, 0.03]} />
-              <meshStandardMaterial
-                color={isActive ? 0xa5b4fc : 0xf97316}
-                metalness={0.4}
-                roughness={0.4}
-              />
+              <meshStandardMaterial color={isActive ? 0xa5b4fc : 0x4338ca} metalness={0.5} roughness={0.35} />
             </mesh>
-            {/* Back beam */}
-            <mesh position={[0, y, -rD / 2]} castShadow>
+            <mesh position={[0, y, -rD / 2]}>
               <boxGeometry args={[rW + 0.04, 0.04, 0.03]} />
-              <meshStandardMaterial
-                color={isActive ? 0xa5b4fc : 0xf97316}
-                metalness={0.4}
-                roughness={0.4}
-              />
+              <meshStandardMaterial color={isActive ? 0xa5b4fc : 0x4338ca} metalness={0.5} roughness={0.35} />
             </mesh>
-            {/* Wire deck shelf */}
-            <mesh position={[0, y + 0.018, 0]} receiveShadow>
+            <mesh position={[0, y + 0.018, 0]}>
               <boxGeometry args={[rW, 0.012, rD - 0.04]} />
-              <meshStandardMaterial
-                map={textures.metal}
-                color={isActive ? 0xc7d2fe : 0xd1d5db}
-                metalness={0.3}
-                roughness={0.5}
-                transparent
-                opacity={0.9}
-              />
+              <meshStandardMaterial color={isActive ? 0xc7d2fe : 0xd1d5db} metalness={0.3} roughness={0.5} />
             </mesh>
-            {/* Wire grid lines on shelf */}
-            {Array.from({ length: Math.floor(rW / 0.08) }, (_, wi) => (
-              <mesh
-                key={`wire-${i}-${wi}`}
-                position={[-rW / 2 + 0.04 + wi * 0.08, y + 0.02, 0]}
-              >
-                <boxGeometry args={[0.003, 0.003, rD - 0.06]} />
-                <meshBasicMaterial color={0xA1A1AA} />
-              </mesh>
-            ))}
           </group>
         );
       })}
 
-      {/* X-bracing on back */}
-      <mesh
-        position={[0, rH / 2, -rD / 2 + 0.01]}
-        rotation={[0, 0, Math.atan2(rH, rW)]}
-      >
-        <boxGeometry
-          args={[Math.sqrt(rW * rW + rH * rH) * 0.95, 0.012, 0.012]}
-        />
-        <meshStandardMaterial color={0xf97316} metalness={0.4} roughness={0.4} />
-      </mesh>
-      <mesh
-        position={[0, rH / 2, -rD / 2 + 0.01]}
-        rotation={[0, 0, -Math.atan2(rH, rW)]}
-      >
-        <boxGeometry
-          args={[Math.sqrt(rW * rW + rH * rH) * 0.95, 0.012, 0.012]}
-        />
-        <meshStandardMaterial color={0xf97316} metalness={0.4} roughness={0.4} />
-      </mesh>
-
-      {/* Inventory boxes with category-based textures */}
+      {/* Inventory boxes — ONE mesh per item, NO pallets, NO labels */}
       {rack.rack_positions.map((pos) => {
+        if (pos.status === "empty" && !pos.inventory) return null;
+
         const cw = rW / rack.columns;
         const ch = (rH - 0.03) / rack.rows;
         const cx = (pos.column_number - 1) * cw - rW / 2 + cw / 2;
         const cy = 0.03 + (pos.row_number - 1) * ch + ch * 0.35;
 
         const st =
-          pos.inventory?.status === "expired"
-            ? "expired"
-            : pos.inventory?.status === "quarantine"
-            ? "quarantine"
-            : pos.status;
+          pos.inventory?.status === "expired" ? "expired"
+          : pos.inventory?.status === "quarantine" ? "quarantine"
+          : pos.status;
 
         if (st === "empty") return null;
 
-        // Category-based texture selection
         const category = pos.inventory?.category || "";
         const texKey = CATEGORY_TEXTURE_MAP[category] || "finished";
-        const catTex = textures.categoryTextures[texKey];
         const catColor = CATEGORY_COLORS[texKey] || 0xd4a574;
 
         const isExpired = st === "expired";
@@ -984,66 +652,27 @@ function Rack3D({
         const isReserved = st === "reserved";
         const baseColor = isExpired ? 0xef4444 : isQuarantine ? 0xa855f7 : isReserved ? 0x3b82f6 : catColor;
 
-        // Use category texture for normal items, no texture for status-colored items
-        const boxTex = (isExpired || isQuarantine || isReserved) ? undefined : catTex;
+        const itemW = cw * 0.7;
+        const itemH = ch * 0.45;
+        const itemD = rD * 0.55;
 
         return (
-          <group key={pos.id} position={[cx, cy, 0]}>
-            {/* 3D Wooden pallet */}
-            <group position={[0, -ch * 0.22, 0]}>
-              {[-1, 0, 1].map((s) => (
-                <mesh key={`ps-${pos.id}-${s}`} position={[s * cw * 0.22, 0, 0]} castShadow>
-                  <boxGeometry args={[cw * 0.08, 0.02, rD * 0.5]} />
-                  <meshStandardMaterial color={0x8B6914} roughness={0.9} />
-                </mesh>
-              ))}
-              {[-1, 1].map((s) => (
-                <mesh key={`pc-${pos.id}-${s}`} position={[0, -0.015, s * rD * 0.16]}>
-                  <boxGeometry args={[cw * 0.6, 0.015, 0.03]} />
-                  <meshStandardMaterial color={0x7A5A10} roughness={0.9} />
-                </mesh>
-              ))}
-            </group>
-            <mesh
-              castShadow
-              onClick={(e) => {
-                e.stopPropagation();
-                onBoxClick?.(pos, rack.code);
-              }}
-              onPointerOver={(e) => {
-                e.stopPropagation();
-                document.body.style.cursor = 'pointer';
-              }}
-              onPointerOut={() => { document.body.style.cursor = 'auto'; }}
-            >
-              <boxGeometry args={[cw * 0.7, ch * 0.45, rD * 0.55]} />
-              <meshStandardMaterial
-                map={boxTex}
-                color={baseColor}
-                roughness={0.75}
-                metalness={isExpired ? 0.1 : 0.05}
-                emissive={isExpired ? 0xef4444 : 0x000000}
-                emissiveIntensity={isExpired ? 0.3 : 0}
-              />
-            </mesh>
-            {/* SKU label on box face */}
-            {pos.inventory?.product_sku && (
-              <Text
-                position={[0, 0, rD * 0.28 + 0.001]}
-                fontSize={0.035}
-                color={isExpired ? "#FCA5A5" : "#1F2937"}
-                anchorX="center"
-                anchorY="middle"
-                maxWidth={cw * 0.6}
-              >
-                {pos.inventory.product_sku}
-              </Text>
-            )}
-          </group>
+          <mesh
+            key={pos.id}
+            position={[cx, cy, 0]}
+            onClick={(e) => { e.stopPropagation(); onBoxClick?.(pos, rack.code); }}
+          >
+            <boxGeometry args={[itemW, itemH, itemD]} />
+            <meshStandardMaterial
+              color={baseColor}
+              roughness={0.75}
+              metalness={isExpired ? 0.1 : 0.05}
+            />
+          </mesh>
         );
       })}
 
-      {/* Label */}
+      {/* Rack code label — only one Text per rack */}
       <Text
         position={[0, rH + 0.15, 0]}
         fontSize={0.15}
@@ -1053,37 +682,8 @@ function Rack3D({
       >
         {rack.code}
       </Text>
-      {/* Rack code on floor */}
-      <Text
-        position={[0, 0.008, rD / 2 + 0.3]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.12}
-        color="#475569"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {rack.code}
-      </Text>
-      {/* Heat map tile on floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]}>
-        <planeGeometry args={[rW + 0.2, rD + 0.4]} />
-        <meshBasicMaterial
-          color={occupancy > 0.8 ? "#EF4444" : occupancy > 0.5 ? "#F59E0B" : "#22C55E"}
-          transparent
-          opacity={0.06}
-        />
-      </mesh>
-      <Text
-        position={[0, rH + 0.02, 0]}
-        fontSize={0.08}
-        color={occupancy > 0.8 ? "#D97706" : "#94A3B8"}
-        anchorX="center"
-        anchorY="middle"
-      >
-        {`${occupiedCount}/${totalSlots} · ${Math.round(occupancy * 100)}%`}
-      </Text>
 
-      {/* Tooltip */}
+      {/* Tooltip on hover */}
       {hovered && (
         <Html
           position={[0, rH + 0.45, 0]}
@@ -1095,8 +695,7 @@ function Rack3D({
               background: "white",
               borderRadius: 10,
               padding: "8px 14px",
-              boxShadow:
-                "0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)",
               whiteSpace: "nowrap",
               fontFamily: "system-ui, sans-serif",
             }}
@@ -1104,51 +703,20 @@ function Rack3D({
             <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
               Rack {rack.code}
             </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "#64748B",
-                marginTop: 3,
-                display: "flex",
-                gap: 6,
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: 40,
-                  height: 4,
-                  background: "#E2E8F0",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${occupancy * 100}%`,
-                    height: "100%",
-                    background: occupancy > 0.8 ? "#F59E0B" : "#22C55E",
-                    borderRadius: 2,
-                  }}
-                />
+            <div style={{ fontSize: 11, color: "#64748B", marginTop: 3, display: "flex", gap: 6, alignItems: "center" }}>
+              <div style={{ width: 40, height: 4, background: "#E2E8F0", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ width: `${occupancy * 100}%`, height: "100%", background: occupancy > 0.8 ? "#F59E0B" : "#22C55E", borderRadius: 2 }} />
               </div>
               <span>{Math.round(occupancy * 100)}%</span>
               <span style={{ color: "#D1D5DB" }}>·</span>
-              <span>
-                {occupiedCount}/{totalSlots}
-              </span>
+              <span>{occupiedCount}/{totalSlots}</span>
             </div>
-            {rack.aisle && (
-              <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>
-                Pasillo {rack.aisle}
-              </div>
-            )}
           </div>
         </Html>
       )}
     </group>
   );
-}
+});
 
 // ─── Camera Fly-To ──────────────────────────────────────
 
@@ -1513,13 +1081,32 @@ function SceneContent({
   const textures = useWarehouseTextures();
 
   const getRackPosition = useCallback((index: number): [number, number, number] => {
-    const racksPerAisle = Math.ceil(racks.length / 4);
-    const aisleIdx = Math.floor(index / racksPerAisle);
-    const posInAisle = index % racksPerAisle;
-    const side = posInAisle % 2 === 0 ? -1 : 1;
-    const col = Math.floor(posInAisle / 2);
-    return [-10 + col * 3.2, 0, -7 + aisleIdx * 4.5 + side * 1.2];
-  }, [racks.length]);
+    const totalRacks = racks.length;
+    
+    // Find the widest rack to prevent overlap
+    const maxRackWidth = Math.max(...racks.map(r => r.columns * 0.5));
+    const maxRackDepth = 0.5; // rD is always 0.5
+    
+    // Spacing = widest rack + aisle gap
+    const xSpacing = maxRackWidth + 0.5;  // rack width + 0.5m walkway
+    const zSpacing = maxRackDepth + 1.8;  // rack depth + 1.8m aisle for walking
+    
+    // Calculate grid dimensions — slightly more columns than rows for wide layout
+    const cols = Math.ceil(Math.sqrt(totalRacks * 1.5));
+    const rows = Math.ceil(totalRacks / cols);
+    
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    
+    const totalW = (cols - 1) * xSpacing;
+    const totalD = (rows - 1) * zSpacing;
+    
+    return [
+      -totalW / 2 + col * xSpacing,
+      0,
+      -totalD / 2 + row * zSpacing
+    ];
+  }, [racks]);
 
   return (
     <>
@@ -1539,28 +1126,16 @@ function SceneContent({
       <directionalLight position={[-8, 14, -8]} intensity={0.4} color="#E0E7FF" />
       <hemisphereLight color="#F8FAFC" groundColor="#D1D5DB" intensity={0.5} />
 
-      <WarehouseBuilding textures={textures} />
-
-      {/* Animated forklifts */}
-      {[0, 1, 2].map((i) => (
-        <AnimatedForklift
-          key={`forklift-${i}`}
-          pathIndex={i}
-          active={simulating}
-          metalTex={textures.metal}
-        />
-      ))}
+      <WarehouseBuilding textures={textures} rackCount={racks.length} maxRackWidth={Math.max(...racks.map(r => r.columns * 0.5))} />
 
       {racks.map((rack, i) => (
         <Rack3D
           key={rack.id}
           rack={rack}
-          rackIndex={i}
-          totalRacks={racks.length}
           isSelected={rack.id === selectedRackId}
           onSelect={() => onRackSelect(rack)}
-          textures={textures}
           onBoxClick={onBoxClick}
+          position={getRackPosition(i)}
         />
       ))}
       {cameraTarget && <CameraController target={cameraTarget} />}
@@ -1941,6 +1516,7 @@ export function Warehouse3DScene({
                   product_name: `Producto ${Math.floor(Math.random() * 100)}`,
                   product_sku: `SKU-${Math.floor(Math.random() * 9000 + 1000)}`,
                   category: categories[Math.floor(Math.random() * categories.length)],
+                  image_url: null,
                   quantity: Math.floor(Math.random() * 500 + 10),
                   lot_number: `LOT-${Math.floor(Math.random() * 900 + 100)}`,
                   batch_code: `BATCH-${Math.floor(Math.random() * 99 + 1)}`,
@@ -2012,7 +1588,7 @@ export function Warehouse3DScene({
       : 0;
 
   return (
-    <div ref={containerRef} className={`relative w-full overflow-hidden rounded-xl border border-slate-200 ${isFullscreen ? 'h-screen' : 'h-full'}`}>
+    <div ref={containerRef} className={`relative w-full overflow-hidden rounded-xl border border-slate-200 ${isFullscreen ? 'fixed inset-0 z-50 rounded-none border-0' : 'h-[calc(100vh-12rem)] min-h-[500px]'}`} style={{ overflow: 'hidden' }}>
       <ErrorBoundary
         fallback={
           <div className="flex h-full items-center justify-center bg-slate-50 p-8">
@@ -2032,8 +1608,7 @@ export function Warehouse3DScene({
       >
         <Canvas
           camera={{ position: [16, 10, 16], fov: 50 }}
-          shadows
-          dpr={[1, 1.5]}
+          dpr={[1, 1.25]}
           style={{ background: "#E8EDF3" }}
           onCreated={({ gl }) => {
             gl.setClearColor(0xe8edf3);
@@ -2221,99 +1796,133 @@ export function Warehouse3DScene({
         ))}
       </div>
 
-      {/* ── Tool buttons ──────────── */}
-      <div className="absolute left-3 bottom-14 flex flex-col gap-1">
+      {/* ── Tool buttons — Modern glassmorphism toolbar ──────────── */}
+      <div className="absolute left-3 bottom-14 z-20 flex flex-col gap-0.5 rounded-2xl bg-white/90 p-1.5 shadow-xl ring-1 ring-black/[0.06] backdrop-blur-xl">
+        {/* Reset View */}
+        <button
+          onClick={() => {
+            setCameraTarget(null);
+            setSelectedRackId(null);
+            setSelectedBox(null);
+            setFpsMode(false);
+          }}
+          title="Resetear vista"
+          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-800"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Resetear vista</span>
+        </button>
+
+        <div className="mx-1.5 h-px bg-slate-200" />
+
         {/* Screenshot */}
         <button
           onClick={takeScreenshot}
-          title="Exportar captura HD"
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-slate-500 shadow-md ring-1 ring-black/5 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+          title="Captura HD"
+          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-blue-50 hover:text-blue-600"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="12" cy="13" r="3" /><path d="M9 3h6" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Captura HD</span>
         </button>
         {/* Fullscreen */}
         <button
           onClick={toggleFullscreen}
           title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-slate-500 shadow-md ring-1 ring-black/5 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-blue-50 hover:text-blue-600"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             {isFullscreen ? (
               <><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></>
             ) : (
               <><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></>
             )}
           </svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{isFullscreen ? "Salir fullscreen" : "Pantalla completa"}</span>
         </button>
+
+        <div className="mx-1.5 h-px bg-slate-200" />
+
         {/* FPS Mode */}
         <button
           onClick={() => setFpsMode((p) => !p)}
-          title={fpsMode ? "Salir de primera persona (ESC)" : "Vista primera persona (WASD)"}
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            fpsMode ? "bg-indigo-500 text-white" : "bg-white/95 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+          title={fpsMode ? "Salir de primera persona" : "Vista primera persona"}
+          className={`group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+            fpsMode ? "bg-indigo-500 text-white shadow-sm shadow-indigo-200" : "text-slate-500 hover:bg-violet-50 hover:text-violet-600"
           }`}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{fpsMode ? "Salir FPS (ESC)" : "Vista FPS (WASD)"}</span>
         </button>
         {/* Distance Measure */}
         <button
           onClick={() => setDistanceMeasuring((p) => !p)}
           title={distanceMeasuring ? "Desactivar medición" : "Medir distancia"}
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            distanceMeasuring ? "bg-red-500 text-white" : "bg-white/95 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+          className={`group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+            distanceMeasuring ? "bg-red-500 text-white shadow-sm shadow-red-200" : "text-slate-500 hover:bg-red-50 hover:text-red-500"
           }`}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.3 15.3a2.4 2.4 0 010 3.4l-2.6 2.6a2.4 2.4 0 01-3.4 0L2.7 8.7a2.4 2.4 0 010-3.4l2.6-2.6a2.4 2.4 0 013.4 0z" /><path d="M14.5 12.5l2-2" /><path d="M11.5 9.5l2-2" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.3 15.3a2.4 2.4 0 010 3.4l-2.6 2.6a2.4 2.4 0 01-3.4 0L2.7 8.7a2.4 2.4 0 010-3.4l2.6-2.6a2.4 2.4 0 013.4 0z"/><path d="M14.5 12.5l2-2"/><path d="M11.5 9.5l2-2"/></svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{distanceMeasuring ? "Desactivar regla" : "Medir distancia"}</span>
         </button>
+
+        <div className="mx-1.5 h-px bg-slate-200" />
+
         {/* Search */}
         <button
           onClick={() => setSearchOpen(true)}
           title="Buscar inventario (⌘K)"
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-slate-500 shadow-md ring-1 ring-black/5 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-emerald-50 hover:text-emerald-600"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Buscar (⌘K)</span>
         </button>
         {/* Product Locator */}
         <button
           onClick={() => setLocatorOpen(true)}
-          title="Localizar producto (QR/Código)"
-          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 text-slate-500 shadow-md ring-1 ring-black/5 transition-all hover:bg-emerald-50 hover:text-emerald-600"
+          title="Localizar producto (QR)"
+          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-emerald-50 hover:text-emerald-600"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="8" height="8" rx="1" /><rect x="14" y="2" width="8" height="8" rx="1" /><rect x="2" y="14" width="8" height="8" rx="1" /><path d="M14 14h2v4h4v2" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><path d="M14 14h2v4h4v2"/></svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Localizar (QR)</span>
         </button>
-        {/* AI Recommendations */}
+        {/* AI */}
         <button
           onClick={handleLoadAI}
-          title="Recomendaciones AI (Gemini)"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            aiPanelOpen ? "bg-violet-500 text-white" : "bg-white/95 text-slate-500 hover:bg-violet-50 hover:text-violet-600"
+          title="IA Recomendaciones"
+          className={`group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+            aiPanelOpen ? "bg-violet-500 text-white shadow-sm shadow-violet-200" : "text-slate-500 hover:bg-violet-50 hover:text-violet-600"
           }`}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1.27c.35-.6 1-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1H20a7 7 0 01-7 7v1.27c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73V23a7 7 0 01-7-7H2.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1H4a7 7 0 017-7V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1.27c.35-.6 1-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1H20a7 7 0 01-7 7v1.27c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73V23a7 7 0 01-7-7H2.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1H4a7 7 0 017-7V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/></svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">IA Recomendaciones</span>
         </button>
-        {/* Expand / collapse advanced tools */}
+
+        <div className="mx-1.5 h-px bg-slate-200" />
+
+        {/* More tools */}
         <button
           onClick={() => setToolsExpanded((p) => !p)}
           title="Más herramientas"
-          className={`flex h-7 w-7 items-center justify-center rounded-lg shadow-md ring-1 ring-black/5 transition-all ${
-            toolsExpanded ? "bg-slate-700 text-white" : "bg-white/95 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className={`group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+            toolsExpanded ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
           }`}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             {toolsExpanded ? (
               <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
             ) : (
               <><circle cx="12" cy="5" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="19" r="1" fill="currentColor" /></>
             )}
           </svg>
+          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{toolsExpanded ? "Cerrar" : "Más herramientas"}</span>
         </button>
       </div>
 
       {/* ── Expandable Advanced Tools Popover ──────── */}
       {toolsExpanded && (
-        <div className="absolute left-12 bottom-14 z-30 rounded-xl bg-white/98 p-3 shadow-2xl ring-1 ring-black/10 backdrop-blur-xl" style={{ width: 220 }}>
-          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-2">Herramientas Avanzadas</p>
-          <div className="grid grid-cols-4 gap-1.5 mb-3">
+        <div className="absolute left-14 bottom-14 z-30 rounded-2xl bg-white/95 p-4 shadow-2xl ring-1 ring-black/[0.06] backdrop-blur-xl" style={{ width: 240 }}>
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Herramientas Avanzadas</p>
+          <div className="grid grid-cols-4 gap-2 mb-3">
             {[
               { key: "iot", icon: "📡", label: "IoT", action: () => { setIotPanelOpen((p) => !p); setFeatureToggles((p) => ({ ...p, iot: !p.iot })); } },
               { key: "labor", icon: "👷", label: "Personal", action: () => { setLaborPanelOpen((p) => !p); setFeatureToggles((p) => ({ ...p, operators: !p.operators })); } },
@@ -2327,16 +1936,16 @@ export function Warehouse3DScene({
               <button
                 key={tool.key}
                 onClick={tool.action}
-                className="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900"
+                className="flex flex-col items-center gap-1 rounded-xl p-2 text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 hover:shadow-sm"
               >
-                <span className="text-base">{tool.icon}</span>
-                <span className="text-[7px] font-medium">{tool.label}</span>
+                <span className="text-lg">{tool.icon}</span>
+                <span className="text-[8px] font-semibold">{tool.label}</span>
               </button>
             ))}
           </div>
-          <div className="border-t border-slate-100 pt-2">
-            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Modo de Vista</p>
-            <div className="flex flex-wrap gap-1">
+          <div className="border-t border-slate-100 pt-3">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Modo de Vista</p>
+            <div className="flex flex-wrap gap-1.5">
               {[
                 { id: "normal" as const, label: "Normal", icon: "🏭" },
                 { id: "heatmap" as const, label: "Calor", icon: "🔥" },
@@ -2348,8 +1957,8 @@ export function Warehouse3DScene({
                 <button
                   key={mode.id}
                   onClick={() => setViewMode(mode.id)}
-                  className={`flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold transition-all ${
-                    viewMode === mode.id ? "bg-indigo-500 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-all ${
+                    viewMode === mode.id ? "bg-indigo-500 text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
                   }`}
                 >
                   {mode.icon} {mode.label}
@@ -2357,9 +1966,9 @@ export function Warehouse3DScene({
               ))}
             </div>
           </div>
-          <div className="border-t border-slate-100 pt-2 mt-2">
-            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Capas 3D</p>
-            <div className="flex flex-wrap gap-1">
+          <div className="border-t border-slate-100 pt-3 mt-3">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Capas 3D</p>
+            <div className="flex flex-wrap gap-1.5">
               {[
                 { key: "labels", label: "Labels AR", icon: "🏷" },
                 { key: "dock", label: "Muelle", icon: "🚚" },
@@ -2369,8 +1978,8 @@ export function Warehouse3DScene({
                 <button
                   key={layer.key}
                   onClick={() => handleToggleFeature(layer.key)}
-                  className={`flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold transition-all ${
-                    featureToggles[layer.key] ? "bg-indigo-500 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold transition-all ${
+                    featureToggles[layer.key] ? "bg-indigo-500 text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
                   }`}
                 >
                   {layer.icon} {layer.label}

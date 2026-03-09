@@ -126,11 +126,11 @@ export function UsersContent({ users, departments, roles }: UsersContentProps) {
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">
-            Equipo ({filteredUsers.length})
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">
+            Usuarios
           </h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Gestiona los miembros de Grixi Industrial S.A.
+          <p className="text-[11px] text-[var(--text-secondary)]">
+            {filteredUsers.length} miembros de GRIXI Industrial S.A.
           </p>
         </div>
         <button className="flex items-center gap-2 rounded-full bg-[var(--brand)] px-5 py-2.5 text-sm font-medium text-white transition-all hover:shadow-lg hover:shadow-[var(--brand)]/20 active:scale-[0.98]">
