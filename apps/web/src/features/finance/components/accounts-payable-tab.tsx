@@ -113,7 +113,9 @@ export function AccountsPayableTab({
   const totalInvoiced = apInvoices.reduce((s, t) => s + t.amount_usd, 0);
   const totalPaid = apPayments.reduce((s, t) => s + t.amount_usd, 0);
   const outstanding = totalInvoiced - totalPaid;
-  const dpo = totalInvoiced > 0 ? Math.round((outstanding / totalInvoiced) * 365) : 0;
+  const dpo = totalInvoiced > 0
+    ? Math.min(365, Math.max(0, Math.round((Math.max(0, outstanding) / totalInvoiced) * 365)))
+    : 0;
 
   const now = new Date();
 

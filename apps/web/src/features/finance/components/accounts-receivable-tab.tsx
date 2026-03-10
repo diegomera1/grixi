@@ -189,8 +189,10 @@ export function AccountsReceivableTab({
     [arInvoices]
   );
 
-  // DSO calculation
-  const dso = totalInvoiced > 0 ? Math.round((outstanding / totalInvoiced) * 365) : 0;
+  // DSO calculation — clamped to realistic range
+  const dso = totalInvoiced > 0
+    ? Math.min(365, Math.max(0, Math.round((Math.max(0, outstanding) / totalInvoiced) * 365)))
+    : 0;
 
   const agingBars = [
     { label: "Al día", amount: aging.current, color: "#10B981" },
