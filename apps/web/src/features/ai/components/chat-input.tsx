@@ -124,14 +124,14 @@ export function ChatInput({
       onModulesChange(["general"]);
       return;
     }
-    let next = modules.filter((m) => m !== "general"); // remove general if present
+    let next: AiModule[] = modules.filter((m) => m !== "general");
     if (next.includes(mod)) {
       next = next.filter((m) => m !== mod);
     } else {
       next = [...next, mod];
     }
     // If nothing selected, fall back to general
-    if (next.length === 0) next = ["general"] as AiModule[];
+    if (next.length === 0) next = ["general"];
     onModulesChange(next);
   };
 
