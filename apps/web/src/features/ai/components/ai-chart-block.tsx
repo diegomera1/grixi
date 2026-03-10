@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   ResponsiveContainer,
   BarChart,
@@ -18,7 +19,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Maximize2, Minimize2, X } from "lucide-react";
 
 // Chart configuration type the AI generates
 export type ChartConfig = {
@@ -51,9 +52,116 @@ const tooltipStyle = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
 };
 
+const fullscreenTooltipStyle = {
+  ...tooltipStyle,
+  fontSize: "13px",
+  padding: "10px 16px",
+};
+
+/** Renders the chart content — shared between inline and fullscreen */
+function ChartContent({
+  type,
+  data,
+  resolvedX,
+  resolvedKeys,
+  chartColors,
+  fullscreen = false,
+}: {
+  type: ChartConfig["type"];
+  data: ChartConfig["data"];
+  resolvedX: string;
+  resolvedKeys: { key: string; label: string; color: string }[];
+  chartColors: string[];
+  fullscreen?: boolean;
+}) {
+  const fontSize = fullscreen ? 12 : 10;
+  const legendFontSize = fullscreen ? "13px" : "11px";
+  const ts = fullscreen ? fullscreenTooltipStyle : tooltipStyle;
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      {type === "bar" ? (
+        <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+          <XAxis dataKey={resolvedX} tick={{ fontSize, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+          <YAxis tick={{ fontSize, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+          <Tooltip contentStyle={ts} />
+          <Legend wrapperStyle={{ fontSize: legendFontSize }} />
+          {resolvedKeys.map((k) => (
+            <Bar key={k.key} dataKey={k.key} name={k.label} fill={k.color} radius={[4, 4, 0, 0]} />
+          ))}
+        </BarChart>
+      ) : type === "line" ? (
+        <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+          <XAxis dataKey={resolvedX} tick={{ fontSize, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+          <YAxis tick={{ fontSize, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+          <Tooltip contentStyle={ts} />
+          <Legend wrapperStyle={{ fontSize: legendFontSize }} />
+          {resolvedKeys.map((k) => (
+            <Line key={k.key} type="monotone" dataKey={k.key} name={k.label} stroke={k.color} strokeWidth={2} dot={{ r: 3, fill: k.color }} activeDot={{ r: 5 }} />
+          ))}
+        </LineChart>
+      ) : type === "area" ? (
+        <AreaChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+          <XAxis dataKey={resolvedX} tick={{ fontSize, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+          <YAxis tick={{ fontSize, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+          <Tooltip contentStyle={ts} />
+          <Legend wrapperStyle={{ fontSize: legendFontSize }} />
+          {resolvedKeys.map((k) => (
+            <Area key={k.key} type="monotone" dataKey={k.key} name={k.label} stroke={k.color} fill={k.color} fillOpacity={0.15} strokeWidth={2} />
+          ))}
+        </AreaChart>
+      ) : (
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey={resolvedKeys[0]?.key || "value"}
+            nameKey={resolvedX}
+            cx="50%"
+            cy="50%"
+            outerRadius={fullscreen ? 180 : 80}
+            innerRadius={fullscreen ? 80 : 40}
+            paddingAngle={2}
+            label={({ name, value }) => `${name}: ${value}`}
+          >
+            {data.map((_, i) => (
+              <Cell key={i} fill={chartColors[i % chartColors.length]} />
+            ))}
+          </Pie>
+          <Tooltip contentStyle={ts} />
+          <Legend wrapperStyle={{ fontSize: legendFontSize }} />
+        </PieChart>
+      )}
+    </ResponsiveContainer>
+  );
+}
+
 export function AiChartBlock({ config }: { config: ChartConfig }) {
   const { type, title, description, data, xKey, yKeys, colors } = config;
   const chartColors = colors || DEFAULT_COLORS;
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Close fullscreen on Escape
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isFullscreen]);
+
+  // Lock body scroll when fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isFullscreen]);
 
   // Auto-detect keys if not provided
   const resolvedKeys = useMemo(() => {
@@ -73,125 +181,84 @@ export function AiChartBlock({ config }: { config: ChartConfig }) {
   const resolvedX = xKey || (data.length > 0 ? Object.keys(data[0])[0] : "name");
 
   return (
-    <div className="my-3 rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] p-4">
-      {/* Header */}
-      <div className="mb-3 flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand)]/10">
-          <BarChart3 size={14} className="text-[var(--brand)]" />
+    <>
+      <div className="my-3 rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] p-4">
+        {/* Header */}
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand)]/10">
+              <BarChart3 size={14} className="text-[var(--brand)]" />
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-[var(--text-primary)]">{title}</h4>
+              {description && (
+                <p className="text-[10px] text-[var(--text-muted)]">{description}</p>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setIsFullscreen(true)}
+            className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+            title="Pantalla completa"
+          >
+            <Maximize2 size={14} />
+          </button>
         </div>
-        <div>
-          <h4 className="text-xs font-semibold text-[var(--text-primary)]">{title}</h4>
-          {description && (
-            <p className="text-[10px] text-[var(--text-muted)]">{description}</p>
-          )}
+
+        {/* Inline Chart */}
+        <div className="h-64 w-full">
+          <ChartContent
+            type={type}
+            data={data}
+            resolvedX={resolvedX}
+            resolvedKeys={resolvedKeys}
+            chartColors={chartColors}
+          />
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {type === "bar" ? (
-            <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
-              <XAxis
-                dataKey={resolvedX}
-                tick={{ fontSize: 10, fill: "var(--text-muted)" }}
-                axisLine={{ stroke: "var(--border)" }}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: "var(--text-muted)" }}
-                axisLine={{ stroke: "var(--border)" }}
-              />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: "11px" }} />
-              {resolvedKeys.map((k) => (
-                <Bar
-                  key={k.key}
-                  dataKey={k.key}
-                  name={k.label}
-                  fill={k.color}
-                  radius={[4, 4, 0, 0]}
-                />
-              ))}
-            </BarChart>
-          ) : type === "line" ? (
-            <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
-              <XAxis
-                dataKey={resolvedX}
-                tick={{ fontSize: 10, fill: "var(--text-muted)" }}
-                axisLine={{ stroke: "var(--border)" }}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: "var(--text-muted)" }}
-                axisLine={{ stroke: "var(--border)" }}
-              />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: "11px" }} />
-              {resolvedKeys.map((k) => (
-                <Line
-                  key={k.key}
-                  type="monotone"
-                  dataKey={k.key}
-                  name={k.label}
-                  stroke={k.color}
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: k.color }}
-                  activeDot={{ r: 5 }}
-                />
-              ))}
-            </LineChart>
-          ) : type === "area" ? (
-            <AreaChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
-              <XAxis
-                dataKey={resolvedX}
-                tick={{ fontSize: 10, fill: "var(--text-muted)" }}
-                axisLine={{ stroke: "var(--border)" }}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: "var(--text-muted)" }}
-                axisLine={{ stroke: "var(--border)" }}
-              />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: "11px" }} />
-              {resolvedKeys.map((k) => (
-                <Area
-                  key={k.key}
-                  type="monotone"
-                  dataKey={k.key}
-                  name={k.label}
-                  stroke={k.color}
-                  fill={k.color}
-                  fillOpacity={0.15}
-                  strokeWidth={2}
-                />
-              ))}
-            </AreaChart>
-          ) : (
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey={resolvedKeys[0]?.key || "value"}
-                nameKey={resolvedX}
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                innerRadius={40}
-                paddingAngle={2}
-                label={({ name, value }) => `${name}: ${value}`}
+      {/* Fullscreen modal overlay via portal */}
+      {isFullscreen && typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex flex-col bg-[var(--bg-primary)]">
+            {/* Fullscreen header */}
+            <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--brand)]/10">
+                  <BarChart3 size={18} className="text-[var(--brand)]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">{title}</h3>
+                  {description && (
+                    <p className="text-xs text-[var(--text-muted)]">{description}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
               >
-                {data.map((_, i) => (
-                  <Cell key={i} fill={chartColors[i % chartColors.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: "11px" }} />
-            </PieChart>
-          )}
-        </ResponsiveContainer>
-      </div>
-    </div>
+                <Minimize2 size={14} />
+                Salir
+              </button>
+            </div>
+
+            {/* Fullscreen chart */}
+            <div className="flex-1 p-6">
+              <ChartContent
+                type={type}
+                data={data}
+                resolvedX={resolvedX}
+                resolvedKeys={resolvedKeys}
+                chartColors={chartColors}
+                fullscreen
+              />
+            </div>
+          </div>,
+          document.body
+        )
+      }
+    </>
   );
 }
 

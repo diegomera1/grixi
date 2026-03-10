@@ -131,7 +131,7 @@ export function ChatInput({
       next = [...next, mod];
     }
     // If nothing selected, fall back to general
-    if (next.length === 0) next = ["general"];
+    if (next.length === 0) next = ["general"] as AiModule[];
     onModulesChange(next);
   };
 
