@@ -41,6 +41,21 @@ export async function GET(request: NextRequest) {
     // Sync profile data from Google + log the login event
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      // ── EMAIL ALLOWLIST CHECK ──────────────────────
+      // Verify the user's email is in the allowed_emails table
+      const { data: allowedEntry } = await supabase
+        .from("allowed_emails")
+        .select("id")
+        .eq("email", user.email?.toLowerCase() || "")
+        .maybeSingle();
+
+      if (!allowedEntry) {
+        // Email not in allowlist — revoke the session and redirect
+        console.warn(`Unauthorized login attempt: ${user.email}`);
+        await supabase.auth.signOut();
+        return NextResponse.redirect(`${origin}/login?error=unauthorized`);
+      }
+
       // Sync Google avatar and full name to profiles table
       const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
       const googleName = user.user_metadata?.full_name || user.user_metadata?.name;

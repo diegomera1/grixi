@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   Users,
   Zap,
+  Lock,
 } from "lucide-react";
 import {
   BarChart,
@@ -38,6 +39,7 @@ import {
   Area,
 } from "recharts";
 import { cn } from "@/lib/utils/cn";
+import { AllowlistTab } from "./allowlist-tab";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -84,6 +86,7 @@ const tabs = [
   { id: "overview", label: "Resumen", icon: Activity, count: null },
   { id: "audit", label: "Auditoría", icon: Shield, count: null },
   { id: "sessions", label: "Sesiones Activas", icon: Monitor, count: null },
+  { id: "access", label: "Acceso", icon: Lock, count: null },
   { id: "insights", label: "AI Insights", icon: Sparkles, count: null },
 ] as const;
 
@@ -806,6 +809,16 @@ export function AdminContent({
         )}
 
         {/* ── Tab: AI Insights ─────────────── */}
+        {activeTab === "access" && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AllowlistTab />
+          </motion.div>
+        )}
+
         {activeTab === "insights" && (
           <motion.div
             key="insights"

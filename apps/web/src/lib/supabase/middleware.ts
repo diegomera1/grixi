@@ -36,27 +36,28 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session if it exists
-  await supabase.auth.getUser();
+  // Refresh session and get user
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // For demo mode: skip auth protection — all routes are public
-  // When Google OAuth is configured, uncomment the protection logic below:
-  
-  // const { data: { user } } = await supabase.auth.getUser();
-  // const protectedPaths = ["/dashboard", "/usuarios", "/administracion", "/almacenes"];
-  // const isProtectedRoute = protectedPaths.some((path) =>
-  //   request.nextUrl.pathname.startsWith(path)
-  // );
-  // if (isProtectedRoute && !user) {
-  //   const url = request.nextUrl.clone();
-  //   url.pathname = "/login";
-  //   return NextResponse.redirect(url);
-  // }
-  // if (request.nextUrl.pathname === "/login" && user) {
-  //   const url = request.nextUrl.clone();
-  //   url.pathname = "/dashboard";
-  //   return NextResponse.redirect(url);
-  // }
+  // ── Route protection ──────────────────────────────
+  const protectedPaths = ["/dashboard", "/usuarios", "/administracion", "/almacenes", "/finanzas", "/ai"];
+  const isProtectedRoute = protectedPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  // Redirect unauthenticated users to login
+  if (isProtectedRoute && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users away from login page
+  if (request.nextUrl.pathname === "/login" && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }
