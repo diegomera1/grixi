@@ -162,7 +162,7 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
               )}
             >
               <Grid3x3 size={14} />
-              Vista 2D
+              Plano 2D
             </button>
             <button
               onClick={() => setViewMode("3d")}
@@ -174,7 +174,7 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
               )}
             >
               <Cuboid size={14} />
-              Vista 3D
+              Ver 3D
             </button>
           </div>
         </div>
@@ -230,60 +230,95 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
 
                   {/* Racks grid */}
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                    {racks.map((rack) => (
-                      <motion.button
-                        key={rack.id}
-                        onClick={() => setSelectedRack(rack)}
-                        className={cn(
-                          "group rounded-xl border p-3 text-left transition-all",
-                          selectedRack?.id === rack.id
-                            ? "border-[var(--brand)]/30 bg-[var(--brand)]/5 shadow-md ring-1 ring-[var(--brand)]/10"
-                            : "border-[var(--border)] bg-[var(--bg-primary)] hover:border-[var(--brand)]/15 hover:shadow-sm"
-                        )}
-                      >
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold text-[var(--text-primary)]">
-                            {rack.code}
-                          </span>
-                          {rack.aisle && (
-                            <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--text-muted)]">
-                              Pasillo {rack.aisle}
-                            </span>
+                    {racks.map((rack) => {
+                      const occupied = rack.rack_positions.filter((p) => p.status === "occupied").length;
+                      const total = rack.rows * rack.columns;
+                      const occupancy = total > 0 ? Math.round((occupied / total) * 100) : 0;
+                      const productsInRack = rack.rack_positions
+                        .filter((p) => p.inventory)
+                        .map((p) => p.inventory!.product_name);
+                      const uniqueProducts = [...new Set(productsInRack)];
+
+                      return (
+                        <motion.button
+                          key={rack.id}
+                          onClick={() => setSelectedRack(rack)}
+                          className={cn(
+                            "group relative rounded-xl border p-3 text-left transition-all",
+                            selectedRack?.id === rack.id
+                              ? "border-[var(--brand)]/30 bg-[var(--brand)]/5 shadow-md ring-1 ring-[var(--brand)]/10"
+                              : "border-[var(--border)] bg-[var(--bg-primary)] hover:border-[var(--brand)]/15 hover:shadow-sm"
                           )}
-                        </div>
-
-                        {/* Mini grid of positions */}
-                        <div
-                          className="grid gap-[2px]"
-                          style={{
-                            gridTemplateColumns: `repeat(${rack.columns}, 1fr)`,
-                          }}
                         >
-                          {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
-                            const row = Math.floor(idx / rack.columns) + 1;
-                            const col = (idx % rack.columns) + 1;
-                            const pos = rack.rack_positions.find(
-                              (p) => p.row_number === row && p.column_number === col
-                            );
-                            const status = pos ? getPositionStatus(pos) : "empty";
-                            const cfg = statusConfig[status] || statusConfig.empty;
-                            return (
-                              <div
-                                key={idx}
-                                className="aspect-square rounded-[3px] transition-all group-hover:scale-105"
-                                style={{ backgroundColor: cfg.color }}
-                                title={pos?.inventory?.product_name || status}
-                              />
-                            );
-                          })}
-                        </div>
+                          <div className="mb-2 flex items-center justify-between">
+                            <span className="font-mono text-xs font-bold text-[var(--text-primary)]">
+                              {rack.code}
+                            </span>
+                            {rack.aisle && (
+                              <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--text-muted)]">
+                                Pasillo {rack.aisle}
+                              </span>
+                            )}
+                          </div>
 
-                        <p className="mt-2 text-[10px] text-[var(--text-muted)]">
-                          {rack.rack_positions.filter((p) => p.status === "occupied").length}/
-                          {rack.rows * rack.columns} ocupadas
-                        </p>
-                      </motion.button>
-                    ))}
+                          {/* Mini grid of positions — NO scale animation */}
+                          <div
+                            className="grid gap-[2px]"
+                            style={{
+                              gridTemplateColumns: `repeat(${rack.columns}, 1fr)`,
+                            }}
+                          >
+                            {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
+                              const row = Math.floor(idx / rack.columns) + 1;
+                              const col = (idx % rack.columns) + 1;
+                              const pos = rack.rack_positions.find(
+                                (p) => p.row_number === row && p.column_number === col
+                              );
+                              const status = pos ? getPositionStatus(pos) : "empty";
+                              const cfg = statusConfig[status] || statusConfig.empty;
+                              return (
+                                <div
+                                  key={idx}
+                                  className="aspect-square rounded-[3px]"
+                                  style={{ backgroundColor: cfg.color }}
+                                />
+                              );
+                            })}
+                          </div>
+
+                          <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+                            {occupied}/{total} ocupadas · {occupancy}%
+                          </p>
+
+                          {/* Hover tooltip with rack summary */}
+                          <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-56 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-xl group-hover:block">
+                            <p className="mb-1 font-mono text-xs font-bold text-[var(--text-primary)]">
+                              {rack.code}
+                            </p>
+                            <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-muted)]">
+                              <div
+                                className="h-full rounded-full bg-[var(--brand)] transition-all"
+                                style={{ width: `${occupancy}%` }}
+                              />
+                            </div>
+                            <div className="space-y-1 text-[10px] text-[var(--text-muted)]">
+                              <p>{occupied} de {total} posiciones ocupadas ({occupancy}%)</p>
+                              <p>{uniqueProducts.length} producto{uniqueProducts.length !== 1 ? "s" : ""} distinto{uniqueProducts.length !== 1 ? "s" : ""}</p>
+                              {uniqueProducts.length > 0 && (
+                                <div className="mt-1 space-y-0.5">
+                                  {uniqueProducts.slice(0, 3).map((name) => (
+                                    <p key={name} className="truncate text-[var(--text-secondary)]">• {name}</p>
+                                  ))}
+                                  {uniqueProducts.length > 3 && (
+                                    <p className="text-[var(--text-muted)]">+{uniqueProducts.length - 3} más</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 </motion.div>
               ) : (

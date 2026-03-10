@@ -38,19 +38,26 @@ export default async function WarehouseDetailPage({
     .eq("warehouse_id", id)
     .order("code");
 
-  // Fetch inventory for this warehouse's positions
+  // Fetch inventory for this warehouse's positions (batched to avoid URL length limits)
   const positionIds = (racks || []).flatMap((r) =>
     (r.rack_positions || []).map((p: { id: string }) => p.id)
   );
 
-  const { data: inventory } = await supabase
-    .from("inventory")
-    .select("*, products(sku, name, category, unit_of_measure, image_url)")
-    .in("position_id", positionIds.length > 0 ? positionIds : ["00000000-0000-0000-0000-000000000000"]);
+  const BATCH_SIZE = 500;
+  const inventoryResults = [];
+  for (let i = 0; i < positionIds.length; i += BATCH_SIZE) {
+    const batch = positionIds.slice(i, i + BATCH_SIZE);
+    const { data } = await supabase
+      .from("inventory")
+      .select("*, products(sku, name, category, unit_of_measure, image_url)")
+      .in("position_id", batch);
+    if (data) inventoryResults.push(...data);
+  }
+  const inventory = inventoryResults;
 
   // Build position map with inventory data
   const inventoryMap = new Map(
-    (inventory || []).map((inv) => [inv.position_id, inv])
+    inventory.map((inv) => [inv.position_id, inv])
   );
 
   // Enrich racks with inventory data
