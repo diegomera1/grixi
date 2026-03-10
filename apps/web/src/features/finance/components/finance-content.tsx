@@ -1036,7 +1036,7 @@ function TransactionDrawer({
                 {aiLoading ? (
                   <>
                     <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
-                    Analizando con Gemini...
+                    Analizando con IA...
                   </>
                 ) : (
                   <>

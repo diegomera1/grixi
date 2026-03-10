@@ -367,10 +367,10 @@ export function Hero() {
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <span className="text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-            Supabase · OrioleDB
+            Base de datos en tiempo real
           </span>
           <span className="text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-            Gemini AI
+            Inteligencia Artificial
           </span>
         </div>
       </div>

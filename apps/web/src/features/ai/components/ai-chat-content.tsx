@@ -300,7 +300,7 @@ export function AiChatContent({
         role: "assistant",
         content: "",
         attachments: [],
-        model_used: "gemini-3.1-flash-lite-preview",
+        model_used: "default",
         tokens_used: 0,
         created_at: new Date().toISOString(),
       };

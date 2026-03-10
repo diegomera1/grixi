@@ -2087,7 +2087,7 @@ export function Warehouse3DScene({
           {aiLoading ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-[var(--text-muted)]">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-              <p className="text-xs">Gemini está analizando {racks.length} racks...</p>
+              <p className="text-xs">La IA está analizando {racks.length} racks...</p>
             </div>
           ) : aiRecs ? (
             <div className="flex-1 overflow-y-auto">

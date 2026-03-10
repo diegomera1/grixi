@@ -23,7 +23,7 @@ const showcaseItems: ShowcaseItem[] = [
     title: "Visibilidad total.",
     titleAccent: "Datos en tiempo real.",
     description:
-      "KPIs, gráficos interactivos y métricas de negocio en un solo dashboard. Conecta con SAP, ERPs y cualquier fuente de datos. Cada número se actualiza al instante con Supabase Realtime.",
+      "KPIs, gráficos interactivos y métricas de negocio en un solo dashboard. Conecta con SAP, ERPs y cualquier fuente de datos. Cada número se actualiza al instante en tiempo real.",
     image: "/brand/preview-dashboard.png",
     imageAlt: "Dashboard principal de GRIXI con KPIs y gráficos",
   },
@@ -32,17 +32,17 @@ const showcaseItems: ShowcaseItem[] = [
     title: "Tu almacén,",
     titleAccent: "en tres dimensiones.",
     description:
-      "Visualización interactiva de racks, posiciones e inventario con Three.js. Colores por estado, zoom inteligente, selección de posiciones. Todo conectado a tu sistema de origen en tiempo real.",
+      "Visualización interactiva de racks, posiciones e inventario en 3D. Colores por estado, zoom inteligente, selección de posiciones. Todo conectado a tu sistema de origen en tiempo real.",
     image: "/brand/preview-warehouse.png",
     imageAlt: "Visualización 3D de almacén con racks codificados por color",
     reverse: true,
   },
   {
-    label: "Gemini AI",
+    label: "Inteligencia Artificial",
     title: "Pregunta cualquier cosa.",
     titleAccent: "La IA responde.",
     description:
-      "Chat con Gemini 3.1 integrado con function calling. Pregunta por un producto y te muestra su ubicación. Analiza tendencias, detecta anomalías y sugiere acciones — todo en lenguaje natural.",
+      "Chat con IA integrado con function calling. Pregunta por un producto y te muestra su ubicación. Analiza tendencias, detecta anomalías y sugiere acciones — todo en lenguaje natural.",
     image: "/brand/preview-ai-chat.png",
     imageAlt: "Chat de IA de GRIXI con respuesta de inventario",
   },

@@ -7,7 +7,7 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
+    return Response.json({ error: "AI_API_KEY not configured" }, { status: 500 });
   }
 
   const supabase = await createClient();
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    // Use Nano Banana 2 (Gemini 3.1 Flash Image) for image generation
+    // Use AI image generation model
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-image-preview",
       contents: prompt,

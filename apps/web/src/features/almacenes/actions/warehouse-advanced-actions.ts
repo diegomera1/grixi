@@ -40,7 +40,7 @@ export async function getAllWarehouses() {
 }
 
 export async function getSlottingRecommendations(warehouseId: string) {
-  // This could call Gemini for AI-powered recommendations
+  // This could call AI for AI-powered recommendations
   return {
     suggestions: [],
     summary: "Optimización completada",

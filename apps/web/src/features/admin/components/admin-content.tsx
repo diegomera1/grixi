@@ -822,7 +822,7 @@ export function AdminContent({
               <div>
                 <h3 className="text-base font-semibold text-[var(--text-primary)]">Análisis Inteligente</h3>
                 <p className="text-xs text-[var(--text-secondary)]">
-                  Insights generados con Gemini 3.1 Flash Lite basados en los últimos 14 días de actividad
+                  Insights generados con IA basados en los últimos 14 días de actividad
                 </p>
               </div>
             </div>

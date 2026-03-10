@@ -164,7 +164,7 @@ async function generateTitle(firstMessage: string): Promise<string> {
   }
 }
 
-/** Send a chat message to Gemini and persist both user + assistant messages */
+/** Send a chat message to AI and persist both user + assistant messages */
 export async function sendChatMessage(
   conversationId: string,
   userMessage: string,
@@ -174,7 +174,7 @@ export async function sendChatMessage(
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return { response: "", error: "GEMINI_API_KEY no está configurada." };
+    return { response: "", error: "La API key de IA no está configurada." };
   }
 
   const supabase = await createClient();
@@ -229,7 +229,7 @@ export async function sendChatMessage(
       ? `${systemPrompt}\n\nHistorial de conversación reciente:\n${contextParts}\n\nUsuario: ${userMessage}${attachmentContext}\n\nAsistente:`
       : `${systemPrompt}\n\nUsuario: ${userMessage}${attachmentContext}\n\nAsistente:`;
 
-    // 5. Call Gemini
+    // 5. Call AI
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-lite-preview",
@@ -244,7 +244,7 @@ export async function sendChatMessage(
       role: "assistant",
       content: text,
       attachments: "[]",
-      model_used: "gemini-3.1-flash-lite-preview",
+      model_used: "default",
       tokens_used: 0,
     });
 
@@ -272,12 +272,12 @@ export async function sendChatMessage(
 
     return { response: text };
   } catch (error: unknown) {
-    console.error("Gemini AI error:", error);
+    console.error("AI service error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Error desconocido";
     return {
       response: "",
-      error: `Error al comunicarse con Gemini: ${errorMessage}`,
+      error: `Error al comunicarse con el servicio de IA: ${errorMessage}`,
     };
   }
 }

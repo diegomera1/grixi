@@ -6,16 +6,15 @@ Plataforma SaaS enterprise multi-tenant para empresas medianas y grandes que nec
 
 ## Stack
 
-| Tecnología     | Uso                                        |
-| -------------- | ------------------------------------------ |
-| Next.js 16     | App Router + React Server Components       |
-| React 19       | UI Runtime                                 |
-| TypeScript 5   | Tipo seguro en strict mode                 |
-| Tailwind CSS 4 | Estilos + Design Tokens                    |
-| Supabase       | PostgreSQL 17.6 + OrioleDB, Auth, Realtime |
-| Three.js       | Visualización 3D de almacenes              |
-| Gemini AI      | Inteligencia artificial en cada módulo     |
-| Vercel         | Deploy + Edge Runtime                      |
+| Capa       | Descripción                                        |
+| ---------- | -------------------------------------------------- |
+| Framework  | App Router + Server Components (última generación) |
+| UI Runtime | Componentes reactivos con strict typing            |
+| Estilos    | Design Tokens + utility-first CSS                  |
+| Backend    | Base de datos relacional + Auth + Realtime         |
+| 3D         | Visualización 3D interactiva de almacenes          |
+| AI         | Inteligencia artificial integrada en cada módulo   |
+| Deploy     | Edge Runtime + CI/CD automático                    |
 
 ## Módulos
 
@@ -23,7 +22,7 @@ Plataforma SaaS enterprise multi-tenant para empresas medianas y grandes que nec
 - 👤 **Usuarios** — Registro, roles dinámicos, permisos granulares
 - 🔍 **Administración** — Auditoría completa, tracking de clicks, cierre remoto
 - 🏭 **Almacenes** — Vista 2D/3D de racks, inventario en tiempo real
-- 🤖 **AI Chat** — Gemini integrado con function calling
+- 🤖 **AI Chat** — IA integrada con function calling
 
 ## Documentación
 

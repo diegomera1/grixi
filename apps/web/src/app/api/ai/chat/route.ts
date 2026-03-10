@@ -160,7 +160,7 @@ async function generateTitle(firstMessage: string): Promise<string> {
 export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
+    return Response.json({ error: "AI_API_KEY not configured" }, { status: 500 });
   }
 
   const supabase = await createClient();
@@ -238,7 +238,7 @@ export async function POST(req: Request) {
     ? `${systemPrompt}\n\nHistorial de conversación reciente:\n${contextParts}\n\nUsuario: ${message}${attachmentContext}\n\nAsistente:`
     : `${systemPrompt}\n\nUsuario: ${message}${attachmentContext}\n\nAsistente:`;
 
-  // 5. Stream from Gemini
+  // 5. Stream from AI
   const ai = new GoogleGenAI({ apiKey });
 
   const encoder = new TextEncoder();
@@ -275,7 +275,7 @@ export async function POST(req: Request) {
           role: "assistant",
           content: fullResponse,
           attachments: "[]",
-          model_used: "gemini-3.1-flash-lite-preview",
+          model_used: "default",
           tokens_used: 0,
         });
 

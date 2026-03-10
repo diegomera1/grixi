@@ -156,7 +156,7 @@ export function GrixiAiLogo({
             </span>
           </span>
           <span className="text-[10px] font-medium text-[var(--text-muted)]">
-            Powered by Gemini
+            Asistente Inteligente
           </span>
         </motion.div>
       )}

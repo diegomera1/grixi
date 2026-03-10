@@ -49,7 +49,7 @@ export async function analyzeTransaction(
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return { analysis: "", error: "GEMINI_API_KEY no configurada." };
+    return { analysis: "", error: "API key de IA no configurada." };
   }
 
   try {

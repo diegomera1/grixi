@@ -93,7 +93,7 @@ export function Statement() {
               GRIXI es la plataforma enterprise que se conecta con SAP, ERPs,
               CRMs, IoT y cualquier fuente de datos que necesites. Unifica toda
               la información de tu empresa en un solo lugar, con visualización
-              3D, auditoría inteligente, y predicciones con Gemini AI. Diseñada
+              3D, auditoría inteligente, y predicciones con IA avanzada. Diseñada
               para empresas que necesitan control total sobre su operación.
             </p>
           </div>

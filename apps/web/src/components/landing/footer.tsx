@@ -93,7 +93,7 @@ export function Footer() {
             © {new Date().getFullYear()} GRIXI
           </span>
           <span className="text-[11px] text-[var(--text-muted)]">
-            Supabase · Next.js · Gemini AI
+            Tecnología de última generación
           </span>
         </div>
       </div>

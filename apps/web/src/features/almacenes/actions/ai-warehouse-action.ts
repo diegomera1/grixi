@@ -38,12 +38,12 @@ export async function getAIWarehouseRecommendations(
         {
           type: "alerta_vencimiento",
           title: "API Key no configurada",
-          description: "Configura GEMINI_API_KEY en .env.local para habilitar recomendaciones AI.",
+          description: "Configura la API key de IA en .env.local para habilitar recomendaciones AI.",
           impactLevel: "alto",
           rackCode: "—",
         },
       ],
-      summary: "No se pudo conectar con Gemini. Configura la API key.",
+      summary: "No se pudo conectar con el servicio de IA. Configura la API key.",
     };
   }
 
@@ -88,16 +88,16 @@ REGLAS:
     // Extract JSON from response (handle possible markdown wrapping)
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return { recommendations: [], summary: "No se pudo parsear la respuesta de Gemini." };
+      return { recommendations: [], summary: "No se pudo parsear la respuesta de IA." };
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as { summary: string; recommendations: Recommendation[] };
     return parsed;
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("AI service error:", error);
     return {
       recommendations: [],
-      summary: `Error al consultar Gemini: ${error instanceof Error ? error.message : "Error desconocido"}`,
+      summary: `Error al consultar el servicio de IA: ${error instanceof Error ? error.message : "Error desconocido"}`,
     };
   }
 }
