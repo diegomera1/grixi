@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DashboardContent } from "@/features/dashboard/components/dashboard-content";
+import { HIDDEN_USER_IDS } from "@/config/hidden-users";
 
 export const metadata = {
   title: "Dashboard",
@@ -127,7 +128,9 @@ export default async function DashboardPage() {
     ? await supabase.from("profiles").select("id, full_name, avatar_url").in("id", userIds)
     : { data: [] };
   const profileMap = new Map((userProfiles || []).map((p) => [p.id, p]));
-  const enrichedAudit = (recentAudit || []).map((log) => ({
+  const enrichedAudit = (recentAudit || [])
+    .filter((log) => !HIDDEN_USER_IDS.includes(log.user_id))
+    .map((log) => ({
     ...log,
     user: profileMap.get(log.user_id) || { full_name: "Sistema", avatar_url: null },
   }));

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminContent } from "@/features/admin/components/admin-content";
+import { HIDDEN_USER_IDS } from "@/config/hidden-users";
 
 export const metadata = {
   title: "Administración",
@@ -24,7 +25,9 @@ export default async function AdminPage() {
 
   const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
-  const enrichedLogs = (auditLogs || []).map((log) => ({
+  const enrichedLogs = (auditLogs || [])
+    .filter((log) => !HIDDEN_USER_IDS.includes(log.user_id))
+    .map((log) => ({
     ...log,
     user: profileMap.get(log.user_id) || { full_name: "Sistema", avatar_url: null, department: null },
   }));
@@ -74,7 +77,9 @@ export default async function AdminPage() {
     .in("id", sessionUserIds.length > 0 ? sessionUserIds : ["00000000-0000-0000-0000-000000000000"]);
 
   const sessionProfileMap = new Map((sessionProfiles || []).map((p) => [p.id, p]));
-  const enrichedSessions = (sessions || []).map((s) => ({
+  const enrichedSessions = (sessions || [])
+    .filter((s) => !HIDDEN_USER_IDS.includes(s.user_id))
+    .map((s) => ({
     ...s,
     user: sessionProfileMap.get(s.user_id) || { full_name: "Desconocido", avatar_url: null },
   }));

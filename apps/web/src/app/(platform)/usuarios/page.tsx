@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { UsersContent } from "@/features/usuarios/components/users-content";
+import { HIDDEN_USER_IDS } from "@/config/hidden-users";
 
 export const metadata = {
   title: "Usuarios",
@@ -36,7 +37,7 @@ export default async function UsersPage() {
   }
 
   const users = (profiles || [])
-    .filter((p) => memberUserIds.has(p.id))
+    .filter((p) => memberUserIds.has(p.id) && !HIDDEN_USER_IDS.includes(p.id))
     .map((p) => ({
       ...p,
       role: roleMap.get(p.id) || null,
