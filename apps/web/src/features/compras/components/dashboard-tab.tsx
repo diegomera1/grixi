@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText, Clock, Truck, PackageCheck, DollarSign,
   TrendingUp, ArrowRight,
@@ -31,6 +31,7 @@ const PIPELINE_STAGES: { id: PurchaseOrderStatus; label: string; color: string }
 ];
 
 export function DashboardTab({ orders, vendors, kpis }: Props) {
+  const [hoveredStage, setHoveredStage] = useState<string | null>(null);
   const pipelineCounts = useMemo(() => {
     const counts: Record<string, { count: number; total: number }> = {};
     PIPELINE_STAGES.forEach((s) => { counts[s.id] = { count: 0, total: 0 }; });
@@ -122,24 +123,111 @@ export function DashboardTab({ orders, vendors, kpis }: Props) {
         <div className="flex items-center gap-1 overflow-x-auto pb-2">
           {PIPELINE_STAGES.map((stage, i) => {
             const data = pipelineCounts[stage.id];
+            // Get top orders for this stage
+            const stageOrders = orders
+              .filter((o) => o.status === stage.id)
+              .sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0))
+              .slice(0, 4);
+            const avgValue = data.count > 0 ? data.total / data.count : 0;
+            const stageVendors = new Set(stageOrders.map((o) => o.vendor_id)).size;
+
             return (
               <div key={stage.id} className="flex items-center">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.4 + i * 0.06 }}
-                  className="flex min-w-[100px] flex-col items-center rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] p-3 transition-all hover:shadow-md"
-                  style={{ borderColor: data.count > 0 ? `${stage.color}40` : undefined }}
-                >
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: stage.color }} />
-                  <span className="mt-2 text-lg font-bold text-[var(--text-primary)]">{data.count}</span>
-                  <span className="text-[9px] font-medium text-[var(--text-muted)]">{stage.label}</span>
-                  {data.total > 0 && (
-                    <span className="mt-1 text-[8px] text-[var(--text-muted)]">
-                      ${(data.total / 1000).toFixed(0)}K
-                    </span>
-                  )}
-                </motion.div>
+                <div className="relative">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.4 + i * 0.06 }}
+                    className="flex min-w-[100px] flex-col items-center rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] p-3 transition-all hover:shadow-md cursor-pointer"
+                    style={{ borderColor: data.count > 0 ? `${stage.color}40` : undefined }}
+                    onMouseEnter={() => setHoveredStage(stage.id)}
+                    onMouseLeave={() => setHoveredStage(null)}
+                  >
+                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: stage.color }} />
+                    <span className="mt-2 text-lg font-bold text-[var(--text-primary)]">{data.count}</span>
+                    <span className="text-[9px] font-medium text-[var(--text-muted)]">{stage.label}</span>
+                    {data.total > 0 && (
+                      <span className="mt-1 text-[8px] text-[var(--text-muted)]">
+                        ${(data.total / 1000).toFixed(0)}K
+                      </span>
+                    )}
+                  </motion.div>
+
+                  {/* Hover popover with stage details */}
+                  <AnimatePresence>
+                    {hoveredStage === stage.id && data.count > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 shadow-xl"
+                      >
+                        {/* Arrow */}
+                        <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-[var(--border)] bg-[var(--bg-elevated)]" />
+                        <div className="relative">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: stage.color }} />
+                            <span className="text-xs font-semibold text-[var(--text-primary)]">{stage.label}</span>
+                            <span className="ml-auto text-[10px] font-mono text-[var(--text-muted)]">{data.count} OC</span>
+                          </div>
+
+                          {/* Stats */}
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div className="rounded-lg bg-[var(--bg-muted)]/50 p-2">
+                              <p className="text-[9px] text-[var(--text-muted)]">Valor total</p>
+                              <p className="text-xs font-bold font-mono text-[var(--text-primary)]">
+                                ${(data.total / 1000).toFixed(1)}K
+                              </p>
+                            </div>
+                            <div className="rounded-lg bg-[var(--bg-muted)]/50 p-2">
+                              <p className="text-[9px] text-[var(--text-muted)]">Promedio/OC</p>
+                              <p className="text-xs font-bold font-mono text-[var(--text-primary)]">
+                                ${(avgValue / 1000).toFixed(1)}K
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Top orders in stage */}
+                          {stageOrders.length > 0 && (
+                            <div>
+                              <p className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider mb-1.5 font-semibold">Órdenes principales</p>
+                              <div className="space-y-1.5">
+                                {stageOrders.map((o) => {
+                                  const v = vendors.find((vn) => vn.id === o.vendor_id);
+                                  return (
+                                    <div key={o.id} className="flex items-center gap-2">
+                                      <div
+                                        className="h-5 w-5 rounded flex items-center justify-center text-[8px] font-bold text-white shrink-0"
+                                        style={{ backgroundColor: stage.color }}
+                                      >
+                                        {v?.name.charAt(0) || "?"}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] text-[var(--text-primary)] truncate">
+                                          {o.po_number} — {v?.name || "—"}
+                                        </p>
+                                      </div>
+                                      <span className="text-[10px] font-mono font-semibold" style={{ color: stage.color }}>
+                                        ${((Number(o.total) || 0) / 1000).toFixed(1)}K
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {stageVendors > 0 && (
+                            <p className="mt-2 text-[9px] text-[var(--text-muted)]">
+                              {stageVendors} proveedor{stageVendors > 1 ? "es" : ""} en esta etapa
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
                 {i < PIPELINE_STAGES.length - 1 && (
                   <ArrowRight size={14} className="mx-1 shrink-0 text-[var(--text-muted)]" />
                 )}

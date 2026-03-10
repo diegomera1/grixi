@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -126,7 +126,17 @@ function OccupancyRing({
 
 // ─── Main Component ─────────────────────────────────────
 export function WarehousesContent({ warehouses }: WarehousesContentProps) {
-  const [activeTab, setActiveTab] = useState<AlmacenesTab>("resumen");
+  const [activeTab, setActiveTab] = useState<AlmacenesTab>(() => {
+    if (typeof window !== "undefined") {
+      return (sessionStorage.getItem("almacenes-active-tab") as AlmacenesTab) || "resumen";
+    }
+    return "resumen";
+  });
+
+  // Persist active tab for back navigation
+  useEffect(() => {
+    sessionStorage.setItem("almacenes-active-tab", activeTab);
+  }, [activeTab]);
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredWarehouse, setHoveredWarehouse] = useState<string | null>(null);
 
@@ -370,22 +380,30 @@ export function WarehousesContent({ warehouses }: WarehousesContentProps) {
                         )}
                       </AnimatePresence>
 
-                      {/* Action buttons */}
+                      {/* Action buttons with tooltips */}
                       <div className="mt-4 flex gap-2">
                         <Link
                           href={`/almacenes/${warehouse.id}`}
-                          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--border-hover)] hover:bg-[var(--bg-muted)]"
+                          className="group/btn relative flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--border-hover)] hover:bg-[var(--bg-muted)]"
                         >
                           <Eye size={14} />
                           Vista 2D
+                          {/* Animated tooltip */}
+                          <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--bg-elevated)] px-2.5 py-1 text-[10px] font-medium text-[var(--text-secondary)] shadow-lg border border-[var(--border)] opacity-0 scale-90 transition-all group-hover/btn:opacity-100 group-hover/btn:scale-100">
+                            Vista de plano 2D con posiciones
+                          </span>
                         </Link>
                         <Link
                           href={`/almacenes/${warehouse.id}?view=3d`}
-                          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-[var(--brand)]/25"
+                          className="group/btn relative flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-[var(--brand)]/25"
                         >
                           <Box size={14} />
                           Vista 3D
-                          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                          <ArrowRight size={14} className="transition-transform group-hover/btn:translate-x-0.5" />
+                          {/* Animated tooltip */}
+                          <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--bg-elevated)] px-2.5 py-1 text-[10px] font-medium text-[var(--text-secondary)] shadow-lg border border-[var(--border)] opacity-0 scale-90 transition-all group-hover/btn:opacity-100 group-hover/btn:scale-100">
+                            Modelo 3D interactivo del almacén
+                          </span>
                         </Link>
                       </div>
                     </div>
@@ -476,19 +494,25 @@ export function WarehousesContent({ warehouses }: WarehousesContentProps) {
                       </div>
                     </div>
 
-                    {/* Quick actions */}
+                    {/* Quick actions with tooltips */}
                     <div className="flex gap-1.5">
                       <Link
                         href={`/almacenes/${w.id}`}
-                        className="rounded-lg border border-[var(--border)] p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+                        className="group/btn relative rounded-lg border border-[var(--border)] p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
                       >
                         <Eye size={14} />
+                        <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--bg-elevated)] px-2 py-0.5 text-[9px] font-medium text-[var(--text-secondary)] shadow-lg border border-[var(--border)] opacity-0 scale-90 transition-all group-hover/btn:opacity-100 group-hover/btn:scale-100">
+                          Vista 2D
+                        </span>
                       </Link>
                       <Link
                         href={`/almacenes/${w.id}?view=3d`}
-                        className="rounded-lg bg-[var(--brand)] p-2 text-white transition-shadow hover:shadow-md hover:shadow-[var(--brand)]/25"
+                        className="group/btn relative rounded-lg bg-[var(--brand)] p-2 text-white transition-shadow hover:shadow-md hover:shadow-[var(--brand)]/25"
                       >
                         <Box size={14} />
+                        <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--bg-elevated)] px-2 py-0.5 text-[9px] font-medium text-[var(--text-secondary)] shadow-lg border border-[var(--border)] opacity-0 scale-90 transition-all group-hover/btn:opacity-100 group-hover/btn:scale-100">
+                          Vista 3D
+                        </span>
                       </Link>
                     </div>
                   </motion.div>

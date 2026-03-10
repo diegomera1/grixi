@@ -32,6 +32,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Target,
+  Info,
 } from "lucide-react";
 import {
   AreaChart,
@@ -176,15 +177,37 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
     };
   }, [allTransactions, kpis, c]);
 
-  // AR Aging
+  // AR Aging — calculated from real transaction due dates
   const agingData = useMemo(() => {
+    const now = Date.now();
+    const buckets = { "0-30d": 0, "30-60d": 0, "60-90d": 0, "90+d": 0 };
+    const arTransactions = allTransactions.filter(
+      (t) => t.transaction_type === "invoice_revenue" && t.due_date
+    );
+    for (const tx of arTransactions) {
+      const dueDate = new Date(tx.due_date!).getTime();
+      const daysOverdue = Math.max(0, Math.floor((now - dueDate) / 86400000));
+      if (daysOverdue <= 30) buckets["0-30d"] += tx.amount_usd;
+      else if (daysOverdue <= 60) buckets["30-60d"] += tx.amount_usd;
+      else if (daysOverdue <= 90) buckets["60-90d"] += tx.amount_usd;
+      else buckets["90+d"] += tx.amount_usd;
+    }
+    // Fallback: if no AR transactions, use proportional estimates
+    const total = Object.values(buckets).reduce((s, v) => s + v, 0);
+    if (total === 0) {
+      const outstanding = kpis.totalRevenue * 0.35;
+      buckets["0-30d"] = outstanding * 0.45;
+      buckets["30-60d"] = outstanding * 0.28;
+      buckets["60-90d"] = outstanding * 0.17;
+      buckets["90+d"] = outstanding * 0.10;
+    }
     return [
-      { range: "0-30d", amount: c(randomStable(180000, 350000, 1)), fill: "#10B981" },
-      { range: "30-60d", amount: c(randomStable(100000, 200000, 2)), fill: "#F59E0B" },
-      { range: "60-90d", amount: c(randomStable(50000, 120000, 3)), fill: "#F97316" },
-      { range: "90+d", amount: c(randomStable(20000, 60000, 4)), fill: "#EF4444" },
+      { range: "0-30d", amount: c(buckets["0-30d"]), fill: "#10B981" },
+      { range: "30-60d", amount: c(buckets["30-60d"]), fill: "#F59E0B" },
+      { range: "60-90d", amount: c(buckets["60-90d"]), fill: "#F97316" },
+      { range: "90+d", amount: c(buckets["90+d"]), fill: "#EF4444" },
     ];
-  }, [c]);
+  }, [allTransactions, kpis, c]);
 
   // Recent transactions for feed (last 30)
   // Show ALL transactions — historical + live, deduplicated, with live ones first
@@ -206,70 +229,77 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* ── Header ──────────────────────────────── */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-sm font-bold text-[var(--text-primary)]">Finanzas</h2>
-          <p className="text-[11px] text-[var(--text-secondary)]">
-            Centro financiero en tiempo real — datos tipo SAP
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Pulse indicator */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-            </span>
-            <span className="text-xs font-medium text-emerald-400">
-              {isSimulating ? "Tiempo real" : "Conectando..."}
-            </span>
+      {/* ── Header + Tabs (same row, matching Compras) ───── */}
+      <div className="mb-2">
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--brand)]/10">
+              <DollarSign size={20} className="text-[var(--brand)]" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-[var(--text-primary)]">Finanzas</h2>
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                Centro financiero en tiempo real — datos tipo SAP
+              </p>
+            </div>
           </div>
+          <div className="flex items-center gap-3">
+            {/* Pulse indicator */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              </span>
+              <span className="text-xs font-medium text-emerald-400">
+                {isSimulating ? "Tiempo real" : "Conectando..."}
+              </span>
+            </div>
 
-          {/* Currency selector */}
-          <div className="flex rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-0.5">
-            {(["USD", "EUR", "GBP"] as CurrencyCode[]).map((code) => (
-              <button
-                key={code}
-                onClick={() => setCurrency(code)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                  currency === code
-                    ? "bg-violet-500/20 text-violet-400 shadow-sm"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                )}
-              >
-                <span>{CURRENCY_CONFIG[code].flag}</span>
-                <span>{code}</span>
-              </button>
-            ))}
+            {/* Currency selector */}
+            <div className="flex rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-0.5">
+              {(["USD", "EUR", "GBP"] as CurrencyCode[]).map((code) => (
+                <button
+                  key={code}
+                  onClick={() => setCurrency(code)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                    currency === code
+                      ? "bg-violet-500/20 text-violet-400 shadow-sm"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  )}
+                >
+                  <span>{CURRENCY_CONFIG[code].flag}</span>
+                  <span>{code}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-      {/* ── Tab Navigation ─────────────────────── */}
-      <div className="flex items-center gap-1 border-b border-[var(--border)] -mx-1 px-1 overflow-x-auto">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-all relative shrink-0",
-              activeTab === tab.id
-                ? "text-[var(--brand)]"
-                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-            )}
-          >
-            <tab.icon size={14} />
-            <span>{tab.label}</span>
-            {activeTab === tab.id && (
-              <motion.div
-                layoutId="finance-tab-indicator"
-                className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--brand)] rounded-full"
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
-            )}
-          </button>
-        ))}
+        {/* Tab Navigation — same level as header */}
+        <div className="flex items-center gap-1 border-b border-[var(--border)] -mx-1 px-1 overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-all relative shrink-0",
+                activeTab === tab.id
+                  ? "text-[var(--brand)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              )}
+            >
+              <tab.icon size={14} />
+              <span>{tab.label}</span>
+              {activeTab === tab.id && (
+                <motion.div
+                  layoutId="finance-tab-indicator"
+                  className="absolute bottom-0 left-2 right-2 h-0.5 bg-[var(--brand)] rounded-full"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Tab Content ────────────────────────── */}
@@ -284,6 +314,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           icon={TrendingUp}
           color="emerald"
           trend={12.5}
+          tooltip="Ingresos Totales — Suma de todas las facturas de venta y cobros recibidos en el periodo actual."
         />
         <KPICard
           label="Gastos"
@@ -292,6 +323,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           icon={TrendingDown}
           color="rose"
           trend={8.3}
+          tooltip="Gastos Operativos — Total de egresos incluyendo compras, nómina, impuestos y servicios."
         />
         <KPICard
           label="EBITDA"
@@ -300,6 +332,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           icon={Activity}
           color="violet"
           trend={15.7}
+          tooltip="Earnings Before Interest, Taxes, Depreciation & Amortization — Utilidad operativa antes de deducciones financieras. Mide la rentabilidad operativa real del negocio."
         />
         <KPICard
           label="Cash Flow"
@@ -308,6 +341,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           icon={Wallet}
           color="cyan"
           trend={5.2}
+          tooltip="Flujo de Caja — Diferencia neta entre ingresos y egresos en el periodo. Indica la liquidez disponible para operaciones."
         />
         <KPICard
           label="Balance Neto"
@@ -316,6 +350,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
           icon={DollarSign}
           color="amber"
           trend={10.1}
+          tooltip="Balance Neto — Posición financiera neta considerando todos los activos y pasivos corrientes. Refleja la salud financiera general."
         />
       </div>
 
@@ -631,7 +666,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
 
 // ── KPI Card ────────────────────────────────────
 function KPICard({
-  label, value, currency, icon: Icon, color, trend,
+  label, value, currency, icon: Icon, color, trend, tooltip,
 }: {
   label: string;
   value: number;
@@ -639,7 +674,9 @@ function KPICard({
   icon: typeof DollarSign;
   color: string;
   trend: number;
+  tooltip?: string;
 }) {
+  const [showTooltip, setShowTooltip] = useState(false);
   const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
     emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", icon: "text-emerald-400" },
     rose: { bg: "bg-rose-500/10", text: "text-rose-400", icon: "text-rose-400" },
@@ -656,8 +693,36 @@ function KPICard({
     >
       {/* Background icon */}
       <Icon className={cn("absolute -right-2 -top-2 w-16 h-16 opacity-[0.04]", c.icon)} />
-      <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center mb-3", c.bg)}>
-        <Icon className={cn("w-4.5 h-4.5", c.icon)} />
+      <div className="flex items-center justify-between mb-3">
+        <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", c.bg)}>
+          <Icon className={cn("w-4.5 h-4.5", c.icon)} />
+        </div>
+        {tooltip && (
+          <div className="relative">
+            <button
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              className="rounded-full p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-all"
+            >
+              <Info size={13} />
+            </button>
+            <AnimatePresence>
+              {showTooltip && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-xl"
+                >
+                  <p className="text-[11px] leading-relaxed text-[var(--text-secondary)]">
+                    {tooltip}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
       <AnimatePresence mode="wait">
         <motion.p
