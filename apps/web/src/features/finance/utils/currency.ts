@@ -1,13 +1,13 @@
 import type { CurrencyCode } from "../types";
 
-// Base exchange rates (USD as reference) — March 2026 approximate
+// Base exchange rates — updated 2026-03-11 from open.er-api.com
 const BASE_RATES: Record<CurrencyCode, Record<CurrencyCode, number>> = {
-  USD: { USD: 1, EUR: 0.923, GBP: 0.789, COP: 4285, PEN: 3.72, ARS: 1065 },
-  EUR: { USD: 1.0834, EUR: 1, GBP: 0.8549, COP: 4642, PEN: 4.03, ARS: 1154 },
-  GBP: { USD: 1.2674, EUR: 1.1698, GBP: 1, COP: 5431, PEN: 4.72, ARS: 1350 },
-  COP: { USD: 0.000233, EUR: 0.000215, GBP: 0.000184, COP: 1, PEN: 0.000868, ARS: 0.2485 },
-  PEN: { USD: 0.2688, EUR: 0.2482, GBP: 0.2119, COP: 1152, PEN: 1, ARS: 286.3 },
-  ARS: { USD: 0.000939, EUR: 0.000867, GBP: 0.000741, COP: 4.024, PEN: 0.003493, ARS: 1 },
+  USD: { USD: 1, EUR: 0.8601, GBP: 0.7718, COP: 3753.09, PEN: 3.4611, ARS: 1452.25 },
+  EUR: { USD: 1.1627, EUR: 1, GBP: 0.8974, COP: 4363.35, PEN: 4.0241, ARS: 1688.38 },
+  GBP: { USD: 1.2957, EUR: 1.1143, GBP: 1, COP: 4862.99, PEN: 4.4847, ARS: 1881.67 },
+  COP: { USD: 0.000266, EUR: 0.000229, GBP: 0.000206, COP: 1, PEN: 0.000922, ARS: 0.3869 },
+  PEN: { USD: 0.2889, EUR: 0.2485, GBP: 0.2230, COP: 1084.47, PEN: 1, ARS: 419.61 },
+  ARS: { USD: 0.000689, EUR: 0.000592, GBP: 0.000531, COP: 2.5849, PEN: 0.002383, ARS: 1 },
 };
 
 export function convertCurrency(
@@ -44,7 +44,7 @@ export function formatCurrency(
     style: "currency",
     currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: currency === "COP" || currency === "ARS" ? 0 : 0,
+    maximumFractionDigits: 0,
   });
   return formatter.format(amount);
 }

@@ -256,22 +256,67 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
             </div>
 
             {/* Currency selector */}
-            <div className="flex flex-wrap rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-0.5">
-              {(["USD", "EUR", "GBP", "COP", "PEN", "ARS"] as CurrencyCode[]).map((code) => (
-                <button
-                  key={code}
-                  onClick={() => setCurrency(code)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                    currency === code
-                      ? "bg-violet-500/20 text-violet-400 shadow-sm"
-                      : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                  )}
-                >
-                  <span>{CURRENCY_CONFIG[code].flag}</span>
-                  <span>{code}</span>
-                </button>
-              ))}
+            <div className="flex flex-wrap rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-0.5 relative">
+              {(["USD", "EUR", "GBP", "COP", "PEN", "ARS"] as CurrencyCode[]).map((code) => {
+                const cfg = CURRENCY_CONFIG[code];
+                const otherCurrencies = (["USD", "EUR", "GBP", "COP", "PEN", "ARS"] as CurrencyCode[]).filter((c) => c !== code);
+                return (
+                  <div key={code} className="relative group">
+                    <button
+                      onClick={() => setCurrency(code)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                        currency === code
+                          ? "bg-violet-500/20 text-violet-400 shadow-sm"
+                          : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                      )}
+                    >
+                      <span>{cfg.flag}</span>
+                      <span>{code}</span>
+                    </button>
+                    {/* Exchange rate popover */}
+                    <div className="pointer-events-none absolute left-1/2 top-full z-[60] mt-2 hidden w-60 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-2xl group-hover:block">
+                      <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-[var(--border)] bg-[var(--bg-elevated)]" />
+                      <div className="relative">
+                        <div className="flex items-center gap-2 mb-2.5 pb-2 border-b border-[var(--border)]">
+                          <span className="text-base">{cfg.flag}</span>
+                          <div>
+                            <p className="text-[11px] font-semibold text-[var(--text-primary)]">{cfg.name} ({code})</p>
+                            <p className="text-[9px] text-[var(--text-muted)]">1 {code} = equivalencias</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          {otherCurrencies.map((other) => {
+                            const otherCfg = CURRENCY_CONFIG[other];
+                            const rate = convertCurrency(1, code, other);
+                            const isLargeRate = rate >= 100;
+                            return (
+                              <div key={other} className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs">{otherCfg.flag}</span>
+                                  <span className="text-[10px] text-[var(--text-secondary)]">{other}</span>
+                                </div>
+                                <span className="text-[11px] font-mono font-semibold text-[var(--text-primary)]">
+                                  {isLargeRate ? rate.toLocaleString("es-ES", { maximumFractionDigits: 0 }) : rate.toFixed(4)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="mt-2.5 pt-2 border-t border-[var(--border)] flex items-center gap-1.5">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                          </span>
+                          <span className="text-[8px] text-[var(--text-muted)]">
+                            Tasas actualizadas • {new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
