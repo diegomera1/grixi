@@ -16,32 +16,47 @@ import type { FinanceTransaction, CurrencyCode } from "../types";
 import type { FinanceCostCenter } from "../types";
 import { formatCurrency, formatCurrencyCompact } from "../utils/currency";
 
-// ── Mock responsible users per department ────────
+// ── Responsible users per department ─────────────
 const RESPONSIBLE_USERS: Record<string, string> = {
-  "Tecnología": "Carlos Mendoza",
-  "Operaciones": "María Rodríguez",
-  "Administración": "Jorge Herrera",
-  "Ventas": "Ana Torres",
+  "Dirección": "Carlos Mendoza",
+  "Finanzas": "María Rodríguez",
+  "Contabilidad": "Camila Gutiérrez",
+  "Tesorería": "Laura Espinoza",
   "Producción": "Pedro Vásquez",
-  "Logística": "Lucía Fernández",
-  "RRHH": "Roberto Silva",
+  "Mantenimiento": "Gabriel Paredes",
+  "Control de Procesos": "Fernando Castillo",
   "Calidad": "Diana Morales",
-  "Mantenimiento": "Fernando Castillo",
-  "Compras": "Valentina Reyes",
-  "Marketing": "Carlos Mendoza",
-  "Finanzas": "Jorge Herrera",
-  "Seguridad": "Pedro Vásquez",
-  "Almacén": "Lucía Fernández",
+  "Laboratorio": "Elena Bravo",
+  "Inspección": "Natalia Salazar",
+  "Ventas": "Ana Torres",
+  "Marketing": "Valentina Reyes",
+  "Postventa": "Adriana Cordero",
+  "IT": "Andrés León",
+  "Desarrollo": "Sofía Méndez",
+  "Infraestructura": "Marcos Peña",
+  "Seguridad TI": "Nicolás Zambrano",
+  "Logística": "Jorge Herrera",
+  "Almacenes": "Miguel Pacheco",
+  "Distribución": "Santiago Ramírez",
+  "Compras": "Luis Aguilar",
+  "RRHH": "Lucía Fernández",
+  "Nómina": "Isabella Ortiz",
+  "Bienestar": "Carolina Vega",
+  "Investigación": "Daniel Cruz",
+  "Innovación": "Óscar Delgado",
+  "Prototipos": "Rafael Soto",
 };
 
-// ── Map departments to cost centers ─────────────
+// ── Map sub-departments to cost centers ──────────
 const CC_DEPARTMENT_MAP: Record<string, string[]> = {
-  "CC-TECH": ["Tecnología", "Seguridad"],
-  "CC-OPS": ["Operaciones", "Producción", "Mantenimiento"],
-  "CC-ADMIN": ["Administración", "RRHH", "Finanzas"],
-  "CC-SALES": ["Ventas", "Marketing"],
-  "CC-LOG": ["Logística", "Almacén", "Compras"],
-  "CC-QA": ["Calidad"],
+  CC100: ["Dirección", "Finanzas", "Contabilidad", "Tesorería"],
+  CC200: ["Producción", "Mantenimiento", "Control de Procesos"],
+  CC300: ["Calidad", "Laboratorio", "Inspección"],
+  CC400: ["Ventas", "Marketing", "Postventa"],
+  CC500: ["IT", "Desarrollo", "Infraestructura", "Seguridad TI"],
+  CC600: ["Logística", "Almacenes", "Distribución", "Compras"],
+  CC700: ["RRHH", "Nómina", "Bienestar"],
+  CC800: ["Investigación", "Innovación", "Prototipos"],
 };
 
 export function BudgetsTab({

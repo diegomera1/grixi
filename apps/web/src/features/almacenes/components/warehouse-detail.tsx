@@ -208,7 +208,7 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
       <div className="flex gap-6">
         {/* Visualization area */}
         <div className="flex-1">
-          <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
             <AnimatePresence mode="wait">
               {viewMode === "2d" ? (
                 <motion.div
@@ -291,7 +291,7 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                           </p>
 
                           {/* Hover tooltip with rack summary */}
-                          <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-56 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-xl group-hover:block">
+                          <div className="pointer-events-none absolute bottom-full left-1/2 z-[60] mb-2 hidden w-56 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-xl group-hover:block">
                             <p className="mb-1 font-mono text-xs font-bold text-[var(--text-primary)]">
                               {rack.code}
                             </p>
@@ -327,7 +327,7 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="h-[600px]"
+                  className="h-[600px] overflow-hidden rounded-b-xl"
                 >
                   <Warehouse3DScene
                     racks={racks}
