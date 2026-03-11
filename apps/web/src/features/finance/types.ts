@@ -16,7 +16,7 @@ export type TransactionCategory =
   | "payment_out"
   | "adjustment";
 
-export type CurrencyCode = "USD" | "EUR" | "GBP";
+export type CurrencyCode = "USD" | "EUR" | "GBP" | "COP" | "PEN" | "ARS";
 
 export type PaymentMethod = "transfer" | "check" | "cash" | "credit_card" | "direct_debit";
 export type TransactionStatus = "draft" | "posted" | "cleared" | "reversed";

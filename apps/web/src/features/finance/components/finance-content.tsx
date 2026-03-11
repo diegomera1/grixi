@@ -256,8 +256,8 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
             </div>
 
             {/* Currency selector */}
-            <div className="flex rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-0.5">
-              {(["USD", "EUR", "GBP"] as CurrencyCode[]).map((code) => (
+            <div className="flex flex-wrap rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-0.5">
+              {(["USD", "EUR", "GBP", "COP", "PEN", "ARS"] as CurrencyCode[]).map((code) => (
                 <button
                   key={code}
                   onClick={() => setCurrency(code)}
