@@ -218,7 +218,7 @@ export default async function DashboardPage() {
     <DashboardContent
       user={{
         name: userProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuario",
-        avatar: userProfile?.avatar_url || null,
+        avatar: userProfile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null,
         role: userRole || "Operador",
       }}
       kpis={{
