@@ -277,7 +277,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
                       <span className="hidden sm:inline">{code}</span>
                     </button>
                     {/* Exchange rate popover — desktop only */}
-                    <div className="pointer-events-none absolute left-1/2 top-full z-[60] mt-2 hidden w-56 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-2xl md:group-hover:block">
+                    <div className="pointer-events-none invisible absolute left-1/2 top-full z-[60] mt-2 w-56 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 opacity-0 shadow-2xl transition-all duration-200 group-hover:visible group-hover:opacity-100 max-md:!hidden">
                       <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-[var(--border)] bg-[var(--bg-elevated)]" />
                       <div className="relative">
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border)]">
