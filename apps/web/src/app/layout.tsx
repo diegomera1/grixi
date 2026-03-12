@@ -64,8 +64,14 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/brand/icon.png",
-    apple: "/brand/icon.png",
+    apple: "/brand/icon-192.png",
   },
+  manifest: "/manifest.json",
+  other: [
+    { name: "apple-mobile-web-app-capable", content: "yes" },
+    { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+    { name: "mobile-web-app-capable", content: "yes" },
+  ],
 };
 
 export default function RootLayout({
@@ -75,10 +81,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#0a0a0f" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+        <link rel="apple-touch-icon" href="/brand/icon-192.png" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
       >
         <ThemeProvider>{children}</ThemeProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );

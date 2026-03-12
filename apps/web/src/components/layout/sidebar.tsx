@@ -140,7 +140,7 @@ export function Sidebar() {
       initial={false}
       animate={{ width: collapsed ? 64 : 230 }}
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-      className="relative m-2 flex h-[calc(100vh-16px)] flex-col rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-lg"
+      className="relative m-2 hidden md:flex h-[calc(100vh-16px)] flex-col rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-lg"
     >
       {/* ── Logo / Brand ──────────────────────── */}
       <div className="flex h-14 items-center gap-2.5 border-b border-[var(--border)] px-3.5">

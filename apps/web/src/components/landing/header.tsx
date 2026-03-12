@@ -39,11 +39,11 @@ export function LandingHeader() {
         )}
       />
 
-      <nav className="relative z-10 mx-auto flex max-w-[1800px] items-center justify-between px-6 lg:px-10">
-        {/* Left: Menu pill */}
+      <nav className="relative z-10 mx-auto flex max-w-[1800px] items-center justify-between px-4 md:px-6 lg:px-10">
+        {/* Left: Menu pill (desktop) / Login (mobile) */}
         <button
           className={cn(
-            "rounded-full border px-5 py-2 text-[13px] font-medium backdrop-blur-xl transition-all",
+            "hidden md:flex rounded-full border px-5 py-2 text-[13px] font-medium backdrop-blur-xl transition-all",
             isDark
               ? "border-white/20 bg-white/5 text-white hover:bg-white/10"
               : "border-black/10 bg-black/5 text-black hover:bg-black/10"
@@ -51,20 +51,33 @@ export function LandingHeader() {
         >
           Menu
         </button>
+        <div className="md:hidden" />
 
         {/* Center: SVG Logo — transparent, crisp at any size */}
         <Link href="/" className="absolute left-1/2 -translate-x-1/2">
           <GrixiLogo
-            height={36}
+            height={28}
+            className="md:h-9"
             variant={isDark ? "dark" : "light"}
           />
         </Link>
 
-        {/* Right: Time + Theme toggle */}
-        <div className="flex items-center gap-4">
+        {/* Right: Login (mobile) + Time + Theme toggle */}
+        <div className="flex items-center gap-3 md:gap-4">
+          <Link
+            href="/auth/login"
+            className={cn(
+              "md:hidden rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all",
+              isDark
+                ? "border-violet-400/30 bg-violet-500/10 text-violet-300"
+                : "border-violet-500/30 bg-violet-500/10 text-violet-600"
+            )}
+          >
+            Iniciar sesión
+          </Link>
           <span
             className={cn(
-              "hidden text-[13px] sm:inline",
+              "hidden text-[13px] md:inline",
               isDark ? "text-white/50" : "text-black/50"
             )}
           >
@@ -77,7 +90,7 @@ export function LandingHeader() {
           <button
             onClick={() => setTheme(isDark ? "light" : "dark")}
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-xl transition-all",
+              "flex h-9 w-9 md:h-8 md:w-8 items-center justify-center rounded-full border backdrop-blur-xl transition-all",
               isDark
                 ? "border-white/20 bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
                 : "border-black/10 bg-black/5 text-black/60 hover:bg-black/10 hover:text-black"

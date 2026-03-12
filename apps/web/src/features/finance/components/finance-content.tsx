@@ -231,19 +231,19 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
     <div className="space-y-6">
       {/* ── Header + Tabs (same row, matching Compras) ───── */}
       <div className="mb-2">
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--brand)]/10">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)]/10">
               <DollarSign size={20} className="text-[var(--brand)]" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-[var(--text-primary)]">Finanzas</h2>
-              <p className="text-[11px] text-[var(--text-secondary)]">
+              <p className="text-[11px] text-[var(--text-secondary)] hidden sm:block">
                 Centro financiero en tiempo real — datos tipo SAP
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 overflow-x-auto">
             {/* Pulse indicator */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5">
               <span className="relative flex h-2.5 w-2.5">

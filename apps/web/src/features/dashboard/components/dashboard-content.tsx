@@ -193,7 +193,7 @@ export function DashboardContent({
         transition={{ duration: 0.5 }}
         className="relative overflow-hidden rounded-xl border border-[var(--border)] bg-gradient-to-r from-[var(--bg-surface)] via-[var(--bg-surface)] to-[color-mix(in_srgb,var(--brand)_8%,var(--bg-surface))] p-4"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[color-mix(in_srgb,var(--brand)_70%,#000)] text-white text-sm font-bold shadow-md">
               {user.avatar ? (
@@ -222,7 +222,7 @@ export function DashboardContent({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start">
             <div className="flex items-center gap-1.5 rounded-full bg-[var(--success-light)] px-2.5 py-1 text-[10px] font-medium text-[var(--success)]">
               <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--success)]" />
               Todos los sistemas operativos
@@ -530,7 +530,7 @@ export function DashboardContent({
           className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4"
         >
           <h3 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">Acciones Rápidas</h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {[
               { icon: ShoppingCart, label: "Crear Orden", href: "/compras", color: "#7C3AED" },
               { icon: Eye, label: "Almacén 3D", href: warehouseStats[0] ? `/almacenes/${warehouseStats[0].id}?view=3d` : "/almacenes", color: "#10B981" },

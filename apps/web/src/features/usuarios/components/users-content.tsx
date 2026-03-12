@@ -226,7 +226,7 @@ export function UsersContent({ users, departments, roles }: UsersContentProps) {
                     Departamento <SortIcon field="department" />
                   </div>
                 </th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                <th className="hidden sm:table-cell px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                   Rol
                 </th>
                 <th
@@ -237,7 +237,7 @@ export function UsersContent({ users, departments, roles }: UsersContentProps) {
                     Estado <SortIcon field="last_active_at" />
                   </div>
                 </th>
-                <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                <th className="hidden md:table-cell px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
                   Acciones
                 </th>
               </tr>
@@ -281,7 +281,7 @@ export function UsersContent({ users, departments, roles }: UsersContentProps) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="hidden sm:table-cell px-5 py-4">
                     <p className="text-sm text-[var(--text-secondary)]">
                       {user.department || "—"}
                     </p>
@@ -304,7 +304,7 @@ export function UsersContent({ users, departments, roles }: UsersContentProps) {
                       <span className="text-xs text-[var(--text-muted)]">Sin rol</span>
                     )}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="hidden sm:table-cell px-5 py-4">
                     <div className="flex items-center gap-2">
                       <div
                         className={cn(
@@ -326,7 +326,7 @@ export function UsersContent({ users, departments, roles }: UsersContentProps) {
                       </span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-right">
+                  <td className="hidden md:table-cell px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Link
                         href={`/usuarios/${user.id}`}
