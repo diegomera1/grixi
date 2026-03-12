@@ -257,9 +257,9 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
 
             {/* Currency selector */}
             <div className="flex flex-wrap rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-0.5 relative">
-              {(["USD", "EUR", "GBP", "COP", "PEN", "ARS"] as CurrencyCode[]).map((code) => {
+              {(Object.keys(CURRENCY_CONFIG) as CurrencyCode[]).map((code) => {
                 const cfg = CURRENCY_CONFIG[code];
-                const otherCurrencies = (["USD", "EUR", "GBP", "COP", "PEN", "ARS"] as CurrencyCode[]).filter((c) => c !== code);
+                const otherCurrencies = (Object.keys(CURRENCY_CONFIG) as CurrencyCode[]).filter((c) => c !== code);
                 return (
                   <div key={code} className="relative group">
                     <button
