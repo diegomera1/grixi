@@ -59,12 +59,17 @@ export default async function UserProfilePage({
   const roles = (userRoles || []).map((ur) => ur.roles as unknown as { name: string; color: string; description: string });
   const organizations = (orgs || []).map((o) => o.organizations as unknown as { name: string; slug: string });
 
+  // Check if viewing own profile
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+  const isOwnProfile = currentUser?.id === id;
+
   return (
     <UserProfileContent
       profile={profile}
       roles={roles}
       organizations={organizations}
       recentActivity={recentActivity || []}
+      isOwnProfile={isOwnProfile}
     />
   );
 }

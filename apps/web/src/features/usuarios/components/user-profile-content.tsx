@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -13,7 +14,11 @@ import {
   Clock,
   Activity,
   Edit,
+  Camera,
+  Loader2,
+  Check,
 } from "lucide-react";
+import { uploadAvatar } from "../actions/upload-avatar";
 
 type Profile = {
   id: string;
@@ -43,6 +48,7 @@ type UserProfileContentProps = {
   roles: Role[];
   organizations: Organization[];
   recentActivity: AuditLog[];
+  isOwnProfile?: boolean;
 };
 
 const actionLabels: Record<string, string> = {
@@ -76,7 +82,39 @@ export function UserProfileContent({
   roles,
   organizations,
   recentActivity,
+  isOwnProfile = false,
 }: UserProfileContentProps) {
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const result = await uploadAvatar(formData);
+      setAvatarUrl(result.avatarUrl);
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 2000);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Error al subir foto");
+      setTimeout(() => setUploadError(null), 3000);
+    } finally {
+      setUploading(false);
+      // Reset input so same file can be re-uploaded
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, []);
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Back button */}
@@ -99,20 +137,49 @@ export function UserProfileContent({
 
         <div className="px-6 pb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-6">
-            {/* Avatar */}
-            <div className="-mt-12 h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-4 border-[var(--bg-surface)] bg-[var(--bg-muted)] shadow-lg">
-              {profile.avatar_url ? (
-                <Image
-                  src={profile.avatar_url}
-                  alt={profile.full_name}
-                  width={96}
-                  height={96}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--text-muted)]">
-                  {profile.full_name?.charAt(0)}
-                </div>
+            {/* Avatar with upload overlay */}
+            <div className="relative -mt-12 h-24 w-24 shrink-0 group">
+              <div className="h-full w-full overflow-hidden rounded-2xl border-4 border-[var(--bg-surface)] bg-[var(--bg-muted)] shadow-lg">
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt={profile.full_name}
+                    width={96}
+                    height={96}
+                    className="h-full w-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--text-muted)]">
+                    {profile.full_name?.charAt(0)}
+                  </div>
+                )}
+              </div>
+
+              {/* Upload overlay — only shown for own profile */}
+              {isOwnProfile && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="absolute inset-0 flex items-center justify-center rounded-2xl border-4 border-transparent bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100"
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+                    ) : uploadSuccess ? (
+                      <Check className="h-6 w-6 text-emerald-400" />
+                    ) : (
+                      <Camera className="h-6 w-6 text-white" />
+                    )}
+                  </button>
+                </>
               )}
             </div>
 
@@ -127,11 +194,27 @@ export function UserProfileContent({
                     {profile.position || "Sin cargo"}
                   </p>
                 </div>
-                <button className="flex items-center gap-2 rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--border-hover)] hover:text-[var(--text-primary)]">
-                  <Edit size={14} />
-                  Editar
-                </button>
+                {isOwnProfile && (
+                  <button className="flex items-center gap-2 rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--border-hover)] hover:text-[var(--text-primary)]">
+                    <Edit size={14} />
+                    Editar
+                  </button>
+                )}
               </div>
+
+              {/* Upload error */}
+              <AnimatePresence>
+                {uploadError && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="mt-1 text-xs text-red-500"
+                  >
+                    {uploadError}
+                  </motion.p>
+                )}
+              </AnimatePresence>
 
               {/* Roles badges */}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -250,7 +333,7 @@ export function UserProfileContent({
 
           {recentActivity.length > 0 ? (
             <div className="space-y-3">
-              {recentActivity.map((log, index) => (
+              {recentActivity.map((log) => (
                 <div
                   key={log.id}
                   className="flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-[var(--bg-muted)]"
