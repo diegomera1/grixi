@@ -24,6 +24,7 @@ import { createClient } from "@/lib/supabase/client";
 import { logLogoutEvent } from "@/lib/actions/audit";
 import { useThemeTransition } from "@/lib/hooks/use-theme-transition";
 import { UserPopover } from "./user-popover";
+import { MobilePreviewToggle } from "./mobile-preview";
 import type { User } from "@supabase/supabase-js";
 
 // Navigation grouped by category
@@ -312,6 +313,13 @@ export function Sidebar() {
           )}
         </div>
       </div>
+
+      {/* ── Mobile Preview Toggle ──────────────── */}
+      {!collapsed && (
+        <div className="border-t border-[var(--border)] px-2 py-1.5">
+          <MobilePreviewToggle />
+        </div>
+      )}
 
       {/* ── User Popover ─────────────────────── */}
       <div className="border-t border-[var(--border)] px-2 py-2">

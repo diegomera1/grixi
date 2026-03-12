@@ -806,70 +806,153 @@ export function GuidedTourOverlay({
   active,
   onNavigate,
   onEnd,
+  onAction,
 }: {
   racks: { code: string; rack_positions: { status: string }[] }[];
   active: boolean;
   onNavigate: (index: number) => void;
   onEnd: () => void;
+  onAction?: (action: string, value?: unknown) => void;
 }) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(false);
 
-  const steps = useMemo(() => {
-    return [
-      { title: "Bienvenido al Almacén", description: "Vista general del layout completo con todos los racks y zonas operativas.", rackIdx: -1 },
-      ...racks.slice(0, 8).map((rack, i) => ({
-        title: `Rack ${rack.code}`,
-        description: `${rack.rack_positions.filter((p) => p.status === "occupied").length}/${rack.rack_positions.length} posiciones ocupadas`,
-        rackIdx: i,
-      })),
-      { title: "Fin del Recorrido", description: "Has completado la presentación del almacén.", rackIdx: -1 },
-    ];
-  }, [racks]);
+  const steps = useMemo(() => [
+    {
+      title: "📷 Rotación de Cámara",
+      description: "Arrastra con el mouse para rotar la vista del almacén. Click derecho para mover.",
+      action: "rotate",
+    },
+    {
+      title: "🔍 Zoom",
+      description: "Usa la rueda del mouse o pinch para acercarte/alejarte de la escena.",
+      action: "zoom",
+    },
+    {
+      title: "📦 Seleccionar Rack",
+      description: "Haz click en cualquier rack para ver sus productos y posiciones.",
+      action: "selectRack",
+    },
+    {
+      title: "🔎 Buscar Productos",
+      description: "Usa el buscador (⌘K) para encontrar productos por nombre o SKU.",
+      action: "search",
+    },
+    {
+      title: "🔥 Modos de Vista",
+      description: "Cambia entre Heat Map, ABC, Antigüedad y más para analizar el inventario.",
+      action: "heatmap",
+    },
+    {
+      title: "👁 Vista Primera Persona",
+      description: "Activa FPS para recorrer el almacén con WASD. ESC para salir.",
+      action: "fps",
+    },
+  ], []);
 
+  // Execute action for current step
   useEffect(() => {
-    if (!active) {
-      setCurrentStep(0);
-      return;
-    }
-    const interval = setInterval(() => {
+    if (!active) return;
+    const step = steps[currentStep];
+    if (!step || !onAction) return;
+
+    onAction(step.action);
+
+    return () => {
+      // Cleanup: reset the action when leaving the step
+      onAction("cleanup", step.action);
+    };
+  }, [currentStep, active, steps, onAction]);
+
+  // Auto-play mode
+  useEffect(() => {
+    if (!active || !autoPlay) return;
+    const timer = setInterval(() => {
       setCurrentStep((prev) => {
         const next = prev + 1;
         if (next >= steps.length) {
+          setAutoPlay(false);
           onEnd();
           return 0;
         }
-        if (steps[next].rackIdx >= 0) onNavigate(steps[next].rackIdx);
         return next;
       });
     }, 4000);
-    return () => clearInterval(interval);
-  }, [active, steps, onNavigate, onEnd]);
+    return () => clearInterval(timer);
+  }, [active, autoPlay, steps, onEnd]);
+
+  // Reset on deactivate
+  useEffect(() => {
+    if (!active) setCurrentStep(0);
+  }, [active]);
 
   if (!active) return null;
 
   const step = steps[currentStep];
+  const progress = ((currentStep + 1) / steps.length) * 100;
+
+  const goNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep((p) => p + 1);
+    } else {
+      onEnd();
+    }
+  };
+
+  const goPrev = () => {
+    if (currentStep > 0) setCurrentStep((p) => p - 1);
+  };
 
   return (
-    <div className="absolute inset-x-0 top-3 flex justify-center z-30">
+    <div className="absolute inset-x-0 top-3 flex justify-center z-30 pointer-events-none">
       <motion.div
         key={currentStep}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10 }}
-        className="rounded-xl bg-slate-900/90 px-6 py-3 shadow-2xl backdrop-blur-md"
+        className="pointer-events-auto rounded-2xl bg-slate-900/95 px-5 py-3.5 shadow-2xl backdrop-blur-xl ring-1 ring-white/10"
+        style={{ minWidth: 340 }}
       >
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            {steps.map((_, i) => (
-              <div key={i} className={`h-1 rounded-full transition-all ${i === currentStep ? "w-4 bg-emerald-400" : "w-1 bg-slate-600"}`} />
-            ))}
+        {/* Progress bar */}
+        <div className="mb-3 h-1 w-full rounded-full bg-slate-700 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-white">{step.title}</p>
+            <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">{step.description}</p>
           </div>
-          <div>
-            <p className="text-[11px] font-bold text-white">{step.title}</p>
-            <p className="text-[9px] text-slate-400">{step.description}</p>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={goPrev}
+              disabled={currentStep === 0}
+              className="rounded-lg px-2 py-1 text-[9px] font-semibold text-slate-400 transition-all hover:bg-slate-700 hover:text-white disabled:opacity-30"
+            >
+              ← Ant.
+            </button>
+            <button
+              onClick={goNext}
+              className="rounded-lg bg-emerald-500 px-2.5 py-1 text-[9px] font-bold text-white shadow-sm transition-all hover:bg-emerald-400"
+            >
+              {currentStep === steps.length - 1 ? "Fin ✓" : "Sig. →"}
+            </button>
           </div>
-          <button onClick={onEnd} className="rounded-md bg-slate-700 px-2 py-1 text-[9px] font-semibold text-white hover:bg-slate-600">
-            ✕ Salir
+        </div>
+
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-[8px] font-semibold text-slate-500">{currentStep + 1} de {steps.length}</span>
+          <button
+            onClick={onEnd}
+            className="rounded-md px-2 py-0.5 text-[8px] font-semibold text-slate-500 transition-colors hover:bg-slate-700 hover:text-white"
+          >
+            Salir del tutorial
           </button>
         </div>
       </motion.div>

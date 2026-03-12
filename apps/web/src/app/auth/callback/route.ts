@@ -57,15 +57,25 @@ export async function GET(request: NextRequest) {
       }
 
       // Sync Google avatar and full name to profiles table
+      // Only update avatar if profile doesn't have a custom (non-Google) one
       const googleAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
       const googleName = user.user_metadata?.full_name || user.user_metadata?.name;
-      if (googleAvatar || googleName) {
-        const updateData: Record<string, string> = {};
-        if (googleAvatar) updateData.avatar_url = googleAvatar;
-        if (googleName) updateData.full_name = googleName;
-        updateData.last_active_at = new Date().toISOString();
-        await supabase.from("profiles").update(updateData).eq("id", user.id);
-      }
+      
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+      
+      const hasCustomAvatar = currentProfile?.avatar_url && 
+        !currentProfile.avatar_url.includes("googleusercontent.com") &&
+        !currentProfile.avatar_url.includes("randomuser.me");
+
+      const updateData: Record<string, string> = {};
+      if (googleAvatar && !hasCustomAvatar) updateData.avatar_url = googleAvatar;
+      if (googleName) updateData.full_name = googleName;
+      updateData.last_active_at = new Date().toISOString();
+      await supabase.from("profiles").update(updateData).eq("id", user.id);
 
       // Ensure user is a member of the org
       await supabase.from("organization_members").upsert({

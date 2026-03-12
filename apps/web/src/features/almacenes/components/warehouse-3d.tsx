@@ -11,6 +11,10 @@ import React, {
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls, Text, Html, Line } from "@react-three/drei";
 import * as THREE from "three";
+import {
+  RotateCcw, Camera, Maximize, Minimize, Eye, Ruler, Search, QrCode,
+  Sparkles, MoreVertical, X as XIcon, GraduationCap,
+} from "lucide-react";
 import { BoxDetailDrawer } from "./box-detail-drawer";
 import { WarehouseSearch } from "./warehouse-search";
 import type { SearchableItem } from "./warehouse-search";
@@ -1475,7 +1479,12 @@ export function Warehouse3DScene({
   }, []);
 
   useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    const handler = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+      // Force Canvas to re-render at correct dimensions
+      setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
+      setTimeout(() => window.dispatchEvent(new Event("resize")), 300);
+    };
     document.addEventListener("fullscreenchange", handler);
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
@@ -1588,7 +1597,7 @@ export function Warehouse3DScene({
       : 0;
 
   return (
-    <div ref={containerRef} className={`relative w-full overflow-hidden rounded-xl border border-slate-200 ${isFullscreen ? 'fixed inset-0 z-50 rounded-none border-0' : 'h-[calc(100vh-12rem)] min-h-[500px]'}`} style={{ overflow: 'hidden' }}>
+    <div ref={containerRef} className={`relative w-full overflow-hidden transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen' : 'h-[calc(100vh-12rem)] min-h-[500px] rounded-xl border border-slate-200'}`}>
       <ErrorBoundary
         fallback={
           <div className="flex h-full items-center justify-center bg-slate-50 p-8">
@@ -1796,125 +1805,110 @@ export function Warehouse3DScene({
         ))}
       </div>
 
-      {/* ── Tool buttons — Modern glassmorphism toolbar ──────────── */}
-      <div className="absolute left-3 bottom-14 z-20 flex flex-col gap-0.5 rounded-2xl bg-white/90 p-1.5 shadow-xl ring-1 ring-black/[0.06] backdrop-blur-xl">
-        {/* Reset View */}
-        <button
-          onClick={() => {
-            setCameraTarget(null);
-            setSelectedRackId(null);
-            setSelectedBox(null);
-            setFpsMode(false);
-          }}
-          title="Resetear vista"
-          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-800"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Resetear vista</span>
-        </button>
+      {/* ── Tool buttons — Clean labeled toolbar ──────────── */}
+      <div className="absolute left-3 bottom-14 z-20 flex flex-col gap-0.5 rounded-2xl bg-white/90 p-1 shadow-xl ring-1 ring-black/[0.06] backdrop-blur-xl">
+        {/* Primary tools — always visible */}
+        {([
+          {
+            icon: RotateCcw,
+            label: "Reset",
+            active: false,
+            onClick: () => { setCameraTarget(null); setSelectedRackId(null); setSelectedBox(null); setFpsMode(false); },
+            hoverClass: "hover:bg-slate-100 hover:text-slate-800",
+          },
+          {
+            icon: isFullscreen ? Minimize : Maximize,
+            label: isFullscreen ? "Salir" : "Full",
+            active: false,
+            onClick: toggleFullscreen,
+            hoverClass: "hover:bg-blue-50 hover:text-blue-600",
+          },
+          {
+            icon: Camera,
+            label: "Foto",
+            active: false,
+            onClick: takeScreenshot,
+            hoverClass: "hover:bg-blue-50 hover:text-blue-600",
+          },
+          {
+            icon: GraduationCap,
+            label: "Tutorial",
+            active: guidedTourActive,
+            onClick: () => setGuidedTourActive((p) => !p),
+            hoverClass: "hover:bg-amber-50 hover:text-amber-600",
+            activeClass: "bg-amber-500 text-white shadow-sm shadow-amber-200",
+          },
+        ] as const).map((tool) => (
+          <button
+            key={tool.label}
+            onClick={tool.onClick}
+            title={tool.label}
+            className={`group relative flex h-10 w-10 flex-col items-center justify-center gap-0.5 rounded-xl transition-all ${
+              tool.active && tool.activeClass
+                ? tool.activeClass
+                : `text-slate-500 ${tool.hoverClass}`
+            }`}
+          >
+            <tool.icon size={15} />
+            <span className="text-[7px] font-semibold leading-none">{tool.label}</span>
+          </button>
+        ))}
 
         <div className="mx-1.5 h-px bg-slate-200" />
 
-        {/* Screenshot */}
-        <button
-          onClick={takeScreenshot}
-          title="Captura HD"
-          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-blue-50 hover:text-blue-600"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Captura HD</span>
-        </button>
-        {/* Fullscreen */}
-        <button
-          onClick={toggleFullscreen}
-          title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-blue-50 hover:text-blue-600"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            {isFullscreen ? (
-              <><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" /></>
-            ) : (
-              <><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></>
-            )}
-          </svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{isFullscreen ? "Salir fullscreen" : "Pantalla completa"}</span>
-        </button>
+        {/* Secondary tools */}
+        {([
+          {
+            icon: Eye,
+            label: "FPS",
+            active: fpsMode,
+            onClick: () => setFpsMode((p) => !p),
+            activeClass: "bg-indigo-500 text-white shadow-sm shadow-indigo-200",
+            hoverClass: "hover:bg-violet-50 hover:text-violet-600",
+          },
+          {
+            icon: Search,
+            label: "Buscar",
+            active: false,
+            onClick: () => setSearchOpen(true),
+            hoverClass: "hover:bg-emerald-50 hover:text-emerald-600",
+          },
+          {
+            icon: Ruler,
+            label: "Medir",
+            active: distanceMeasuring,
+            onClick: () => setDistanceMeasuring((p) => !p),
+            activeClass: "bg-red-500 text-white shadow-sm shadow-red-200",
+            hoverClass: "hover:bg-red-50 hover:text-red-500",
+          },
+        ] as const).map((tool) => (
+          <button
+            key={tool.label}
+            onClick={tool.onClick}
+            title={tool.label}
+            className={`group relative flex h-10 w-10 flex-col items-center justify-center gap-0.5 rounded-xl transition-all ${
+              tool.active && tool.activeClass
+                ? tool.activeClass
+                : `text-slate-500 ${tool.hoverClass}`
+            }`}
+          >
+            <tool.icon size={15} />
+            <span className="text-[7px] font-semibold leading-none">{tool.label}</span>
+          </button>
+        ))}
 
         <div className="mx-1.5 h-px bg-slate-200" />
 
-        {/* FPS Mode */}
-        <button
-          onClick={() => setFpsMode((p) => !p)}
-          title={fpsMode ? "Salir de primera persona" : "Vista primera persona"}
-          className={`group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
-            fpsMode ? "bg-indigo-500 text-white shadow-sm shadow-indigo-200" : "text-slate-500 hover:bg-violet-50 hover:text-violet-600"
-          }`}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{fpsMode ? "Salir FPS (ESC)" : "Vista FPS (WASD)"}</span>
-        </button>
-        {/* Distance Measure */}
-        <button
-          onClick={() => setDistanceMeasuring((p) => !p)}
-          title={distanceMeasuring ? "Desactivar medición" : "Medir distancia"}
-          className={`group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
-            distanceMeasuring ? "bg-red-500 text-white shadow-sm shadow-red-200" : "text-slate-500 hover:bg-red-50 hover:text-red-500"
-          }`}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.3 15.3a2.4 2.4 0 010 3.4l-2.6 2.6a2.4 2.4 0 01-3.4 0L2.7 8.7a2.4 2.4 0 010-3.4l2.6-2.6a2.4 2.4 0 013.4 0z"/><path d="M14.5 12.5l2-2"/><path d="M11.5 9.5l2-2"/></svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{distanceMeasuring ? "Desactivar regla" : "Medir distancia"}</span>
-        </button>
-
-        <div className="mx-1.5 h-px bg-slate-200" />
-
-        {/* Search */}
-        <button
-          onClick={() => setSearchOpen(true)}
-          title="Buscar inventario (⌘K)"
-          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-emerald-50 hover:text-emerald-600"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Buscar (⌘K)</span>
-        </button>
-        {/* Product Locator */}
-        <button
-          onClick={() => setLocatorOpen(true)}
-          title="Localizar producto (QR)"
-          className="group relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-emerald-50 hover:text-emerald-600"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><path d="M14 14h2v4h4v2"/></svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Localizar (QR)</span>
-        </button>
-        {/* AI */}
-        <button
-          onClick={handleLoadAI}
-          title="IA Recomendaciones"
-          className={`group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
-            aiPanelOpen ? "bg-violet-500 text-white shadow-sm shadow-violet-200" : "text-slate-500 hover:bg-violet-50 hover:text-violet-600"
-          }`}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1.27c.35-.6 1-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1H20a7 7 0 01-7 7v1.27c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73V23a7 7 0 01-7-7H2.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1H4a7 7 0 017-7V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/></svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">IA Recomendaciones</span>
-        </button>
-
-        <div className="mx-1.5 h-px bg-slate-200" />
-
-        {/* More tools */}
+        {/* More tools toggle */}
         <button
           onClick={() => setToolsExpanded((p) => !p)}
-          title="Más herramientas"
-          className={`group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+          title={toolsExpanded ? "Cerrar" : "Más"}
+          className={`group relative flex h-10 w-10 flex-col items-center justify-center gap-0.5 rounded-xl transition-all ${
             toolsExpanded ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
           }`}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            {toolsExpanded ? (
-              <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
-            ) : (
-              <><circle cx="12" cy="5" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="19" r="1" fill="currentColor" /></>
-            )}
-          </svg>
-          <span className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{toolsExpanded ? "Cerrar" : "Más herramientas"}</span>
+          {toolsExpanded ? <XIcon size={15} /> : <MoreVertical size={15} />}
+          <span className="text-[7px] font-semibold leading-none">{toolsExpanded ? "Cerrar" : "Más"}</span>
         </button>
       </div>
 
@@ -2157,7 +2151,51 @@ export function Warehouse3DScene({
           const rack = racks[idx];
           if (rack) handleRackSelect(rack);
         }}
-        onEnd={() => setGuidedTourActive(false)}
+        onEnd={() => {
+          setGuidedTourActive(false);
+          // Cleanup all tutorial effects
+          setViewMode("normal");
+          setFpsMode(false);
+          setSearchOpen(false);
+          setCameraTarget(null);
+          setSelectedRackId(null);
+        }}
+        onAction={(action, value) => {
+          // Real-time activation of features for each tutorial step
+          switch (action) {
+            case "rotate":
+              // Reset camera to default position to demonstrate
+              setCameraTarget(null);
+              setSelectedRackId(null);
+              break;
+            case "zoom":
+              // No automatic action needed — just shows instruction
+              break;
+            case "selectRack":
+              // Auto-select first rack to demonstrate
+              if (racks[0]) handleRackSelect(racks[0]);
+              break;
+            case "search":
+              setSearchOpen(true);
+              break;
+            case "heatmap":
+              setViewMode("heatmap");
+              break;
+            case "fps":
+              setFpsMode(true);
+              break;
+            case "cleanup":
+              // Reset when leaving a step
+              if (value === "selectRack") {
+                setSelectedRackId(null);
+                setCameraTarget(null);
+              }
+              if (value === "search") setSearchOpen(false);
+              if (value === "heatmap") setViewMode("normal");
+              if (value === "fps") setFpsMode(false);
+              break;
+          }
+        }}
       />
       <WarehouseComparisonPanel
         warehouses={allWarehouses}
