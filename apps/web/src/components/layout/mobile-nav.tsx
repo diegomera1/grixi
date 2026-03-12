@@ -82,45 +82,60 @@ export function MobileNav() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
+            whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-5 right-5 z-50 md:hidden"
+            className="fixed bottom-5 right-5 z-50 md:hidden relative flex h-12 w-12 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-surface)] shadow-xl"
+            style={{
+              boxShadow: `0 0 20px ${activeColor}20, 0 4px 12px rgba(0,0,0,0.15)`,
+            }}
           >
-            {/* Pulse ring */}
+            {/* Rotating conic-gradient glow ring */}
             <motion.div
-              animate={{
-                scale: [1, 1.5, 1],
-                opacity: [0.3, 0, 0.3],
-              }}
-              transition={{ duration: 3, repeat: Infinity }}
               className="absolute inset-0 rounded-full"
-              style={{ backgroundColor: activeColor }}
-            />
-            {/* Orb */}
-            <div
-              className="relative flex h-14 w-14 items-center justify-center rounded-full shadow-2xl safe-area-bottom"
               style={{
-                background: `linear-gradient(135deg, ${activeColor}, ${activeColor}cc)`,
-                boxShadow: `0 8px 32px ${activeColor}40, 0 2px 8px rgba(0,0,0,0.3)`,
+                background: `conic-gradient(from 0deg, ${activeColor}40, transparent, ${activeColor}20, transparent, ${activeColor}40)`,
               }}
-            >
-              <Image
-                src="/brand/icon.png"
-                alt="GRIXI"
-                width={28}
-                height={28}
-                className="brightness-0 invert"
-              />
-              {/* Active module indicator dot */}
-              <div
-                className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[var(--bg-primary)]"
-                style={{ backgroundColor: activeColor }}
-              >
-                {activeModule && (
-                  <activeModule.icon size={7} className="m-auto text-white" />
+              animate={{ rotate: 360 }}
+              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+            />
+            {/* Inner circle with module icon */}
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-surface)]">
+              <AnimatePresence mode="wait">
+                {activeModule ? (
+                  <motion.div
+                    key={activeModule.label}
+                    initial={{ opacity: 0, scale: 0.6, rotate: -30 }}
+                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, scale: 0.6, rotate: 30 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                    className="relative"
+                  >
+                    <activeModule.icon size={20} style={{ color: activeModule.color }} />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="grixi-logo"
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.6 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                  >
+                    <Image src="/brand/icon.png" alt="GRIXI" width={22} height={22} className="relative" />
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
             </div>
+            {/* Active module dot */}
+            {activeModule && (
+              <motion.span
+                className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[var(--bg-surface)]"
+                style={{ backgroundColor: activeModule.color }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              />
+            )}
           </motion.button>
         )}
       </AnimatePresence>
