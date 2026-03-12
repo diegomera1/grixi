@@ -67,11 +67,6 @@ export const metadata: Metadata = {
     apple: "/brand/icon-192.png",
   },
   manifest: "/manifest.json",
-  other: [
-    { name: "apple-mobile-web-app-capable", content: "yes" },
-    { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-    { name: "mobile-web-app-capable", content: "yes" },
-  ],
 };
 
 export default function RootLayout({
@@ -84,6 +79,9 @@ export default function RootLayout({
       <head>
         <meta name="theme-color" content="#0a0a0f" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/brand/icon-192.png" />
       </head>
       <body
