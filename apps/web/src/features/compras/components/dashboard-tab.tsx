@@ -120,7 +120,7 @@ export function DashboardTab({ orders, vendors, kpis }: Props) {
         className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5"
       >
         <h3 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">Pipeline de Órdenes de Compra</h3>
-        <div className="flex items-center gap-1 pb-2">
+        <div className="flex items-center gap-1 pb-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-2 px-2">
           {PIPELINE_STAGES.map((stage, i) => {
             const data = pipelineCounts[stage.id];
             // Get top orders for this stage
@@ -132,7 +132,7 @@ export function DashboardTab({ orders, vendors, kpis }: Props) {
             const stageVendors = new Set(stageOrders.map((o) => o.vendor_id)).size;
 
             return (
-              <div key={stage.id} className="flex items-center">
+              <div key={stage.id} className="flex items-center shrink-0 snap-start">
                 <div className="relative">
                   <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}

@@ -70,7 +70,7 @@ export function ComprasContent({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-sm font-bold text-[var(--text-primary)]">
             Compras & Aprovisionamiento
@@ -79,7 +79,7 @@ export function ComprasContent({
             Gestión de órdenes, proveedores y materiales — SAP MM
           </p>
         </div>
-        <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
+        <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto scrollbar-hide">
           {TABS.map((tab) => (
             <button
               key={tab.id}

@@ -57,7 +57,10 @@ export function MobileNav() {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUser(data.user);
     });
-  }, []);
+    // Prefetch all tab routes for instant navigation
+    PRIMARY_TABS.forEach((tab) => router.prefetch(tab.href));
+    MORE_ITEMS.forEach((item) => router.prefetch(item.href));
+  }, [router]);
 
   // Close drawer on route change
   useEffect(() => {
@@ -81,19 +84,22 @@ export function MobileNav() {
   return (
     <>
       {/* ── Bottom Tab Bar ──────────────────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-area-bottom">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         {/* Glass background */}
-        <div className="absolute inset-0 border-t border-[var(--border)] bg-[var(--bg-surface)]/80 backdrop-blur-2xl" />
+        <div className="absolute inset-0 border-t border-[var(--border)] bg-[var(--bg-surface)]/95 backdrop-blur-2xl" />
 
         <div className="relative flex items-stretch">
           {PRIMARY_TABS.map((tab) => {
             const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
             return (
-              <Link
+              <button
                 key={tab.href}
-                href={tab.href}
+                onClick={() => router.push(tab.href)}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-[3px] py-2 pt-2.5 transition-colors relative",
+                  "flex flex-1 flex-col items-center gap-[3px] py-2 pt-2.5 transition-colors relative active:scale-95",
                   isActive
                     ? "text-[var(--text-primary)]"
                     : "text-[var(--text-muted)] active:text-[var(--text-secondary)]"
@@ -132,7 +138,7 @@ export function MobileNav() {
                 >
                   {tab.label}
                 </span>
-              </Link>
+              </button>
             );
           })}
 
