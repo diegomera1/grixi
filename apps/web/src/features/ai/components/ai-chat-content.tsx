@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence } from "framer-motion";
-import { PanelLeftClose, PanelLeftOpen, Square, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Square, PanelRightOpen, PanelRightClose, X } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 
@@ -64,7 +64,8 @@ export function AiChatContent({
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [modules, setModules] = useState<AiModule[]>(["general"]);
   const [canvasOpen, setCanvasOpen] = useState(false);
   const [canvasArtifacts, setCanvasArtifacts] = useState<CanvasArtifact[]>([]);
@@ -72,6 +73,18 @@ export function AiChatContent({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Detect mobile and auto-manage sidebar
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setSidebarOpen(true);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -465,32 +478,51 @@ export function AiChatContent({
   }, [messages]);
 
   return (
-    <div className="flex h-[calc(100vh-6.5rem)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)]">
-      {/* Sidebar */}
+    <div className="flex h-[calc(100vh-10rem)] md:h-[calc(100vh-6.5rem)] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] relative">
+      {/* Sidebar — overlay on mobile, inline on desktop */}
       <AnimatePresence>
         {sidebarOpen && (
-          <ConversationSidebar
-            conversations={conversations}
-            activeId={activeConvId}
-            onSelect={handleSelect}
-            onNew={handleNew}
-            onDelete={handleDelete}
-            onRename={handleRename}
-            onTogglePin={handleTogglePin}
-            collapsed={!sidebarOpen}
-            onToggleCollapse={() => setSidebarOpen(!sidebarOpen)}
-          />
+          <>
+            {/* Mobile backdrop */}
+            {isMobile && (
+              <div
+                className="absolute inset-0 z-20 bg-black/50 backdrop-blur-sm md:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+            <div className={cn(
+              isMobile && "absolute left-0 top-0 bottom-0 z-30 w-[280px] shadow-2xl"
+            )}>
+              <ConversationSidebar
+                conversations={conversations}
+                activeId={activeConvId}
+                onSelect={(id) => {
+                  handleSelect(id);
+                  if (isMobile) setSidebarOpen(false);
+                }}
+                onNew={() => {
+                  handleNew();
+                  if (isMobile) setSidebarOpen(false);
+                }}
+                onDelete={handleDelete}
+                onRename={handleRename}
+                onTogglePin={handleTogglePin}
+                collapsed={!sidebarOpen}
+                onToggleCollapse={() => setSidebarOpen(!sidebarOpen)}
+              />
+            </div>
+          </>
         )}
       </AnimatePresence>
 
       {/* Main chat area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Chat header */}
-        <div className="flex h-12 items-center justify-between border-b border-[var(--border)] px-4">
-          <div className="flex items-center gap-3">
+        <div className="flex h-12 items-center justify-between border-b border-[var(--border)] px-3 md:px-4">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+              className="shrink-0 rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
               title={sidebarOpen ? "Ocultar panel" : "Mostrar panel"}
             >
               {sidebarOpen ? (
@@ -499,8 +531,8 @@ export function AiChatContent({
                 <PanelLeftOpen size={16} />
               )}
             </button>
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+            <div className="min-w-0">
+              <h2 className="text-xs md:text-sm font-semibold text-[var(--text-primary)] truncate">
                 {activeConvId
                   ? activeConv?.title || "Nueva conversación"
                   : `${greeting}, ${userName.split(" ")[0]}`}
@@ -524,11 +556,11 @@ export function AiChatContent({
             </button>
           )}
 
-          {/* Canvas toggle */}
+          {/* Canvas toggle — hidden on mobile */}
           <button
             onClick={() => setCanvasOpen(!canvasOpen)}
             className={cn(
-              "rounded-lg p-1.5 transition-colors",
+              "hidden md:flex rounded-lg p-1.5 transition-colors",
               canvasOpen
                 ? "bg-[var(--brand)]/10 text-[var(--brand)]"
                 : "text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"

@@ -213,7 +213,7 @@ export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeS
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-6 text-2xl font-bold text-[var(--text-primary)]"
+          className="mb-4 md:mb-6 text-lg md:text-2xl font-bold text-[var(--text-primary)]"
         >
           {greeting},{" "}
           <span className="bg-gradient-to-r from-[#7C3AED] to-[#A78BFA] bg-clip-text text-transparent">
@@ -228,7 +228,7 @@ export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeS
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <GrixiAiLogo size={56} showText animate />
+        <GrixiAiLogo size={40} showText animate />
       </motion.div>
 
       {/* Description */}
@@ -236,7 +236,7 @@ export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeS
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.4 }}
-        className="mb-10 mt-4 max-w-md text-center text-sm text-[var(--text-secondary)]"
+        className="mb-6 md:mb-10 mt-3 md:mt-4 max-w-xs md:max-w-md text-center text-xs md:text-sm text-[var(--text-secondary)]"
       >
         {description}
       </motion.p>
@@ -246,7 +246,7 @@ export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeS
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.4 }}
-        className="grid w-full max-w-lg grid-cols-2 gap-3"
+        className="grid w-full max-w-lg grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 px-2 md:px-0"
       >
         {prompts.map((qp, i) => (
           <motion.button
@@ -255,13 +255,13 @@ export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeS
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 + i * 0.08 }}
             onClick={() => onPrompt(qp.prompt)}
-            className="group flex items-start gap-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 text-left transition-all hover:border-[var(--brand)]/30 hover:shadow-md hover:shadow-[var(--brand)]/5"
+            className="group flex items-center sm:items-start gap-2.5 md:gap-3 rounded-xl md:rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 md:p-4 text-left transition-all hover:border-[var(--brand)]/30 hover:shadow-md hover:shadow-[var(--brand)]/5 active:scale-[0.98]"
           >
             <qp.icon
               size={18}
               className="mt-0.5 shrink-0 text-[var(--brand)] transition-transform group-hover:scale-110"
             />
-            <span className="text-sm leading-snug text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
+            <span className="text-xs md:text-sm leading-snug text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
               {qp.label}
             </span>
           </motion.button>
