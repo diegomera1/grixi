@@ -649,10 +649,10 @@ export function GrixiOrb() {
         )}
       </AnimatePresence>
 
-      {/* ── Orb Container ──────────────────────── */}
+      {/* ── Orb Container (desktop only, mobile uses MobileNav orb) ── */}
       <div
         ref={containerRef}
-        className="fixed bottom-4 left-4 z-50"
+        className="fixed bottom-4 left-4 z-50 hidden md:block"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >

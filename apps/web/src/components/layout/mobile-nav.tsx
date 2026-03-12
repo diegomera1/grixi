@@ -27,25 +27,23 @@ import { logLogoutEvent } from "@/lib/actions/audit";
 import { useThemeTransition } from "@/lib/hooks/use-theme-transition";
 import type { User } from "@supabase/supabase-js";
 
-// Primary tabs shown in bottom bar
-const PRIMARY_TABS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "#06B6D4" },
-  { label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6" },
-  { label: "Almacenes", href: "/almacenes", icon: Warehouse, color: "#10B981" },
-  { label: "Compras", href: "/compras", icon: ShoppingCart, color: "#F97316" },
+// All navigation modules
+const ALL_MODULES = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "#06B6D4", category: "PRINCIPAL" },
+  { label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6", category: "OPERACIONES" },
+  { label: "Almacenes", href: "/almacenes", icon: Warehouse, color: "#10B981", category: "OPERACIONES" },
+  { label: "Compras", href: "/compras", icon: ShoppingCart, color: "#F97316", category: "OPERACIONES" },
+  { label: "Usuarios", href: "/usuarios", icon: Users, color: "#F59E0B", category: "EQUIPO" },
+  { label: "Administración", href: "/administracion", icon: Shield, color: "#F43F5E", category: "EQUIPO" },
+  { label: "GRIXI AI", href: "/ai", icon: Sparkles, color: "#A855F7", category: "INTELIGENCIA" },
 ];
 
-// Secondary items in the "More" drawer
-const SECONDARY_ITEMS = [
-  { label: "Usuarios", href: "/usuarios", icon: Users, color: "#F59E0B" },
-  { label: "Administración", href: "/administracion", icon: Shield, color: "#F43F5E" },
-  { label: "GRIXI AI", href: "/ai", icon: Sparkles, color: "#8B5CF6" },
-];
+const CATEGORIES = [...new Set(ALL_MODULES.map((m) => m.category))];
 
 export function MobileNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const { theme, toggleTheme } = useThemeTransition();
@@ -58,9 +56,9 @@ export function MobileNav() {
     });
   }, []);
 
-  // Close drawer on navigation
+  // Close on navigation
   useEffect(() => {
-    setDrawerOpen(false);
+    setIsOpen(false);
   }, [pathname]);
 
   const handleSignOut = async () => {
@@ -70,185 +68,224 @@ export function MobileNav() {
     router.push("/login");
   };
 
-  const isMoreActive = SECONDARY_ITEMS.some(
-    (item) => pathname === item.href || pathname.startsWith(item.href + "/")
-  );
-
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuario";
   const userAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const activeModule = ALL_MODULES.find((m) => pathname === m.href || pathname.startsWith(m.href + "/"));
+  const activeColor = activeModule?.color || "#7C3AED";
 
   return (
     <>
-      {/* ── Bottom Tab Bar ──────────────────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--bg-surface)]/95 backdrop-blur-xl md:hidden safe-area-bottom">
-        <div className="flex items-stretch">
-          {PRIMARY_TABS.map((tab) => {
-            const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={cn(
-                  "flex flex-1 flex-col items-center gap-0.5 py-2 pt-2.5 transition-all relative",
-                  isActive
-                    ? "text-[var(--text-primary)]"
-                    : "text-[var(--text-muted)] active:scale-95"
-                )}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="mobile-tab-indicator"
-                    className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full"
-                    style={{ backgroundColor: tab.color }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <tab.icon
-                  size={20}
-                  style={{ color: isActive ? tab.color : undefined }}
-                />
-                <span className={cn(
-                  "text-[9px] font-medium",
-                  isActive && "font-semibold"
-                )}>
-                  {tab.label}
-                </span>
-              </Link>
-            );
-          })}
-
-          {/* More button */}
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-0.5 py-2 pt-2.5 transition-all relative",
-              isMoreActive
-                ? "text-[var(--text-primary)]"
-                : "text-[var(--text-muted)] active:scale-95"
-            )}
-          >
-            {isMoreActive && (
-              <motion.div
-                layoutId="mobile-tab-indicator"
-                className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full bg-violet-500"
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
-            )}
-            <div className="relative">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" />
-              </svg>
-              <span className="absolute -right-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--error)]" />
-            </div>
-            <span className={cn("text-[9px] font-medium", isMoreActive && "font-semibold")}>
-              Más
-            </span>
-          </button>
-        </div>
-      </nav>
-
-      {/* ── Drawer Overlay ──────────────────────── */}
+      {/* ── Floating Orb Button (bottom-right corner) ──── */}
       <AnimatePresence>
-        {drawerOpen && (
+        {!isOpen && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            onClick={() => setIsOpen(true)}
+            className="fixed bottom-5 right-5 z-50 md:hidden"
+          >
+            {/* Pulse ring */}
+            <motion.div
+              animate={{
+                scale: [1, 1.5, 1],
+                opacity: [0.3, 0, 0.3],
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+              className="absolute inset-0 rounded-full"
+              style={{ backgroundColor: activeColor }}
+            />
+            {/* Orb */}
+            <div
+              className="relative flex h-14 w-14 items-center justify-center rounded-full shadow-2xl safe-area-bottom"
+              style={{
+                background: `linear-gradient(135deg, ${activeColor}, ${activeColor}cc)`,
+                boxShadow: `0 8px 32px ${activeColor}40, 0 2px 8px rgba(0,0,0,0.3)`,
+              }}
+            >
+              <Image
+                src="/brand/icon.png"
+                alt="GRIXI"
+                width={28}
+                height={28}
+                className="brightness-0 invert"
+              />
+              {/* Active module indicator dot */}
+              <div
+                className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[var(--bg-primary)]"
+                style={{ backgroundColor: activeColor }}
+              >
+                {activeModule && (
+                  <activeModule.icon size={7} className="m-auto text-white" />
+                )}
+              </div>
+            </div>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* ── Full-Screen Drawer ──────────────────────── */}
+      <AnimatePresence>
+        {isOpen && (
           <>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
-              onClick={() => setDrawerOpen(false)}
+              className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-md md:hidden"
+              onClick={() => setIsOpen(false)}
             />
 
-            {/* Drawer panel — slides up from bottom */}
+            {/* Panel — slides up from bottom */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 400, damping: 35 }}
-              className="fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-[var(--border)] bg-[var(--bg-surface)] md:hidden safe-area-bottom"
+              transition={{ type: "spring", stiffness: 350, damping: 32 }}
+              className="fixed bottom-0 left-0 right-0 z-[70] max-h-[92vh] overflow-y-auto rounded-t-[28px] bg-[var(--bg-surface)] md:hidden safe-area-bottom"
+              style={{
+                boxShadow: `0 -20px 60px ${activeColor}15, 0 -4px 20px rgba(0,0,0,0.3)`,
+              }}
             >
-              {/* Handle bar */}
-              <div className="flex justify-center py-3">
-                <div className="h-1 w-10 rounded-full bg-[var(--border)]" />
+              {/* Handle bar + close */}
+              <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--bg-surface)] px-5 pt-3 pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Image src="/brand/icon.png" alt="GRIXI" width={24} height={24} />
+                  </div>
+                  <div>
+                    <span className="font-serif text-sm font-semibold italic text-[var(--text-primary)]">
+                      GRIXI
+                    </span>
+                    <p className="text-[8px] font-medium text-[var(--text-muted)]">
+                      Enterprise Platform
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--text-muted)] active:scale-95"
+                >
+                  <X size={16} />
+                </button>
               </div>
 
-              {/* Close button */}
-              <button
-                onClick={() => setDrawerOpen(false)}
-                className="absolute right-4 top-4 rounded-full p-2 text-[var(--text-muted)] hover:bg-[var(--bg-muted)]"
-              >
-                <X size={18} />
-              </button>
-
               <div className="px-5 pb-8">
-                {/* User info */}
-                <div className="mb-5 flex items-center gap-3">
+                {/* User card */}
+                <div className="mb-6 flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-muted)]/50 p-3.5">
                   {userAvatar ? (
-                    <Image src={userAvatar} alt={userName} width={40} height={40} className="rounded-full" />
+                    <Image src={userAvatar} alt={userName} width={44} height={44} className="rounded-full ring-2 ring-[var(--brand)]/20" />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 font-bold text-sm">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-dark)] text-white font-bold text-sm">
                       {userName.charAt(0)}
                     </div>
                   )}
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--text-primary)]">{userName}</p>
-                    <p className="text-[11px] text-[var(--text-muted)]">{user?.email}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{userName}</p>
+                    <p className="text-[11px] text-[var(--text-muted)] truncate">{user?.email}</p>
                   </div>
+                  <div
+                    className="flex h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: "#10B981" }}
+                  />
                 </div>
 
-                {/* Navigation section */}
-                <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                  Módulos
-                </p>
-                <div className="space-y-1 mb-5">
-                  {SECONDARY_ITEMS.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all",
-                          isActive
-                            ? "bg-violet-500/10 text-[var(--text-primary)]"
-                            : "text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
-                        )}
-                      >
-                        <item.icon size={18} style={{ color: item.color }} />
-                        <span className="flex-1">{item.label}</span>
-                        <ChevronRight size={14} className="text-[var(--text-muted)]" />
-                      </Link>
-                    );
-                  })}
-                </div>
+                {/* Modules by category */}
+                {CATEGORIES.map((category) => (
+                  <div key={category} className="mb-4">
+                    <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.15em] text-[var(--text-muted)]">
+                      {category}
+                    </p>
+                    <div className="space-y-1">
+                      {ALL_MODULES.filter((m) => m.category === category).map((mod) => {
+                        const isActive = pathname === mod.href || pathname.startsWith(mod.href + "/");
+                        return (
+                          <Link
+                            key={mod.href}
+                            href={mod.href}
+                            className={cn(
+                              "flex items-center gap-3.5 rounded-xl px-3.5 py-3.5 text-[14px] font-medium transition-all active:scale-[0.98]",
+                              isActive
+                                ? "text-[var(--text-primary)]"
+                                : "text-[var(--text-secondary)]"
+                            )}
+                            style={
+                              isActive
+                                ? {
+                                    backgroundColor: `${mod.color}12`,
+                                    boxShadow: `inset 0 0 0 1px ${mod.color}25`,
+                                  }
+                                : undefined
+                            }
+                          >
+                            <div className="relative">
+                              {isActive && (
+                                <motion.div
+                                  layoutId="mobile-active-glow"
+                                  className="absolute inset-0 rounded-lg opacity-30 blur-md"
+                                  style={{ backgroundColor: mod.color }}
+                                />
+                              )}
+                              <mod.icon
+                                size={20}
+                                className="relative"
+                                style={{ color: isActive ? mod.color : undefined }}
+                              />
+                            </div>
+                            <span className="flex-1">{mod.label}</span>
+                            {isActive && (
+                              <motion.div
+                                layoutId="mobile-nav-check"
+                                className="h-2 w-2 rounded-full"
+                                style={{ backgroundColor: mod.color }}
+                              />
+                            )}
+                            {!isActive && (
+                              <ChevronRight size={14} className="text-[var(--text-muted)]" />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
 
-                {/* Actions section */}
-                <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                  Acciones
+                {/* Divider */}
+                <div className="my-4 h-px bg-[var(--border)]" />
+
+                {/* Quick actions */}
+                <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.15em] text-[var(--text-muted)]">
+                  ACCIONES
                 </p>
-                <div className="space-y-1 mb-5">
+                <div className="space-y-1 mb-4">
                   <button
                     onClick={() => {
-                      setDrawerOpen(false);
+                      setIsOpen(false);
                       document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }));
                     }}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
+                    className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-3.5 text-[14px] font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
                   >
-                    <Search size={18} className="text-[var(--text-muted)]" />
+                    <Search size={20} className="text-[var(--text-muted)]" />
                     <span className="flex-1 text-left">Buscar</span>
+                    <kbd className="rounded-md bg-[var(--bg-muted)] px-1.5 py-0.5 text-[9px] font-mono text-[var(--text-muted)]">
+                      ⌘K
+                    </kbd>
                   </button>
-                  <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]">
-                    <Bell size={18} className="text-[var(--text-muted)]" />
+                  <button className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-3.5 text-[14px] font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]">
+                    <Bell size={20} className="text-[var(--text-muted)]" />
                     <span className="flex-1 text-left">Notificaciones</span>
-                    <span className="h-2 w-2 rounded-full bg-[var(--error)]" />
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--error)] text-[9px] font-bold text-white">
+                      3
+                    </span>
                   </button>
                   {mounted && (
                     <button
                       onClick={(e) => toggleTheme(e)}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
+                      className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-3.5 text-[14px] font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
                     >
-                      {theme === "dark" ? <Sun size={18} className="text-[var(--text-muted)]" /> : <Moon size={18} className="text-[var(--text-muted)]" />}
+                      {theme === "dark" ? <Sun size={20} className="text-amber-400" /> : <Moon size={20} className="text-[var(--text-muted)]" />}
                       <span className="flex-1 text-left">{theme === "dark" ? "Modo claro" : "Modo oscuro"}</span>
                     </button>
                   )}
@@ -257,9 +294,9 @@ export function MobileNav() {
                 {/* Sign out */}
                 <button
                   onClick={handleSignOut}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-400 active:bg-red-500/10"
+                  className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-3.5 text-[14px] font-medium text-red-400 active:bg-red-500/10"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={20} />
                   <span>Cerrar sesión</span>
                 </button>
               </div>

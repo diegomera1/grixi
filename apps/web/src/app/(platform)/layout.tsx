@@ -14,7 +14,7 @@ export default function PlatformLayout({
 }) {
   return (
     <div className="relative h-screen overflow-hidden bg-[var(--bg-primary)]">
-      <main className="platform-dot-grid relative h-full overflow-y-auto p-4 pb-24 md:p-6 md:pl-8 md:pb-6">
+      <main className="platform-dot-grid relative h-full overflow-y-auto p-4 pb-6 md:p-6 md:pl-8 md:pb-6">
         <div className="relative z-10">
           <ActivityTrackerProvider>{children}</ActivityTrackerProvider>
         </div>
