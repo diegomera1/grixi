@@ -171,10 +171,10 @@ export function MobileNav() {
           </button>
         </div>
 
-        {/* Safe area spacer — extends nav background into home indicator zone */}
+        {/* Safe area spacer — uses JS-detected value with 34px iPhone fallback */}
         <div
           className="bg-[var(--bg-surface)]"
-          style={{ height: "env(safe-area-inset-bottom, 0px)" }}
+          style={{ height: "var(--safe-bottom, 34px)" }}
         />
       </nav>
 
