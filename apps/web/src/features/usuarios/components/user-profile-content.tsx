@@ -19,6 +19,7 @@ import {
   Check,
 } from "lucide-react";
 import { uploadAvatar } from "../actions/upload-avatar";
+import { PasskeySettings } from "./passkey-settings";
 
 type Profile = {
   id: string;
@@ -316,6 +317,18 @@ export function UserProfileContent({
             </>
           )}
         </motion.div>
+
+        {/* Passkey settings — own profile only */}
+        {isOwnProfile && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-6"
+          >
+            <PasskeySettings />
+          </motion.div>
+        )}
 
         {/* Activity timeline */}
         <motion.div

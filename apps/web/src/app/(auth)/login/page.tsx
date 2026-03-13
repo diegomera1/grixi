@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Fingerprint } from "lucide-react";
 import { GrixiLogo } from "@/components/ui/grixi-logo";
 import { createClient } from "@/lib/supabase/client";
+import { usePasskey } from "@/lib/hooks/use-passkey";
 
 export default function LoginPage() {
   const { theme } = useTheme();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { authenticate, isSupported: passkeySupported } = usePasskey();
 
   useEffect(() => {
     setMounted(true);
@@ -149,6 +152,46 @@ export default function LoginPage() {
         <p className="mt-4 text-center text-[10px] text-[var(--text-muted)]">
           Solo correos autorizados pueden acceder
         </p>
+
+        {/* Passkey login */}
+        {mounted && passkeySupported && (
+          <>
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-[var(--border)]" />
+              <span className="text-[10px] text-[var(--text-muted)]">o</span>
+              <div className="h-px flex-1 bg-[var(--border)]" />
+            </div>
+            <button
+              onClick={async () => {
+                setIsPasskeyLoading(true);
+                setError(null);
+                try {
+                  const success = await authenticate();
+                  if (success) {
+                    router.push("/dashboard");
+                  } else {
+                    setError("No se pudo autenticar con Passkey");
+                  }
+                } catch {
+                  setError("Error al autenticar con Passkey");
+                } finally {
+                  setIsPasskeyLoading(false);
+                }
+              }}
+              disabled={isPasskeyLoading}
+              className="group flex w-full items-center justify-center gap-3 rounded-full border border-[var(--brand)]/30 bg-[var(--brand)]/5 px-6 py-4 text-sm font-medium text-[var(--brand)] shadow-sm transition-all hover:bg-[var(--brand)]/10 hover:border-[var(--brand)]/50 active:scale-[0.98] disabled:opacity-70"
+            >
+              {isPasskeyLoading ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--brand)]/30 border-t-[var(--brand)]" />
+              ) : (
+                <>
+                  <Fingerprint size={20} />
+                  Iniciar con Passkey
+                </>
+              )}
+            </button>
+          </>
+        )}
 
         {/* Footer */}
         <div className="mt-12 text-center">

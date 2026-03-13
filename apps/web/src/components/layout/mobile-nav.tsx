@@ -6,13 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard,
-  Users,
-  Shield,
-  Warehouse,
-  Sparkles,
-  DollarSign,
-  ShoppingCart,
   X,
   Search,
   Bell,
@@ -23,25 +16,14 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { PRIMARY_TABS, SECONDARY_ITEMS } from "@/config/nav-config";
 import { createClient } from "@/lib/supabase/client";
 import { logLogoutEvent } from "@/lib/actions/audit";
 import { useThemeTransition } from "@/lib/hooks/use-theme-transition";
 import type { User } from "@supabase/supabase-js";
 
-// Primary tabs in bottom bar
-const PRIMARY_TABS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "#06B6D4" },
-  { label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6" },
-  { label: "Almacenes", href: "/almacenes", icon: Warehouse, color: "#10B981" },
-  { label: "Compras", href: "/compras", icon: ShoppingCart, color: "#F97316" },
-];
-
-// Items inside "Más" drawer
-const MORE_ITEMS = [
-  { label: "Usuarios", href: "/usuarios", icon: Users, color: "#F59E0B" },
-  { label: "Administración", href: "/administracion", icon: Shield, color: "#F43F5E" },
-  { label: "GRIXI AI", href: "/ai", icon: Sparkles, color: "#A855F7" },
-];
+// Navigation items from centralized config
+const MORE_ITEMS = SECONDARY_ITEMS;
 
 export function MobileNav() {
   const pathname = usePathname();
@@ -84,13 +66,11 @@ export function MobileNav() {
   return (
     <>
       {/* ── Bottom Tab Bar ──────────────────────── */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      >
-        {/* Glass background */}
-        <div className="absolute inset-0 border-t border-[var(--border)] bg-[var(--bg-surface)]/95 backdrop-blur-2xl" />
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+        {/* Glass background — extends into safe area */}
+        <div className="absolute inset-0 border-t border-[var(--border)] bg-[var(--bg-surface)]/95 backdrop-blur-2xl" style={{ bottom: "calc(-1 * env(safe-area-inset-bottom, 0px))", top: 0 }} />
 
+        {/* Buttons row — above safe area */}
         <div className="relative flex items-stretch">
           {PRIMARY_TABS.map((tab) => {
             const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
@@ -178,6 +158,8 @@ export function MobileNav() {
             </span>
           </button>
         </div>
+        {/* Safe area spacer — fills iPhone home indicator region */}
+        <div className="relative" style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
       </nav>
 
       {/* ── "Más" Drawer ──────────────────────── */}

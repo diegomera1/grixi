@@ -308,7 +308,7 @@ export function AdminContent({
       </motion.div>
 
       {/* ── Tabs ─────────────── */}
-      <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto scrollbar-hide">
         {tabsWithCounts.map((tab) => (
           <button
             key={tab.id}

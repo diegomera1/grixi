@@ -375,12 +375,12 @@ export function DashboardContent({
               Ver todos →
             </Link>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {warehouseStats.map((w) => (
               <Link
                 key={w.id}
                 href={`/almacenes/${w.id}`}
-                className="group flex min-w-[180px] flex-shrink-0 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 transition-all hover:border-[var(--brand)] hover:shadow-sm"
+                className="group flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 transition-all hover:border-[var(--brand)] hover:shadow-sm"
               >
                 {/* Occupancy Ring */}
                 <div className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center">

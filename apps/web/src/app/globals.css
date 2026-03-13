@@ -490,3 +490,9 @@ html.lenis, html.lenis body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ─── PWA Splash Shimmer ─────────────────────── */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
