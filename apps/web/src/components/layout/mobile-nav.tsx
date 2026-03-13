@@ -310,7 +310,7 @@ export function MobileNav() {
                     </kbd>
                   </button>
                   <button
-                    onClick={() => { setDrawerOpen(false); setTimeout(() => setNotificationsOpen(true), 200); }}
+                    onClick={() => { setDrawerOpen(false); setNotificationsOpen(true); }}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
                   >
                     <Bell size={20} className="text-[var(--text-muted)]" />
