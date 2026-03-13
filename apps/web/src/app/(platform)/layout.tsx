@@ -17,6 +17,12 @@ export default function PlatformLayout({
   return (
     <>
       <MobilePreviewWrapper>
+        {/*
+          iOS PWA Architecture:
+          - MobileNav is OUTSIDE the overflow-hidden container
+          - This prevents iOS from misplacing fixed elements
+          - The main container uses h-screen but nav is a sibling, not a child
+        */}
         <div className="relative h-screen overflow-hidden bg-[var(--bg-primary)]">
           <main className="platform-dot-grid relative h-full overflow-y-auto overflow-x-hidden mobile-content-bottom safe-area-all px-4 pt-6 pb-4 md:px-8 md:pt-8 md:pb-6 lg:px-16 lg:pt-10 lg:pb-8 xl:px-24">
             <div className="relative z-10 mx-auto max-w-[1440px]">
@@ -24,12 +30,13 @@ export default function PlatformLayout({
               <ActivityTrackerProvider>{children}</ActivityTrackerProvider>
             </div>
           </main>
-          <MobileNav />
           <CommandPalette />
           <Suspense fallback={null}>
             <GrixiOrb />
           </Suspense>
         </div>
+        {/* Nav is OUTSIDE the overflow-hidden container — critical for iOS */}
+        <MobileNav />
       </MobilePreviewWrapper>
     </>
   );
