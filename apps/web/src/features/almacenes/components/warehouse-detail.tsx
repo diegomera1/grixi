@@ -116,6 +116,110 @@ function getPositionStatus(pos: Position): string {
   return pos.status;
 }
 
+// ─── Shared Rack Detail Content ─────────────────────────
+
+function RackDetailContent({ rack, onClose }: { rack: Rack; onClose: () => void }) {
+  return (
+    <>
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--bg-surface)] p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-mono text-base font-bold text-[var(--text-primary)]">
+              Rack {rack.code}
+            </h3>
+            <p className="text-xs text-[var(--text-muted)]">
+              {rack.rows} filas × {rack.columns} columnas
+              {rack.aisle && ` · Pasillo ${rack.aisle}`}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Position grid */}
+      <div className="space-y-1 p-4">
+        {Array.from({ length: rack.rows }, (_, rowIdx) => {
+          const row = rowIdx + 1;
+          return (
+            <div key={row} className="flex items-center gap-1">
+              <span className="w-4 text-center text-[9px] font-medium text-[var(--text-muted)]">
+                {row}
+              </span>
+              <div className="flex flex-1 gap-1">
+                {Array.from({ length: rack.columns }, (_, colIdx) => {
+                  const col = colIdx + 1;
+                  const pos = rack.rack_positions.find(
+                    (p) => p.row_number === row && p.column_number === col
+                  );
+                  const status = pos ? getPositionStatus(pos) : "empty";
+                  const cfg = statusConfig[status] || statusConfig.empty;
+                  return (
+                    <div
+                      key={col}
+                      className="flex-1 rounded-md p-1.5 transition-all"
+                      style={{ backgroundColor: cfg.bg }}
+                    >
+                      <div
+                        className="mx-auto h-3 w-3 rounded-sm"
+                        style={{ backgroundColor: cfg.color }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Products */}
+      <div className="border-t border-[var(--border)] p-4">
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          Productos en este rack
+        </h4>
+        <div className="space-y-2">
+          {rack.rack_positions
+            .filter((p) => p.inventory)
+            .slice(0, 8)
+            .map((pos) => {
+              const inv = pos.inventory!;
+              const invStatus = statusConfig[inv.status] || statusConfig.active;
+              return (
+                <div key={pos.id} className="rounded-lg bg-[var(--bg-muted)]/50 p-2.5">
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0 flex-1 mr-2">
+                      <p className="text-xs font-medium text-[var(--text-primary)] truncate">
+                        {inv.product_name}
+                      </p>
+                      <p className="font-mono text-[10px] text-[var(--brand)]">{inv.product_sku}</p>
+                    </div>
+                    <span
+                      className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+                      style={{ backgroundColor: invStatus.bg, color: invStatus.color }}
+                    >
+                      {invStatus.label}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-[var(--text-muted)]">
+                    <span>Pos: {pos.row_number}-{pos.column_number}</span>
+                    <span>Cant: {inv.quantity}</span>
+                    {inv.lot_number && <span>Lote: {inv.lot_number}</span>}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Component ──────────────────────────────────────────
 
 export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProps) {
@@ -205,9 +309,9 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
       </div>
 
       {/* Main content area */}
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
         {/* Visualization area */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
             <AnimatePresence mode="wait">
               {viewMode === "2d" ? (
@@ -216,10 +320,10 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="p-6"
+                  className="p-4 md:p-6"
                 >
                   {/* Legend */}
-                  <div className="mb-6 flex flex-wrap items-center gap-4">
+                  <div className="mb-4 md:mb-6 flex flex-wrap items-center gap-3 md:gap-4">
                     {Object.entries(statusConfig).slice(0, 6).map(([key, cfg]) => (
                       <div key={key} className="flex items-center gap-1.5">
                         <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: cfg.color }} />
@@ -229,7 +333,7 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                   </div>
 
                   {/* Racks grid */}
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                     {racks.map((rack) => {
                       const occupied = rack.rack_positions.filter((p) => p.status === "occupied").length;
                       const total = rack.rows * rack.columns;
@@ -261,7 +365,7 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                             )}
                           </div>
 
-                          {/* Mini grid of positions — NO scale animation */}
+                          {/* Mini grid of positions */}
                           <div
                             className="grid gap-[2px]"
                             style={{
@@ -290,8 +394,8 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                             {occupied}/{total} ocupadas · {occupancy}%
                           </p>
 
-                          {/* Hover tooltip with rack summary */}
-                          <div className="pointer-events-none absolute bottom-full left-1/2 z-[60] mb-2 hidden w-56 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-xl group-hover:block">
+                          {/* Hover tooltip — desktop only */}
+                          <div className="pointer-events-none absolute bottom-full left-1/2 z-[60] mb-2 hidden w-56 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-xl md:group-hover:block">
                             <p className="mb-1 font-mono text-xs font-bold text-[var(--text-primary)]">
                               {rack.code}
                             </p>
@@ -327,7 +431,7 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="h-[600px] overflow-hidden rounded-b-xl"
+                  className="h-[400px] md:h-[600px] overflow-hidden rounded-b-xl"
                 >
                   <Warehouse3DScene
                     racks={racks}
@@ -340,132 +444,50 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
           </div>
         </div>
 
-        {/* Rack detail sidebar */}
+        {/* Rack detail — MOBILE: bottom sheet overlay, DESKTOP: side panel */}
         <AnimatePresence>
           {selectedRack && (
-            <motion.div
-              initial={{ opacity: 0, x: 24, width: 0 }}
-              animate={{ opacity: 1, x: 0, width: 340 }}
-              exit={{ opacity: 0, x: 24, width: 0 }}
-              className="shrink-0 overflow-hidden"
-            >
-              <div className="h-full overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)]">
-                {/* Rack header */}
-                <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--bg-surface)] p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-mono text-base font-bold text-[var(--text-primary)]">
-                        Rack {selectedRack.code}
-                      </h3>
-                      <p className="text-xs text-[var(--text-muted)]">
-                        {selectedRack.rows} filas × {selectedRack.columns} columnas
-                        {selectedRack.aisle && ` · Pasillo ${selectedRack.aisle}`}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedRack(null)}
-                      className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
+            <>
+              {/* Mobile backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm md:hidden"
+                onClick={() => setSelectedRack(null)}
+              />
+              {/* Panel: bottom sheet on mobile, side panel on desktop */}
+              <motion.div
+                initial={{ opacity: 0, y: "100%", x: 0 }}
+                animate={{ opacity: 1, y: 0, x: 0 }}
+                exit={{ opacity: 0, y: "100%", x: 0 }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                className={cn(
+                  // Mobile: bottom sheet overlay
+                  "fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-hidden rounded-t-[26px] bg-[var(--bg-surface)] shadow-[0_-10px_50px_rgba(0,0,0,0.25)] md:hidden",
+                )}
+                style={{ paddingBottom: "var(--safe-bottom, 0px)" }}
+              >
+                {/* Pull handle */}
+                <div className="flex justify-center pt-3 pb-1">
+                  <div className="h-[4px] w-9 rounded-full bg-[var(--text-muted)]/30" />
                 </div>
-
-                {/* Position grid detailed */}
-                <div className="space-y-1 p-4">
-                  {Array.from({ length: selectedRack.rows }, (_, rowIdx) => {
-                    const row = rowIdx + 1;
-                    return (
-                      <div key={row} className="flex items-center gap-1">
-                        <span className="w-4 text-center text-[9px] font-medium text-[var(--text-muted)]">
-                          {row}
-                        </span>
-                        <div className="flex flex-1 gap-1">
-                          {Array.from({ length: selectedRack.columns }, (_, colIdx) => {
-                            const col = colIdx + 1;
-                            const pos = selectedRack.rack_positions.find(
-                              (p) => p.row_number === row && p.column_number === col
-                            );
-                            const status = pos ? getPositionStatus(pos) : "empty";
-                            const cfg = statusConfig[status] || statusConfig.empty;
-                            return (
-                              <div
-                                key={col}
-                                className="group relative flex-1 cursor-pointer rounded-md p-1.5 transition-all hover:ring-2 hover:ring-[var(--brand)]/30"
-                                style={{ backgroundColor: cfg.bg }}
-                              >
-                                <div
-                                  className="mx-auto h-3 w-3 rounded-sm"
-                                  style={{ backgroundColor: cfg.color }}
-                                />
-                                {/* Tooltip */}
-                                {pos?.inventory && (
-                                  <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-48 -translate-x-1/2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-lg group-hover:block">
-                                    <p className="text-xs font-semibold text-[var(--text-primary)]">
-                                      {pos.inventory.product_name}
-                                    </p>
-                                    <p className="font-mono text-[10px] text-[var(--brand)]">
-                                      {pos.inventory.product_sku}
-                                    </p>
-                                    <div className="mt-2 space-y-1 text-[10px] text-[var(--text-muted)]">
-                                      <p>Cant: {pos.inventory.quantity} {pos.inventory.category}</p>
-                                      {pos.inventory.lot_number && <p>Lote: {pos.inventory.lot_number}</p>}
-                                      {pos.inventory.supplier && <p>Prov: {pos.inventory.supplier}</p>}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="overflow-y-auto max-h-[calc(85vh-40px)]">
+                  <RackDetailContent rack={selectedRack} onClose={() => setSelectedRack(null)} />
                 </div>
-
-                {/* Products in this rack */}
-                <div className="border-t border-[var(--border)] p-4">
-                  <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                    Productos en este rack
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedRack.rack_positions
-                      .filter((p) => p.inventory)
-                      .slice(0, 8)
-                      .map((pos) => {
-                        const inv = pos.inventory!;
-                        const invStatus = statusConfig[inv.status] || statusConfig.active;
-                        return (
-                          <div
-                            key={pos.id}
-                            className="rounded-lg bg-[var(--bg-muted)]/50 p-2.5"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="text-xs font-medium text-[var(--text-primary)]">
-                                  {inv.product_name}
-                                </p>
-                                <p className="font-mono text-[10px] text-[var(--brand)]">{inv.product_sku}</p>
-                              </div>
-                              <span
-                                className="rounded-full px-1.5 py-0.5 text-[9px] font-bold"
-                                style={{ backgroundColor: invStatus.bg, color: invStatus.color }}
-                              >
-                                {invStatus.label}
-                              </span>
-                            </div>
-                            <div className="mt-1.5 flex gap-3 text-[10px] text-[var(--text-muted)]">
-                              <span>Pos: {pos.row_number}-{pos.column_number}</span>
-                              <span>Cant: {inv.quantity}</span>
-                              {inv.lot_number && <span>Lote: {inv.lot_number}</span>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
+              </motion.div>
+              {/* Desktop side panel */}
+              <motion.div
+                initial={{ opacity: 0, x: 24, width: 0 }}
+                animate={{ opacity: 1, x: 0, width: 340 }}
+                exit={{ opacity: 0, x: 24, width: 0 }}
+                className="hidden md:block shrink-0 overflow-hidden"
+              >
+                <div className="h-full overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)]">
+                  <RackDetailContent rack={selectedRack} onClose={() => setSelectedRack(null)} />
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>

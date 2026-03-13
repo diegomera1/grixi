@@ -20,6 +20,7 @@ import { PRIMARY_TABS, SECONDARY_ITEMS } from "@/config/nav-config";
 import { createClient } from "@/lib/supabase/client";
 import { logLogoutEvent } from "@/lib/actions/audit";
 import { useThemeTransition } from "@/lib/hooks/use-theme-transition";
+import { NotificationsPanel } from "@/components/layout/notifications-panel";
 import type { User } from "@supabase/supabase-js";
 
 const MORE_ITEMS = SECONDARY_ITEMS;
@@ -28,6 +29,7 @@ export function MobileNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const { theme, toggleTheme } = useThemeTransition();
@@ -307,7 +309,10 @@ export function MobileNav() {
                       ⌘K
                     </kbd>
                   </button>
-                  <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]">
+                  <button
+                    onClick={() => { setDrawerOpen(false); setTimeout(() => setNotificationsOpen(true), 200); }}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
+                  >
                     <Bell size={20} className="text-[var(--text-muted)]" />
                     <span className="flex-1 text-left">Notificaciones</span>
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--error)] text-[9px] font-bold text-white">
@@ -344,6 +349,12 @@ export function MobileNav() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Notifications panel (bottom sheet) */}
+      <NotificationsPanel
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+      />
     </>
   );
 }
