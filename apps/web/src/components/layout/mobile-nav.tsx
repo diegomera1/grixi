@@ -64,33 +64,26 @@ export function MobileNav() {
   return (
     <>
       {/*
-        ── iOS PWA Bottom Tab Bar ────────────────────────
+        ── Bottom Tab Bar ────────────────────────
         
-        KEY ARCHITECTURE for iPhone safe area:
-        - The nav uses position:fixed, bottom:0
-        - There is NO padding-bottom on the nav container
-        - Instead, each BUTTON extends into the safe area via extra pb
-        - This means the entire button (including safe area zone) is clickable
-        - Icons/labels are positioned in the top portion via pt/gap
-        - The safe area zone below icons is just extra button area (same bg)
+        NOT position:fixed — this is a flex item inside a flex-col layout.
+        The parent layout is: div.h-full.flex.flex-col > main.flex-1 + nav.shrink-0
+        Main ENDS where nav BEGINS — zero overlap, zero touch interception.
         
-        This avoids the classic iOS PWA bug where padding-bottom on the container
-        pushes buttons up, but touch events still register at the original position.
+        Safe area: the nav background and spacer extend into the safe area,
+        but the icon/label buttons have a fixed height above the safe area.
       */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+        className="shrink-0 md:hidden border-t border-[var(--border)] bg-[var(--bg-surface)]"
         style={{
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        {/* Background that covers buttons + safe area */}
+        {/* Button row — fixed height, icons and labels centered */}
         <div
-          className="absolute inset-0 border-t border-[var(--border)] bg-[var(--bg-surface)]"
-          style={{ bottom: "calc(-1 * env(safe-area-inset-bottom, 0px))" }}
-        />
-
-        {/* Buttons row — each button extends into safe area */}
-        <div className="relative flex items-start">
+          className="flex items-stretch"
+          style={{ touchAction: "manipulation" }}
+        >
           {PRIMARY_TABS.map((tab) => {
             const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
             return (
@@ -98,16 +91,11 @@ export function MobileNav() {
                 key={tab.href}
                 onClick={() => router.push(tab.href)}
                 className={cn(
-                  "flex flex-1 flex-col items-center pt-2 transition-colors relative",
+                  "flex flex-1 flex-col items-center justify-center gap-[3px] h-[52px] transition-colors relative",
                   isActive
                     ? "text-[var(--text-primary)]"
                     : "text-[var(--text-muted)] active:text-[var(--text-secondary)]"
                 )}
-                style={{
-                  // Button extends into safe area — entire area is tappable
-                  paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
-                  touchAction: "manipulation",
-                }}
               >
                 {/* Active indicator line */}
                 {isActive && (
@@ -136,7 +124,7 @@ export function MobileNav() {
                 {/* Label */}
                 <span
                   className={cn(
-                    "mt-[3px] text-[10px] leading-none",
+                    "text-[10px] leading-none",
                     isActive ? "font-semibold" : "font-medium"
                   )}
                   style={{ color: isActive ? tab.color : undefined }}
@@ -151,15 +139,11 @@ export function MobileNav() {
           <button
             onClick={() => setDrawerOpen(true)}
             className={cn(
-              "flex flex-1 flex-col items-center pt-2 transition-colors relative",
+              "flex flex-1 flex-col items-center justify-center gap-[3px] h-[52px] transition-colors relative",
               isMoreActive || drawerOpen
                 ? "text-[var(--text-primary)]"
                 : "text-[var(--text-muted)] active:text-[var(--text-secondary)]"
             )}
-            style={{
-              paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
-              touchAction: "manipulation",
-            }}
           >
             {(isMoreActive && !drawerOpen) && (
               <motion.div
@@ -178,7 +162,7 @@ export function MobileNav() {
             </div>
             <span
               className={cn(
-                "mt-[3px] text-[10px] leading-none",
+                "text-[10px] leading-none",
                 isMoreActive ? "font-semibold text-[var(--brand)]" : "font-medium"
               )}
             >
@@ -186,6 +170,12 @@ export function MobileNav() {
             </span>
           </button>
         </div>
+
+        {/* Safe area spacer — extends nav background into home indicator zone */}
+        <div
+          className="bg-[var(--bg-surface)]"
+          style={{ height: "env(safe-area-inset-bottom, 0px)" }}
+        />
       </nav>
 
       {/* ── "Más" Drawer ──────────────────────── */}
