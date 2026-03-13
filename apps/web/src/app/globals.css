@@ -127,16 +127,7 @@ html, body {
   width: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-html {
-  /* Prevent iOS rubber-banding on the document itself */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -145,17 +136,6 @@ body {
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Prevent text size adjustment on orientation change */
-  -webkit-text-size-adjust: 100%;
-}
-
-/* PWA standalone mode — extra safety */
-@media (display-mode: standalone) {
-  html, body {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-  }
 }
 
 /* Smooth scroll for Lenis */
