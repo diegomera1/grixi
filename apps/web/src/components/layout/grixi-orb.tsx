@@ -793,7 +793,7 @@ export function GrixiOrb() {
               <div className="flex items-center gap-2.5 border-b border-[var(--border)] px-3.5 py-3">
                 <div className="relative shrink-0">
                   <div className="absolute inset-0 rounded-lg bg-[var(--brand)] opacity-10 blur-md" />
-                  <Image src="/brand/icon.png" alt="GRIXI" width={24} height={24} className="relative" />
+                  <Image src="/brand/icon.png" alt="GRIXI" width={24} height={24} className="relative rounded-lg" />
                 </div>
                 <div>
                   <span className="font-serif text-sm font-semibold italic text-[var(--text-primary)]">GRIXI</span>
@@ -949,7 +949,7 @@ export function GrixiOrb() {
                     exit={{ opacity: 0, scale: 0.6 }}
                     transition={{ type: "spring", stiffness: 400, damping: 22 }}
                   >
-                    <Image src="/brand/icon.png" alt="GRIXI" width={22} height={22} className="relative" />
+                    <Image src="/brand/icon.png" alt="GRIXI" width={22} height={22} className="relative rounded-md" />
                   </motion.div>
                 )}
               </AnimatePresence>

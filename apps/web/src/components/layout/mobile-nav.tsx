@@ -209,7 +209,7 @@ export function MobileNav() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <Image src="/brand/icon.png" alt="GRIXI" width={22} height={22} />
+                  <Image src="/brand/icon.png" alt="GRIXI" width={22} height={22} className="rounded-md" />
                   <span className="font-serif text-[13px] font-semibold italic text-[var(--text-primary)]">
                     GRIXI
                   </span>

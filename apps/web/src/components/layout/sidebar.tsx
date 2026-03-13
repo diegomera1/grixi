@@ -154,7 +154,7 @@ export function Sidebar() {
               alt="GRIXI"
               width={28}
               height={28}
-              className="relative h-7 w-7"
+              className="relative h-7 w-7 rounded-lg"
             />
           </div>
           <AnimatePresence>
