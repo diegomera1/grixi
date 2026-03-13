@@ -64,14 +64,19 @@ export function MobileNav() {
   return (
     <>
       {/* ── Bottom Tab Bar ──────────────────────── */}
-      {/* 
-        Structure: fixed bar wrapping buttons + safe-area spacer.
-        The entire nav has a solid background that extends into the safe area.
-        No negative calc, no shifting — just a solid block at the bottom.
+      {/*
+        Flow-based nav: sits at the bottom of the flex column layout.
+        NOT fixed — avoids all iOS position:fixed bugs.
+        The parent layout is flex-col h-[100dvh], so this nav gets
+        exactly the space it needs, and main content fills the rest.
       */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-[var(--border)] bg-[var(--bg-surface)]/95 backdrop-blur-2xl"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        className="relative z-50 md:hidden border-t border-[var(--border)] bg-[var(--bg-surface)] shrink-0"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          WebkitTapHighlightColor: "transparent",
+          touchAction: "manipulation",
+        }}
       >
         {/* Buttons row */}
         <div className="flex items-stretch">
