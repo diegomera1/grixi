@@ -725,18 +725,21 @@ function KPICard({
 
   return (
     <motion.div
-      className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 relative overflow-hidden group card-elevated"
+      className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 relative group card-elevated"
       layout
     >
-      {/* Background icon */}
-      <Icon className={cn("absolute -right-2 -top-2 w-16 h-16 opacity-[0.04]", c.icon)} />
+      {/* Background icon — clip manually so tooltip can overflow */}
+      <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+        <Icon className={cn("absolute -right-2 -top-2 w-16 h-16 opacity-[0.04]", c.icon)} />
+      </div>
       <div className="flex items-center justify-between mb-3">
         <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", c.bg)}>
           <Icon className={cn("w-4.5 h-4.5", c.icon)} />
         </div>
         {tooltip && (
-          <div className="relative">
+          <div className="relative z-30">
             <button
+              onClick={() => setShowTooltip(!showTooltip)}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               className="rounded-full p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-all"
@@ -750,7 +753,7 @@ function KPICard({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-xl"
+                  className="absolute right-0 top-full z-[100] mt-1 w-56 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3 shadow-2xl"
                 >
                   <p className="text-[11px] leading-relaxed text-[var(--text-secondary)]">
                     {tooltip}
