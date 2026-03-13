@@ -18,7 +18,7 @@ export default function PlatformLayout({
     <>
       <MobilePreviewWrapper>
         <div className="relative h-screen overflow-hidden bg-[var(--bg-primary)]">
-          <main className="platform-dot-grid relative h-full overflow-y-auto overflow-x-hidden mobile-content-bottom safe-area-all px-4 py-4 md:px-8 md:py-6 lg:px-16 lg:py-8 xl:px-24">
+          <main className="platform-dot-grid relative h-full overflow-y-auto overflow-x-hidden mobile-content-bottom safe-area-all px-4 pt-6 pb-4 md:px-8 md:pt-8 md:pb-6 lg:px-16 lg:pt-10 lg:pb-8 xl:px-24">
             <div className="relative z-10 mx-auto max-w-[1440px]">
               <PasskeyPromptBanner />
               <ActivityTrackerProvider>{children}</ActivityTrackerProvider>
