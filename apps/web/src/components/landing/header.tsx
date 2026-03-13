@@ -65,7 +65,7 @@ export function LandingHeader() {
         {/* Right: Login (mobile) + Time + Theme toggle */}
         <div className="flex items-center gap-3 md:gap-4">
           <Link
-            href="/auth/login"
+            href="/login"
             className={cn(
               "md:hidden rounded-full border px-4 py-2 text-[12px] font-semibold backdrop-blur-xl transition-all",
               isDark
