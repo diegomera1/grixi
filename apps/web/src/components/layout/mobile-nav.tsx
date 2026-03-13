@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -22,7 +22,6 @@ import { logLogoutEvent } from "@/lib/actions/audit";
 import { useThemeTransition } from "@/lib/hooks/use-theme-transition";
 import type { User } from "@supabase/supabase-js";
 
-// Navigation items from centralized config
 const MORE_ITEMS = SECONDARY_ITEMS;
 
 export function MobileNav() {
@@ -39,7 +38,6 @@ export function MobileNav() {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUser(data.user);
     });
-    // Prefetch all tab routes for instant navigation
     PRIMARY_TABS.forEach((tab) => router.prefetch(tab.href));
     MORE_ITEMS.forEach((item) => router.prefetch(item.href));
   }, [router]);
@@ -49,12 +47,12 @@ export function MobileNav() {
     setDrawerOpen(false);
   }, [pathname]);
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     await logLogoutEvent();
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
-  };
+  }, [router]);
 
   const isMoreActive = MORE_ITEMS.some(
     (item) => pathname === item.href || pathname.startsWith(item.href + "/")
@@ -66,12 +64,17 @@ export function MobileNav() {
   return (
     <>
       {/* ── Bottom Tab Bar ──────────────────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-        {/* Glass background — extends into safe area */}
-        <div className="absolute inset-0 border-t border-[var(--border)] bg-[var(--bg-surface)]/95 backdrop-blur-2xl" style={{ bottom: "calc(-1 * env(safe-area-inset-bottom, 0px))", top: 0 }} />
-
-        {/* Buttons row — above safe area */}
-        <div className="relative flex items-stretch">
+      {/* 
+        Structure: fixed bar wrapping buttons + safe-area spacer.
+        The entire nav has a solid background that extends into the safe area.
+        No negative calc, no shifting — just a solid block at the bottom.
+      */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-[var(--border)] bg-[var(--bg-surface)]/95 backdrop-blur-2xl"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        {/* Buttons row */}
+        <div className="flex items-stretch">
           {PRIMARY_TABS.map((tab) => {
             const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
             return (
@@ -79,7 +82,7 @@ export function MobileNav() {
                 key={tab.href}
                 onClick={() => router.push(tab.href)}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-[3px] py-2 pt-2.5 transition-colors relative active:scale-95",
+                  "flex flex-1 flex-col items-center justify-center gap-[3px] min-h-[52px] transition-colors relative",
                   isActive
                     ? "text-[var(--text-primary)]"
                     : "text-[var(--text-muted)] active:text-[var(--text-secondary)]"
@@ -126,7 +129,7 @@ export function MobileNav() {
           <button
             onClick={() => setDrawerOpen(true)}
             className={cn(
-              "flex flex-1 flex-col items-center gap-[3px] py-2 pt-2.5 transition-colors relative",
+              "flex flex-1 flex-col items-center justify-center gap-[3px] min-h-[52px] transition-colors relative",
               isMoreActive || drawerOpen
                 ? "text-[var(--text-primary)]"
                 : "text-[var(--text-muted)] active:text-[var(--text-secondary)]"
@@ -158,8 +161,6 @@ export function MobileNav() {
             </span>
           </button>
         </div>
-        {/* Safe area spacer — fills iPhone home indicator region */}
-        <div className="relative" style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
       </nav>
 
       {/* ── "Más" Drawer ──────────────────────── */}
@@ -182,7 +183,8 @@ export function MobileNav() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 34 }}
-              className="fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-[26px] bg-[var(--bg-surface)] shadow-[0_-10px_50px_rgba(0,0,0,0.25)] md:hidden safe-area-bottom"
+              className="fixed bottom-0 left-0 right-0 z-[70] max-h-[85vh] overflow-y-auto rounded-t-[26px] bg-[var(--bg-surface)] shadow-[0_-10px_50px_rgba(0,0,0,0.25)] md:hidden"
+              style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 20px)" }}
             >
               {/* Pull handle */}
               <div className="flex justify-center pt-3 pb-1">
@@ -215,6 +217,7 @@ export function MobileNav() {
                       width={40}
                       height={40}
                       className="rounded-full ring-2 ring-[var(--brand)]/15"
+                      unoptimized
                     />
                   ) : (
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-dark)] text-white font-bold text-sm">

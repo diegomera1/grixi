@@ -186,20 +186,21 @@ export function WarehousesContent({ warehouses }: WarehousesContentProps) {
         </div>
 
         {/* Tab Navigation — same pattern as finanzas */}
-        <div className="flex items-center gap-1 border-b border-[var(--border)] -mx-1 px-1 overflow-x-auto">
+        <div className="grid grid-cols-3 border-b border-[var(--border)] sm:flex sm:items-center sm:gap-1 sm:-mx-1 sm:px-1">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-all relative shrink-0",
+                "flex items-center justify-center gap-2 py-2.5 text-xs font-medium transition-all relative",
+                "sm:justify-start sm:px-4",
                 activeTab === tab.id
                   ? "text-[var(--brand)]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               )}
             >
               <tab.icon size={14} />
-              <span>{tab.label}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
               {activeTab === tab.id && (
                 <motion.div
                   layoutId="almacenes-tab-indicator"

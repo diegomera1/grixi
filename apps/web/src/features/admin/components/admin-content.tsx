@@ -308,13 +308,14 @@ export function AdminContent({
       </motion.div>
 
       {/* ── Tabs ─────────────── */}
-      <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto scrollbar-hide">
+      <div className="grid grid-cols-5 border-b border-[var(--border)] sm:flex sm:items-center sm:gap-1">
         {tabsWithCounts.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-all relative shrink-0",
+              "flex items-center justify-center gap-2 py-2.5 text-xs font-medium transition-all relative",
+              "sm:justify-start sm:px-4",
               activeTab === tab.id
                 ? "text-[var(--brand)]"
                 : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
