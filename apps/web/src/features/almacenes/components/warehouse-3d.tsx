@@ -1805,9 +1805,9 @@ export function Warehouse3DScene({
         ))}
       </div>
 
-      {/* ── Tool buttons — horizontal on mobile, vertical on desktop ──────────── */}
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-2 md:left-3 md:translate-x-0 md:bottom-14 z-20 flex flex-row md:flex-col gap-0.5 rounded-2xl bg-white/90 p-1 shadow-xl ring-1 ring-black/[0.06] backdrop-blur-xl max-w-[95vw] overflow-x-auto md:overflow-x-visible">
-        {/* Primary tools — always visible */}
+      {/* ── Tool buttons — full-width dock on mobile, vertical on desktop ──────────── */}
+      <div className="absolute inset-x-0 bottom-0 md:inset-x-auto md:left-3 md:bottom-14 z-20 flex flex-row md:flex-col gap-0 md:gap-0.5 bg-white/95 md:bg-white/90 md:rounded-2xl md:p-1 shadow-xl ring-1 ring-black/[0.06] backdrop-blur-xl">
+        {/* Primary tools */}
         {([
           {
             icon: RotateCcw,
@@ -1843,18 +1843,18 @@ export function Warehouse3DScene({
             key={tool.label}
             onClick={tool.onClick}
             title={tool.label}
-            className={`group relative flex h-10 w-10 flex-col items-center justify-center gap-0.5 rounded-xl transition-all ${
+            className={`group relative flex flex-1 md:flex-none h-12 md:h-10 md:w-10 flex-col items-center justify-center gap-0.5 md:rounded-xl transition-all active:scale-95 ${
               tool.active && tool.activeClass
                 ? tool.activeClass
                 : `text-slate-500 ${tool.hoverClass}`
             }`}
           >
-            <tool.icon size={15} />
-            <span className="text-[7px] font-semibold leading-none">{tool.label}</span>
+            <tool.icon size={16} className="md:size-[15px]" />
+            <span className="text-[8px] md:text-[7px] font-semibold leading-none">{tool.label}</span>
           </button>
         ))}
 
-        <div className="mx-1.5 h-px bg-slate-200" />
+        <div className="w-px self-stretch bg-slate-200 my-2 md:w-auto md:self-auto md:mx-1.5 md:h-px md:my-0" />
 
         {/* Secondary tools */}
         {([
@@ -1886,29 +1886,29 @@ export function Warehouse3DScene({
             key={tool.label}
             onClick={tool.onClick}
             title={tool.label}
-            className={`group relative flex h-10 w-10 flex-col items-center justify-center gap-0.5 rounded-xl transition-all ${
+            className={`group relative flex flex-1 md:flex-none h-12 md:h-10 md:w-10 flex-col items-center justify-center gap-0.5 md:rounded-xl transition-all active:scale-95 ${
               tool.active && tool.activeClass
                 ? tool.activeClass
                 : `text-slate-500 ${tool.hoverClass}`
             }`}
           >
-            <tool.icon size={15} />
-            <span className="text-[7px] font-semibold leading-none">{tool.label}</span>
+            <tool.icon size={16} className="md:size-[15px]" />
+            <span className="text-[8px] md:text-[7px] font-semibold leading-none">{tool.label}</span>
           </button>
         ))}
 
-        <div className="mx-1.5 h-px bg-slate-200" />
+        <div className="w-px self-stretch bg-slate-200 my-2 md:w-auto md:self-auto md:mx-1.5 md:h-px md:my-0" />
 
         {/* More tools toggle */}
         <button
           onClick={() => setToolsExpanded((p) => !p)}
           title={toolsExpanded ? "Cerrar" : "Más"}
-          className={`group relative flex h-10 w-10 flex-col items-center justify-center gap-0.5 rounded-xl transition-all ${
+          className={`group relative flex flex-1 md:flex-none h-12 md:h-10 md:w-10 flex-col items-center justify-center gap-0.5 md:rounded-xl transition-all active:scale-95 ${
             toolsExpanded ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
           }`}
         >
-          {toolsExpanded ? <XIcon size={15} /> : <MoreVertical size={15} />}
-          <span className="text-[7px] font-semibold leading-none">{toolsExpanded ? "Cerrar" : "Más"}</span>
+          {toolsExpanded ? <XIcon size={16} className="md:size-[15px]" /> : <MoreVertical size={16} className="md:size-[15px]" />}
+          <span className="text-[8px] md:text-[7px] font-semibold leading-none">{toolsExpanded ? "Cerrar" : "Más"}</span>
         </button>
       </div>
 
