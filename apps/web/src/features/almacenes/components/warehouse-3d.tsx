@@ -1149,8 +1149,8 @@ function SceneContent({
           makeDefault
           enableDamping
           dampingFactor={0.06}
-          minPolarAngle={0.15}
-          maxPolarAngle={Math.PI / 2.15}
+          minPolarAngle={0.3}
+          maxPolarAngle={Math.PI / 2.5}
           minDistance={3}
           maxDistance={28}
           target={[0, 1.5, 0]}
@@ -1597,7 +1597,7 @@ export function Warehouse3DScene({
       : 0;
 
   return (
-    <div ref={containerRef} className={`relative w-full overflow-hidden transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen' : 'h-[calc(100vh-12rem)] min-h-[500px] rounded-xl border border-slate-200'}`}>
+    <div ref={containerRef} className={`relative w-full overflow-hidden transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen' : 'h-[calc(100vh-12rem)] min-h-[400px] rounded-xl border border-slate-200'}`}>
       <ErrorBoundary
         fallback={
           <div className="flex h-full items-center justify-center bg-slate-50 p-8">
@@ -1659,16 +1659,16 @@ export function Warehouse3DScene({
       </ErrorBoundary>
 
       {/* ── HUD ──────────── */}
-      <div className="absolute left-3 top-3 flex flex-col gap-1.5">
-        <div className="flex items-center gap-2 rounded-lg bg-white/95 px-3 py-1.5 shadow-md ring-1 ring-black/5 backdrop-blur-md">
-          <span className="relative flex h-2 w-2">
+      <div className="absolute left-2 md:left-3 top-2 md:top-3 flex flex-col gap-1.5 max-w-[60%] md:max-w-none">
+        <div className="flex items-center gap-2 rounded-lg bg-white/95 px-2 md:px-3 py-1.5 shadow-md ring-1 ring-black/5 backdrop-blur-md">
+          <span className="relative flex h-2 w-2 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
           </span>
-          <span className="text-[12px] font-bold text-slate-800">
+          <span className="text-[11px] md:text-[12px] font-bold text-slate-800 truncate">
             {warehouse.name}
           </span>
-          <span className="text-[10px] text-slate-400">
+          <span className="text-[9px] md:text-[10px] text-slate-400 shrink-0 hidden sm:inline">
             {racks.length} racks · {totalPositions} pos
           </span>
         </div>
@@ -2163,13 +2163,17 @@ export function Warehouse3DScene({
         onAction={(action, value) => {
           // Real-time activation of features for each tutorial step
           switch (action) {
-            case "rotate":
-              // Reset camera to default position to demonstrate
+            case "overview":
+              // Reset camera to default orbital position
               setCameraTarget(null);
               setSelectedRackId(null);
+              setSelectedBox(null);
+              setFpsMode(false);
+              setSearchOpen(false);
+              setToolsExpanded(false);
               break;
             case "zoom":
-              // No automatic action needed — just shows instruction
+              // No automatic action — just instruction
               break;
             case "selectRack":
               // Auto-select first rack to demonstrate
@@ -2181,8 +2185,16 @@ export function Warehouse3DScene({
             case "heatmap":
               setViewMode("heatmap");
               break;
+            case "showTools":
+              setToolsExpanded(true);
+              break;
             case "fps":
-              setFpsMode(true);
+              if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+                setFpsMode(true);
+              }
+              break;
+            case "screenshot":
+              // Just explanation — no action needed
               break;
             case "cleanup":
               // Reset when leaving a step
@@ -2192,6 +2204,7 @@ export function Warehouse3DScene({
               }
               if (value === "search") setSearchOpen(false);
               if (value === "heatmap") setViewMode("normal");
+              if (value === "showTools") setToolsExpanded(false);
               if (value === "fps") setFpsMode(false);
               break;
           }

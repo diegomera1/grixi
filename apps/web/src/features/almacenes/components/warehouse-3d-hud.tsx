@@ -817,38 +817,58 @@ export function GuidedTourOverlay({
   const [currentStep, setCurrentStep] = useState(0);
   const [autoPlay, setAutoPlay] = useState(false);
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
   const steps = useMemo(() => [
     {
-      title: "📷 Rotación de Cámara",
-      description: "Arrastra con el mouse para rotar la vista del almacén. Click derecho para mover.",
-      action: "rotate",
+      title: "🌐 Vista General del Almacén",
+      description: isMobile
+        ? "Estás viendo tu almacén en 3D. Usa un dedo para rotar la vista y dos dedos para mover la cámara. Cada estructura es un rack con sus productos."
+        : "Estás viendo una representación 3D de tu almacén. Arrastra con el mouse para rotar la vista. Click derecho + arrastra para mover la cámara. Cada estructura es un rack con sus posiciones e inventario.",
+      action: "overview",
     },
     {
-      title: "🔍 Zoom",
-      description: "Usa la rueda del mouse o pinch para acercarte/alejarte de la escena.",
+      title: "🔍 Acercar y Alejar (Zoom)",
+      description: isMobile
+        ? "Haz pinch con dos dedos para acercarte o alejarte. Acércate a un rack para ver sus productos individuales con colores según categoría."
+        : "Usa la rueda del mouse para hacer zoom. Acércate para ver los productos individuales dentro de cada rack — cada caja tiene un color según su categoría de producto.",
       action: "zoom",
     },
     {
-      title: "📦 Seleccionar Rack",
-      description: "Haz click en cualquier rack para ver sus productos y posiciones.",
+      title: "📦 Seleccionar un Rack",
+      description: isMobile
+        ? "Toca cualquier rack para ver sus detalles: número de posiciones, productos almacenados, estado de cada slot y datos del inventario."
+        : "Haz click en cualquier rack para seleccionarlo. Verás sus detalles completos: código del rack, posiciones ocupadas/vacías, productos con SKU, lotes, fechas de vencimiento y más.",
       action: "selectRack",
     },
     {
       title: "🔎 Buscar Productos",
-      description: "Usa el buscador (⌘K) para encontrar productos por nombre o SKU.",
+      description: "Se abre el buscador inteligente. Puedes buscar cualquier producto por nombre, SKU o categoría. Los resultados te llevan directo al rack donde está el producto.",
       action: "search",
     },
     {
-      title: "🔥 Modos de Vista",
-      description: "Cambia entre Heat Map, ABC, Antigüedad y más para analizar el inventario.",
+      title: "🔥 Modos de Visualización",
+      description: "Se activó el Mapa de Calor. Este modo colorea los racks según su nivel de ocupación (verde = bajo, amarillo = medio, rojo = lleno). También hay modos: ABC (clasificación Pareto), Antigüedad (días almacenado), y Conteo Cíclico.",
       action: "heatmap",
     },
     {
-      title: "👁 Vista Primera Persona",
-      description: "Activa FPS para recorrer el almacén con WASD. ESC para salir.",
+      title: "📡 Paneles de Control",
+      description: "El botón 'Más' abre herramientas avanzadas: IoT (sensores de temperatura/humedad), Personal (operarios activos), Waves (órdenes de picking), Alertas (vencimientos, stock bajo), Capacidad (slots disponibles) y Slotting con IA.",
+      action: "showTools",
+    },
+    {
+      title: "👁 Vista en Primera Persona",
+      description: isMobile
+        ? "El modo FPS te permite recorrer el almacén como si caminaras dentro de él. En móvil, la experiencia es más limitada — se recomienda usar esta función en desktop."
+        : "El modo FPS (Primera Persona) te permite recorrer el almacén como si caminaras dentro. Usa WASD para moverte, mouse para mirar alrededor, E/Q para subir/bajar. Click para capturar el mouse. ESC para salir.",
       action: "fps",
     },
-  ], []);
+    {
+      title: "📸 Captura de Pantalla",
+      description: "Puedes tomar capturas del estado actual del almacén 3D en cualquier momento con el botón de cámara. Útil para reportes, documentación o compartir el estado del inventario con tu equipo.",
+      action: "screenshot",
+    },
+  ], [isMobile]);
 
   // Execute action for current step
   useEffect(() => {
