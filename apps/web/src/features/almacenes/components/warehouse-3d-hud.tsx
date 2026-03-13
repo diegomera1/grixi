@@ -904,59 +904,62 @@ export function GuidedTourOverlay({
   };
 
   return (
-    <div className="absolute inset-x-0 top-3 flex justify-center z-30 pointer-events-none">
-      <motion.div
-        key={currentStep}
-        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 10 }}
-        className="pointer-events-auto rounded-2xl bg-slate-900/95 px-5 py-3.5 shadow-2xl backdrop-blur-xl ring-1 ring-white/10"
-        style={{ minWidth: 340 }}
-      >
-        {/* Progress bar */}
-        <div className="mb-3 h-1 w-full rounded-full bg-slate-700 overflow-hidden">
-          <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-white">{step.title}</p>
-            <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">{step.description}</p>
+    <>
+      {/* Full-screen semi-transparent backdrop */}
+      <div className="fixed inset-0 z-[998] bg-black/30 pointer-events-none" />
+      {/* Tour card — fixed, centered, always on top */}
+      <div className="fixed inset-x-0 top-4 md:top-6 flex justify-center z-[999] px-4 pointer-events-none">
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 10 }}
+          className="pointer-events-auto w-full max-w-md rounded-2xl bg-slate-900/95 px-5 py-4 shadow-2xl backdrop-blur-xl ring-1 ring-white/10"
+        >
+          {/* Progress bar */}
+          <div className="mb-3 h-1 w-full rounded-full bg-slate-700 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+            />
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={goPrev}
-              disabled={currentStep === 0}
-              className="rounded-lg px-2 py-1 text-[9px] font-semibold text-slate-400 transition-all hover:bg-slate-700 hover:text-white disabled:opacity-30"
-            >
-              ← Ant.
-            </button>
-            <button
-              onClick={goNext}
-              className="rounded-lg bg-emerald-500 px-2.5 py-1 text-[9px] font-bold text-white shadow-sm transition-all hover:bg-emerald-400"
-            >
-              {currentStep === steps.length - 1 ? "Fin ✓" : "Sig. →"}
-            </button>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white">{step.title}</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">{step.description}</p>
+            </div>
           </div>
-        </div>
 
-        <div className="mt-2 flex items-center justify-between">
-          <span className="text-[8px] font-semibold text-slate-500">{currentStep + 1} de {steps.length}</span>
-          <button
-            onClick={onEnd}
-            className="rounded-md px-2 py-0.5 text-[8px] font-semibold text-slate-500 transition-colors hover:bg-slate-700 hover:text-white"
-          >
-            Salir del tutorial
-          </button>
-        </div>
-      </motion.div>
-    </div>
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-slate-500">{currentStep + 1} de {steps.length}</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onEnd}
+                className="rounded-lg px-3 py-1.5 text-[10px] font-semibold text-slate-400 transition-colors hover:bg-slate-700 hover:text-white active:scale-95"
+              >
+                Salir
+              </button>
+              <button
+                onClick={goPrev}
+                disabled={currentStep === 0}
+                className="rounded-lg px-3 py-1.5 text-[10px] font-semibold text-slate-300 transition-all hover:bg-slate-700 hover:text-white disabled:opacity-30 active:scale-95"
+              >
+                ← Ant.
+              </button>
+              <button
+                onClick={goNext}
+                className="rounded-lg bg-emerald-500 px-4 py-1.5 text-[10px] font-bold text-white shadow-sm transition-all hover:bg-emerald-400 active:scale-95"
+              >
+                {currentStep === steps.length - 1 ? "Fin ✓" : "Sig. →"}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </>
   );
 }
 

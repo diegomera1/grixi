@@ -1748,7 +1748,7 @@ export function Warehouse3DScene({
         </div>
       </div>
 
-      <div className="absolute bottom-3 left-3 flex gap-1.5">
+      <div className="absolute bottom-3 left-3 hidden md:flex gap-1.5">
         {[
           {
             label: "Ocupados",
@@ -1791,7 +1791,7 @@ export function Warehouse3DScene({
         ))}
       </div>
 
-      <div className="absolute bottom-3 right-3 flex items-center gap-3 rounded-lg bg-white/95 px-3 py-2 shadow-md ring-1 ring-black/5">
+      <div className="absolute bottom-3 right-3 hidden md:flex items-center gap-3 rounded-lg bg-white/95 px-3 py-2 shadow-md ring-1 ring-black/5">
         {Object.entries(STATUS_LABELS).map(([key, label]) => (
           <div key={key} className="flex items-center gap-1">
             <div
@@ -1805,8 +1805,8 @@ export function Warehouse3DScene({
         ))}
       </div>
 
-      {/* ── Tool buttons — Clean labeled toolbar ──────────── */}
-      <div className="absolute left-3 bottom-14 z-20 flex flex-col gap-0.5 rounded-2xl bg-white/90 p-1 shadow-xl ring-1 ring-black/[0.06] backdrop-blur-xl">
+      {/* ── Tool buttons — horizontal on mobile, vertical on desktop ──────────── */}
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-2 md:left-3 md:translate-x-0 md:bottom-14 z-20 flex flex-row md:flex-col gap-0.5 rounded-2xl bg-white/90 p-1 shadow-xl ring-1 ring-black/[0.06] backdrop-blur-xl max-w-[95vw] overflow-x-auto md:overflow-x-visible">
         {/* Primary tools — always visible */}
         {([
           {
@@ -1914,7 +1914,7 @@ export function Warehouse3DScene({
 
       {/* ── Expandable Advanced Tools Popover ──────── */}
       {toolsExpanded && (
-        <div className="absolute left-14 bottom-14 z-30 rounded-2xl bg-white/95 p-4 shadow-2xl ring-1 ring-black/[0.06] backdrop-blur-xl" style={{ width: 240 }}>
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-16 md:left-14 md:translate-x-0 md:bottom-14 z-30 rounded-2xl bg-white/95 p-4 shadow-2xl ring-1 ring-black/[0.06] backdrop-blur-xl w-[min(240px,90vw)]">
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Herramientas Avanzadas</p>
           <div className="grid grid-cols-4 gap-2 mb-3">
             {[
