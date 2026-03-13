@@ -63,23 +63,34 @@ export function MobileNav() {
 
   return (
     <>
-      {/* ── Bottom Tab Bar ──────────────────────── */}
       {/*
-        Flow-based nav: sits at the bottom of the flex column layout.
-        NOT fixed — avoids all iOS position:fixed bugs.
-        The parent layout is flex-col h-[100dvh], so this nav gets
-        exactly the space it needs, and main content fills the rest.
+        ── iOS PWA Bottom Tab Bar ────────────────────────
+        
+        KEY ARCHITECTURE for iPhone safe area:
+        - The nav uses position:fixed, bottom:0
+        - There is NO padding-bottom on the nav container
+        - Instead, each BUTTON extends into the safe area via extra pb
+        - This means the entire button (including safe area zone) is clickable
+        - Icons/labels are positioned in the top portion via pt/gap
+        - The safe area zone below icons is just extra button area (same bg)
+        
+        This avoids the classic iOS PWA bug where padding-bottom on the container
+        pushes buttons up, but touch events still register at the original position.
       */}
       <nav
-        className="relative z-50 md:hidden border-t border-[var(--border)] bg-[var(--bg-surface)] shrink-0"
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
         style={{
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
           WebkitTapHighlightColor: "transparent",
-          touchAction: "manipulation",
         }}
       >
-        {/* Buttons row */}
-        <div className="flex items-stretch">
+        {/* Background that covers buttons + safe area */}
+        <div
+          className="absolute inset-0 border-t border-[var(--border)] bg-[var(--bg-surface)]"
+          style={{ bottom: "calc(-1 * env(safe-area-inset-bottom, 0px))" }}
+        />
+
+        {/* Buttons row — each button extends into safe area */}
+        <div className="relative flex items-start">
           {PRIMARY_TABS.map((tab) => {
             const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
             return (
@@ -87,11 +98,16 @@ export function MobileNav() {
                 key={tab.href}
                 onClick={() => router.push(tab.href)}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-[3px] min-h-[52px] transition-colors relative",
+                  "flex flex-1 flex-col items-center pt-2 transition-colors relative",
                   isActive
                     ? "text-[var(--text-primary)]"
                     : "text-[var(--text-muted)] active:text-[var(--text-secondary)]"
                 )}
+                style={{
+                  // Button extends into safe area — entire area is tappable
+                  paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
+                  touchAction: "manipulation",
+                }}
               >
                 {/* Active indicator line */}
                 {isActive && (
@@ -102,7 +118,7 @@ export function MobileNav() {
                     transition={{ type: "spring", stiffness: 500, damping: 35 }}
                   />
                 )}
-                {/* Icon with subtle glow when active */}
+                {/* Icon */}
                 <div className="relative">
                   {isActive && (
                     <div
@@ -117,9 +133,10 @@ export function MobileNav() {
                     style={{ color: isActive ? tab.color : undefined }}
                   />
                 </div>
+                {/* Label */}
                 <span
                   className={cn(
-                    "text-[10px] leading-none",
+                    "mt-[3px] text-[10px] leading-none",
                     isActive ? "font-semibold" : "font-medium"
                   )}
                   style={{ color: isActive ? tab.color : undefined }}
@@ -134,11 +151,15 @@ export function MobileNav() {
           <button
             onClick={() => setDrawerOpen(true)}
             className={cn(
-              "flex flex-1 flex-col items-center justify-center gap-[3px] min-h-[52px] transition-colors relative",
+              "flex flex-1 flex-col items-center pt-2 transition-colors relative",
               isMoreActive || drawerOpen
                 ? "text-[var(--text-primary)]"
                 : "text-[var(--text-muted)] active:text-[var(--text-secondary)]"
             )}
+            style={{
+              paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
+              touchAction: "manipulation",
+            }}
           >
             {(isMoreActive && !drawerOpen) && (
               <motion.div
@@ -153,12 +174,11 @@ export function MobileNav() {
                 strokeWidth={isMoreActive ? 2.2 : 1.8}
                 className={cn(isMoreActive && "text-[var(--brand)]")}
               />
-              {/* Notification dot */}
               <span className="absolute -right-1.5 -top-1 h-[6px] w-[6px] rounded-full bg-[var(--error)] ring-2 ring-[var(--bg-surface)]" />
             </div>
             <span
               className={cn(
-                "text-[10px] leading-none",
+                "mt-[3px] text-[10px] leading-none",
                 isMoreActive ? "font-semibold text-[var(--brand)]" : "font-medium"
               )}
             >
