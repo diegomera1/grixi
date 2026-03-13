@@ -195,9 +195,9 @@ export function DashboardContent({
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[color-mix(in_srgb,var(--brand)_70%,#000)] text-white text-sm font-bold shadow-md">
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--brand)] to-[color-mix(in_srgb,var(--brand)_70%,#000)] text-white text-sm font-bold shadow-md">
               {user.avatar ? (
-                <Image src={user.avatar} alt={user.name} width={40} height={40} className="rounded-full" />
+                <Image src={user.avatar} alt={user.name} width={40} height={40} className="h-full w-full rounded-full object-cover" unoptimized />
               ) : (
                 user.name.charAt(0).toUpperCase()
               )}
