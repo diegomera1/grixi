@@ -18,13 +18,13 @@ export default function PlatformLayout({
     <>
       <MobilePreviewWrapper>
         {/*
-          Layout strategy for iOS PWA:
-          - Outer div: flex column, h-[100dvh] (dynamic viewport height, works with iOS safe areas)
-          - Main: flex-1 + overflow-y-auto (takes all available space minus nav)
-          - MobileNav: NOT fixed, but sticky at bottom via flex layout
-          This avoids all iOS position:fixed bugs inside overflow containers.
+          iOS PWA layout strategy:
+          - `fixed inset-0` = EXACTLY the visible viewport, always stable
+          - No vh/dvh/svh — all are unreliable on iOS Safari/standalone
+          - flex-col splits space: main (flex-1) + nav (shrink-0)
+          - Nav never moves because the container never resizes
         */}
-        <div className="relative flex flex-col bg-[var(--bg-primary)] h-[100dvh] md:h-screen overflow-hidden">
+        <div className="fixed inset-0 flex flex-col bg-[var(--bg-primary)]">
           <main className="platform-dot-grid relative flex-1 overflow-y-auto overflow-x-hidden px-4 pt-6 pb-4 md:px-8 md:pt-8 md:pb-6 lg:px-16 lg:pt-10 lg:pb-8 xl:px-24">
             <div className="relative z-10 safe-area-all mx-auto max-w-[1440px]">
               <PasskeyPromptBanner />
