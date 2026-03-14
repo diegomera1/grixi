@@ -249,8 +249,10 @@ export function useGrixiVoice() {
       const { token, userName, userDepartment, userPosition } = await tokenRes.json();
 
       // 2. Create client with ephemeral token
+      // Ephemeral tokens REQUIRE v1alpha API version
       const client = new GoogleGenAI({
         apiKey: token,
+        httpOptions: { apiVersion: "v1alpha" },
       });
 
       // 3. Build system prompt
