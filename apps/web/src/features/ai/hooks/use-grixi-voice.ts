@@ -243,8 +243,8 @@ export function useGrixiVoice() {
       };
 
       recognition.onerror = (event: { error: string }) => {
-        if (event.error === "no-speech") {
-          // No speech detected, restart listening
+        if (event.error === "no-speech" || event.error === "aborted") {
+          // No speech detected or aborted, restart listening
           if (isActiveRef.current) {
             try {
               recognition.start();
@@ -254,7 +254,25 @@ export function useGrixiVoice() {
           }
           return;
         }
-        if (event.error === "aborted") return;
+        if (event.error === "network") {
+          // Network error — retry after a short delay
+          console.warn("[GRIXI Voice] Network error, retrying...");
+          if (isActiveRef.current) {
+            setTimeout(() => {
+              try {
+                recognition.start();
+              } catch {
+                // Already started
+              }
+            }, 1000);
+          }
+          return;
+        }
+        if (event.error === "not-allowed") {
+          setError("Permiso de micrófono denegado. Habilita el acceso en tu navegador.");
+          setState("idle");
+          return;
+        }
         console.error("[GRIXI Voice] Recognition error:", event.error);
         setError(`Error de reconocimiento: ${event.error}`);
       };

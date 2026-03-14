@@ -28,7 +28,7 @@ import {
   History,
   Plus,
   MessageSquare,
-  Mic,
+  AudioLines,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { createClient } from "@/lib/supabase/client";
@@ -81,6 +81,8 @@ export function GrixiOrb() {
   // Navigation states
   const [state, setState] = useState<"orb" | "peek" | "panel">("orb");
   const [hoveredPeekId, setHoveredPeekId] = useState<string | null>(null);
+  const [hoveredAi, setHoveredAi] = useState(false);
+  const aiHoverTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const [showUserPopover, setShowUserPopover] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -923,20 +925,20 @@ export function GrixiOrb() {
             onClick={handleOrbClick}
             className="relative flex h-12 w-12 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-surface)] shadow-xl transition-shadow hover:shadow-2xl"
             style={{
-              boxShadow: `0 0 20px ${activeColor}20, 0 4px 12px rgba(0,0,0,0.15)`,
+              boxShadow: `0 0 14px ${activeColor}15, 0 4px 12px rgba(0,0,0,0.15)`,
             }}
           >
-            {/* Glow ring */}
+            {/* Thin glow ring */}
             <motion.div
-              className="absolute inset-0 rounded-full"
+              className="absolute inset-[-1px] rounded-full"
               style={{
-                background: `conic-gradient(from 0deg, ${activeColor}40, transparent, ${activeColor}20, transparent, ${activeColor}40)`,
+                background: `conic-gradient(from 0deg, ${activeColor}25, transparent 40%, ${activeColor}15, transparent 80%, ${activeColor}25)`,
               }}
               animate={{ rotate: 360 }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
             />
             {/* Active module icon or logo */}
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-surface)]">
+            <div className="relative flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[var(--bg-surface)]">
               <AnimatePresence mode="wait">
                 {activeModule ? (
                   <motion.div
@@ -977,77 +979,76 @@ export function GrixiOrb() {
 
           {/* ── AI Satellite Bubble (always visible) ── */}
           {!isAiPage && (
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setAiOpen(!aiOpen)}
-              className={cn(
-                "relative flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition-all",
-                aiOpen
-                  ? "border-[#7C3AED]/40 bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] text-white shadow-[#7C3AED]/30"
-                  : "border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)] hover:border-[#7C3AED]/30 hover:text-[#A78BFA] hover:shadow-[#7C3AED]/20"
-              )}
-              title="GRIXI AI"
+            <div
+              className="relative"
+              onMouseEnter={() => {
+                if (aiHoverTimerRef.current) clearTimeout(aiHoverTimerRef.current);
+                setHoveredAi(true);
+              }}
+              onMouseLeave={() => {
+                aiHoverTimerRef.current = setTimeout(() => setHoveredAi(false), 400);
+              }}
             >
-              {/* Breathing pulse when not open */}
-              {!aiOpen && (
-                <motion.div
-                  animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute inset-0 rounded-full border border-[#A78BFA]"
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setAiOpen(!aiOpen)}
+                className={cn(
+                  "relative flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition-all",
+                  aiOpen
+                    ? "border-[#7C3AED]/40 bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] text-white shadow-[#7C3AED]/30"
+                    : "border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)] hover:border-[#7C3AED]/30 hover:text-[#A78BFA] hover:shadow-[#7C3AED]/20"
+                )}
+                title="GRIXI AI"
+              >
+                {/* Subtle breathing pulse */}
+                {!aiOpen && (
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0, 0.2] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-0 rounded-full border border-[#A78BFA]/60"
+                  />
+                )}
+                <Sparkles size={15} className="relative" />
+                {/* Context dot */}
+                <span
+                  className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border-[1.5px] border-[var(--bg-surface)]"
+                  style={{ backgroundColor: activeColor }}
                 />
-              )}
-              <Sparkles size={15} className="relative" />
-              {/* Context dot */}
-              <span
-                className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border-[1.5px] border-[var(--bg-surface)]"
-                style={{ backgroundColor: activeColor }}
-              />
-            </motion.button>
-          )}
+              </motion.button>
 
-          {/* ── GRIXI Voice — AI Voice Satellite ── */}
-          {!isAiPage && (
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => { setVoiceOpen(!voiceOpen); if (aiOpen) setAiOpen(false); }}
-              className={cn(
-                "relative flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition-all",
-                voiceOpen
-                  ? "border-[#7C3AED]/50 bg-gradient-to-br from-[#7C3AED] to-[#A855F7] text-white shadow-[0_0_16px_rgba(124,58,237,0.4)]"
-                  : "border-[var(--border)] bg-[var(--bg-surface)] text-[#A78BFA] hover:border-[#7C3AED]/40 hover:text-[#7C3AED] hover:shadow-[0_0_12px_rgba(124,58,237,0.2)]"
-              )}
-              title="GRIXI Voice"
-            >
-              {/* Breathing pulse */}
-              {!voiceOpen && (
-                <motion.div
-                  animate={{ scale: [1, 1.4, 1], opacity: [0.25, 0, 0.25] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                  className="absolute inset-0 rounded-full border border-[#A78BFA]"
-                />
-              )}
-
-              {/* Icon: AudioLines (clean AI waveform) */}
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative">
-                <path d="M2 10v3" />
-                <path d="M6 6v11" />
-                <path d="M10 3v18" />
-                <path d="M14 8v7" />
-                <path d="M18 5v13" />
-                <path d="M22 10v3" />
-              </svg>
-
-              {/* Active green dot */}
-              {voiceOpen && (
-                <motion.span
-                  className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-surface)] bg-emerald-400"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-              )}
-            </motion.button>
+              {/* ── GRIXI Voice — slides in on AI hover ── */}
+              <AnimatePresence>
+                {(hoveredAi || voiceOpen) && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.5, x: -8 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.5, x: -8 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => { setVoiceOpen(!voiceOpen); if (aiOpen) setAiOpen(false); }}
+                    className={cn(
+                      "absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full border shadow-lg transition-all",
+                      voiceOpen
+                        ? "border-[#7C3AED]/50 bg-gradient-to-br from-[#7C3AED] to-[#A855F7] text-white shadow-[0_0_16px_rgba(124,58,237,0.4)]"
+                        : "border-[var(--border)] bg-[var(--bg-surface)] text-[#A78BFA] hover:border-[#7C3AED]/40 hover:text-[#7C3AED] hover:shadow-[0_0_12px_rgba(124,58,237,0.2)]"
+                    )}
+                    title="GRIXI Voice"
+                  >
+                    <AudioLines size={13} className="relative" />
+                    {/* Active green dot */}
+                    {voiceOpen && (
+                      <motion.span
+                        className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border-[1.5px] border-[var(--bg-surface)] bg-emerald-400"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
+                    )}
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
           )}
         </div>
       </div>
