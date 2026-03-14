@@ -57,6 +57,8 @@ export function useGrixiVoice() {
   const isPlayingRef = useRef(false);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
+  const isConnectedRef = useRef(false);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
 
   // ── Function Call Handler ──────────────────────────
   const handleFunctionCall = useCallback(
@@ -265,7 +267,7 @@ export function useGrixiVoice() {
 
       // 4. Connect to Live API
       const session = await client.live.connect({
-        model: "gemini-2.5-flash-preview-native-audio-dialog",
+        model: "gemini-2.0-flash-live-001",
         config: {
           responseModalities: [Modality.AUDIO, Modality.TEXT],
           systemInstruction: {
@@ -278,6 +280,7 @@ export function useGrixiVoice() {
         },
         callbacks: {
           onopen: () => {
+            isConnectedRef.current = true;
             setState("listening");
           },
           onmessage: async (msg: LiveServerMessage) => {
@@ -375,10 +378,21 @@ export function useGrixiVoice() {
           },
           onerror: (err: ErrorEvent) => {
             console.error("[GRIXI Voice] Error:", err);
+            isConnectedRef.current = false;
+            // Stop audio capture immediately
+            if (processorRef.current) {
+              processorRef.current.disconnect();
+              processorRef.current = null;
+            }
             setError("Error de conexión con GRIXI Voice");
             setState("idle");
           },
           onclose: () => {
+            isConnectedRef.current = false;
+            if (processorRef.current) {
+              processorRef.current.disconnect();
+              processorRef.current = null;
+            }
             setState("idle");
           },
         },
@@ -424,24 +438,26 @@ export function useGrixiVoice() {
       const processor = audioCtx.createScriptProcessor(4096, 1, 1);
       source.connect(processor);
       processor.connect(audioCtx.destination);
+      processorRef.current = processor;
 
       processor.onaudioprocess = (e) => {
-        if (sessionRef.current && state !== "speaking") {
+        // GUARD: Only send if session is alive and connected
+        if (!isConnectedRef.current || !sessionRef.current) return;
+        try {
           const inputData = e.inputBuffer.getChannelData(0);
           const pcm16 = float32ToPcm16(inputData);
           const base64 = btoa(
             String.fromCharCode(...new Uint8Array(pcm16))
           );
-          try {
-            sessionRef.current.sendRealtimeInput({
-              media: {
-                data: base64,
-                mimeType: "audio/pcm;rate=16000",
-              },
-            });
-          } catch {
-            // Session may not be ready yet
-          }
+          sessionRef.current.sendRealtimeInput({
+            media: {
+              data: base64,
+              mimeType: "audio/pcm;rate=16000",
+            },
+          });
+        } catch {
+          // Session closed or not ready — stop trying
+          isConnectedRef.current = false;
         }
       };
     } catch (err) {
@@ -453,6 +469,14 @@ export function useGrixiVoice() {
 
   // ── Stop Session ───────────────────────────────────
   const stop = useCallback(() => {
+    isConnectedRef.current = false;
+
+    // Stop audio processor first
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+
     // Stop microphone
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
@@ -467,7 +491,7 @@ export function useGrixiVoice() {
 
     // Close Live API session
     if (sessionRef.current) {
-      sessionRef.current.close();
+      try { sessionRef.current.close(); } catch { /* already closed */ }
       sessionRef.current = null;
     }
 
