@@ -4,6 +4,7 @@ import {
   Warehouse,
   ShoppingCart,
   Users,
+  Users2,
   Shield,
   Sparkles,
   Crosshair,
@@ -31,6 +32,7 @@ export const PRIMARY_TABS: NavItem[] = [
 // ── Secondary Items ("Más" drawer on mobile) ─────
 
 export const SECONDARY_ITEMS: NavItem[] = [
+  { label: "Recursos Humanos", href: "/rrhh", icon: Users2, color: "#06B6D4" },
   { label: "Centro de Comando", href: "/command-center", icon: Crosshair, color: "#EC4899" },
   { label: "Usuarios", href: "/usuarios", icon: Users, color: "#F59E0B" },
   { label: "Administración", href: "/administracion", icon: Shield, color: "#F43F5E" },

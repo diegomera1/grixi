@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { processVoiceCommand } from "@/features/ai/actions/voice-action";
 
 export type VoiceState = "idle" | "connecting" | "listening" | "processing" | "speaking";
 
@@ -13,33 +12,7 @@ export type VoiceTranscript = {
   timestamp: number;
 };
 
-// ── SpeechRecognition types ──────────────────────────
-type SpeechRecognitionEvent = {
-  results: { [key: number]: { [key: number]: { transcript: string } }; length: number };
-  resultIndex: number;
-};
-
-type SpeechRecognitionInstance = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
-  onstart: (() => void) | null;
-};
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognitionInstance;
-    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
-  }
-}
-
-// ── Main Voice Hook ──────────────────────────────────
+// ── Main Voice Hook (MediaRecorder + Gemini Audio) ──
 export function useGrixiVoice() {
   const router = useRouter();
   const pathname = usePathname();
@@ -51,133 +24,212 @@ export function useGrixiVoice() {
   const [error, setError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
 
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
   const isActiveRef = useRef(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const silenceCountRef = useRef(0);
 
-  // ── Process user speech ───────────────────────────
-  const processText = useCallback(
-    async (text: string) => {
-      if (!text.trim()) return;
+  // ── Speak response ────────────────────────────────
+  const speak = useCallback(
+    (text: string, navigationRoute?: string | null) => {
+      setState("speaking");
+      setCurrentAssistantText(text);
 
-      // Add user transcript
-      setTranscripts((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), text: text.trim(), role: "user", timestamp: Date.now() },
-      ]);
-      setCurrentUserText("");
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "es-ES";
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+
+      // Find a good Spanish voice
+      const voices = speechSynthesis.getVoices();
+      const spanishVoice =
+        voices.find((v) => v.lang.startsWith("es") && v.name.toLowerCase().includes("google")) ||
+        voices.find((v) => v.lang.startsWith("es"));
+      if (spanishVoice) utterance.voice = spanishVoice;
+
+      utterance.onend = () => {
+        setCurrentAssistantText("");
+        if (navigationRoute) router.push(navigationRoute);
+        // Auto-restart listening if still active
+        if (isActiveRef.current) {
+          startRecording();
+        } else {
+          setState("idle");
+        }
+      };
+
+      utterance.onerror = () => {
+        setCurrentAssistantText("");
+        if (navigationRoute) router.push(navigationRoute);
+        if (isActiveRef.current) {
+          startRecording();
+        } else {
+          setState("idle");
+        }
+      };
+
+      speechSynthesis.speak(utterance);
+    },
+    [router]
+  );
+
+  // ── Process recorded audio ────────────────────────
+  const processAudio = useCallback(
+    async (audioBlob: Blob) => {
+      if (audioBlob.size < 1000) {
+        // Too small, likely silence — restart listening
+        if (isActiveRef.current) {
+          startRecording();
+        }
+        return;
+      }
+
+      setCurrentUserText("Procesando audio...");
       setState("processing");
 
       try {
-        const result = await processVoiceCommand(text.trim(), {
-          currentPage: pathname,
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recording.webm");
+        formData.append("currentPage", pathname);
+
+        const response = await fetch("/api/ai/voice", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
         });
 
-        // Add assistant transcript
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // Add transcripts
         setTranscripts((prev) => [
           ...prev,
-          { id: crypto.randomUUID(), text: result.text, role: "assistant", timestamp: Date.now() },
+          { id: crypto.randomUUID(), text: "🎤 [Audio]", role: "user", timestamp: Date.now() },
+          { id: crypto.randomUUID(), text: data.text, role: "assistant", timestamp: Date.now() },
         ]);
-        setCurrentAssistantText(result.text);
-        setState("speaking");
 
-        // Speak the response
-        const utterance = new SpeechSynthesisUtterance(result.text);
-        utterance.lang = "es-ES";
-        utterance.rate = 1.05;
-        utterance.pitch = 1.0;
-
-        // Try to find a Spanish voice
-        const voices = speechSynthesis.getVoices();
-        const spanishVoice = voices.find(
-          (v) => v.lang.startsWith("es") && v.name.toLowerCase().includes("google")
-        ) || voices.find((v) => v.lang.startsWith("es"));
-        if (spanishVoice) utterance.voice = spanishVoice;
-
-        utteranceRef.current = utterance;
-
-        utterance.onend = () => {
-          setCurrentAssistantText("");
-          // Navigate if requested
-          if (result.navigationRoute) {
-            router.push(result.navigationRoute);
-          }
-          // Resume listening if still active
-          if (isActiveRef.current) {
-            setState("listening");
-            try {
-              recognitionRef.current?.start();
-            } catch {
-              // Already started
-            }
-          } else {
-            setState("idle");
-          }
-        };
-
-        utterance.onerror = () => {
-          setCurrentAssistantText("");
-          if (result.navigationRoute) {
-            router.push(result.navigationRoute);
-          }
-          if (isActiveRef.current) {
-            setState("listening");
-            try {
-              recognitionRef.current?.start();
-            } catch {
-              // Already started
-            }
-          } else {
-            setState("idle");
-          }
-        };
-
-        speechSynthesis.speak(utterance);
+        setCurrentUserText("");
+        speak(data.text, data.navigationRoute);
       } catch (err) {
         console.error("[GRIXI Voice] Processing error:", err);
-        setError("Error al procesar tu comando");
+        setError(err instanceof Error ? err.message : "Error al procesar audio");
+        setCurrentUserText("");
         if (isActiveRef.current) {
-          setState("listening");
-          try {
-            recognitionRef.current?.start();
-          } catch {
-            // Already started
-          }
+          // Retry listening
+          setTimeout(() => startRecording(), 500);
         } else {
           setState("idle");
         }
       }
     },
-    [pathname, router]
+    [pathname, speak]
   );
 
-  // ── Start ─────────────────────────────────────────
+  // ── Start recording ───────────────────────────────
+  const startRecording = useCallback(() => {
+    if (!streamRef.current || !isActiveRef.current) return;
+
+    chunksRef.current = [];
+    silenceCountRef.current = 0;
+
+    try {
+      const recorder = new MediaRecorder(streamRef.current, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/webm",
+      });
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        if (chunksRef.current.length > 0 && isActiveRef.current) {
+          const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+          processAudio(blob);
+        }
+      };
+
+      recorder.start(250); // Collect data every 250ms for silence detection
+      mediaRecorderRef.current = recorder;
+      setState("listening");
+
+      // Auto-stop after detecting silence (3s of low audio) or max 10s
+      const checkSilence = () => {
+        if (!isActiveRef.current || !analyserRef.current) return;
+
+        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
+        if (avg < 8) {
+          silenceCountRef.current++;
+        } else {
+          silenceCountRef.current = 0;
+        }
+
+        // Stop after 3s of silence (30 checks * 100ms) and at least 1s of recording
+        if (silenceCountRef.current > 30 && chunksRef.current.length > 4) {
+          if (recorder.state === "recording") {
+            recorder.stop();
+          }
+          return;
+        }
+
+        silenceTimerRef.current = setTimeout(checkSilence, 100);
+      };
+
+      // Start silence detection after a 1s grace period
+      setTimeout(() => {
+        if (isActiveRef.current) checkSilence();
+      }, 1000);
+
+      // Max recording time: 10 seconds
+      setTimeout(() => {
+        if (recorder.state === "recording") {
+          recorder.stop();
+        }
+      }, 10000);
+    } catch (err) {
+      console.error("[GRIXI Voice] MediaRecorder error:", err);
+      setError("Error al grabar audio");
+      setState("idle");
+    }
+  }, [processAudio]);
+
+  // ── Start session ─────────────────────────────────
   const start = useCallback(async () => {
     if (state === "connecting" || state === "listening") return;
     setError(null);
     setState("connecting");
 
-    // Check browser support
-    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) {
-      setError("Tu navegador no soporta reconocimiento de voz. Usa Chrome.");
-      setState("idle");
-      return;
-    }
-
     try {
-      // Request microphone permission
+      // Request microphone
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000,
+        },
       });
       streamRef.current = stream;
 
-      // Audio level visualization
+      // Audio visualization
       const audioCtx = new AudioContext();
       audioContextRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
@@ -186,6 +238,7 @@ export function useGrixiVoice() {
       source.connect(analyser);
       analyserRef.current = analyser;
 
+      // Audio level animation loop
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       const updateLevel = () => {
         analyser.getByteFrequencyData(dataArray);
@@ -195,114 +248,44 @@ export function useGrixiVoice() {
       };
       updateLevel();
 
-      // Set up speech recognition
-      const recognition = new SpeechRecognitionCtor();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = "es-ES";
-      recognitionRef.current = recognition;
-
-      let finalTranscript = "";
-
-      recognition.onstart = () => {
-        setState("listening");
-        finalTranscript = "";
-        setCurrentUserText("");
-      };
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interim = "";
-        finalTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          const isFinal = !!(event.results[i] as unknown as { isFinal: boolean }).isFinal;
-          if (isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interim += transcript;
-          }
-        }
-        setCurrentUserText(finalTranscript || interim);
-
-        // Reset silence timer on each result
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-      };
-
-      recognition.onend = () => {
-        const textToProcess = finalTranscript.trim();
-        if (textToProcess && isActiveRef.current) {
-          processText(textToProcess);
-        } else if (isActiveRef.current) {
-          // No speech detected, restart
-          try {
-            recognition.start();
-          } catch {
-            // Already started
-          }
-        }
-      };
-
-      recognition.onerror = (event: { error: string }) => {
-        if (event.error === "no-speech" || event.error === "aborted") {
-          // No speech detected or aborted, restart listening
-          if (isActiveRef.current) {
-            try {
-              recognition.start();
-            } catch {
-              // Already started
-            }
-          }
-          return;
-        }
-        if (event.error === "network") {
-          // Network error — retry after a short delay
-          console.warn("[GRIXI Voice] Network error, retrying...");
-          if (isActiveRef.current) {
-            setTimeout(() => {
-              try {
-                recognition.start();
-              } catch {
-                // Already started
-              }
-            }, 1000);
-          }
-          return;
-        }
-        if (event.error === "not-allowed") {
-          setError("Permiso de micrófono denegado. Habilita el acceso en tu navegador.");
-          setState("idle");
-          return;
-        }
-        console.error("[GRIXI Voice] Recognition error:", event.error);
-        setError(`Error de reconocimiento: ${event.error}`);
-      };
+      // Load voices for TTS
+      speechSynthesis.getVoices();
 
       isActiveRef.current = true;
-      recognition.start();
+      startRecording();
     } catch (err) {
       console.error("[GRIXI Voice] Start error:", err);
-      setError(err instanceof Error ? err.message : "Error al iniciar GRIXI Voice");
+      if (err instanceof Error && err.name === "NotAllowedError") {
+        setError("Permiso de micrófono denegado. Habilita el acceso en tu navegador.");
+      } else {
+        setError(err instanceof Error ? err.message : "Error al iniciar GRIXI Voice");
+      }
       setState("idle");
     }
-  }, [state, processText]);
+  }, [state, startRecording]);
 
-  // ── Stop ──────────────────────────────────────────
+  // ── Stop session ──────────────────────────────────
   const stop = useCallback(() => {
     isActiveRef.current = false;
 
-    // Stop speech recognition
-    if (recognitionRef.current) {
+    // Stop silence detection
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+
+    // Stop recorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try {
-        recognitionRef.current.abort();
+        mediaRecorderRef.current.stop();
       } catch {
         /* already stopped */
       }
-      recognitionRef.current = null;
     }
+    mediaRecorderRef.current = null;
 
-    // Stop speech synthesis
+    // Stop speech
     speechSynthesis.cancel();
-    utteranceRef.current = null;
 
     // Stop microphone
     if (streamRef.current) {
@@ -316,14 +299,7 @@ export function useGrixiVoice() {
       audioContextRef.current = null;
     }
 
-    // Stop animation
     cancelAnimationFrame(animFrameRef.current);
-
-    // Clear timers
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
 
     setAudioLevel(0);
     setState("idle");
@@ -331,7 +307,7 @@ export function useGrixiVoice() {
     setCurrentAssistantText("");
   }, []);
 
-  // Clean up on unmount
+  // Unmount cleanup
   useEffect(() => {
     return () => {
       stop();

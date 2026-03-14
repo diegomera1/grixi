@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
+  Users2,
   Shield,
   Warehouse,
   Sparkles,
@@ -84,6 +85,13 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "EQUIPO",
     items: [
+      {
+        label: "Recursos Humanos",
+        href: "/rrhh",
+        icon: Users2,
+        color: "#06B6D4",
+        glowColor: "rgba(6,182,212,0.25)",
+      },
       {
         label: "Usuarios",
         href: "/usuarios",
