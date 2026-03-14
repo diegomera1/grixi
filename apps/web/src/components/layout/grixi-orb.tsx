@@ -8,6 +8,7 @@ import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer
 import {
   LayoutDashboard,
   Users,
+  Users2,
   Shield,
   Warehouse,
   Sparkles,
@@ -59,6 +60,7 @@ const MODULES: NavModule[] = [
   { id: "finanzas", label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.3)", category: "OPERACIONES", aiModule: "finanzas" },
   { id: "compras", label: "Compras", href: "/compras", icon: ShoppingCart, color: "#F97316", glowColor: "rgba(249,115,22,0.3)", category: "OPERACIONES", aiModule: "compras" },
   { id: "almacenes", label: "Almacenes", href: "/almacenes", icon: Warehouse, color: "#10B981", glowColor: "rgba(16,185,129,0.3)", category: "OPERACIONES", aiModule: "almacenes" },
+  { id: "rrhh", label: "Recursos Humanos", href: "/rrhh", icon: Users2, color: "#06B6D4", glowColor: "rgba(6,182,212,0.3)", category: "EQUIPO", aiModule: "general" },
   { id: "usuarios", label: "Usuarios", href: "/usuarios", icon: Users, color: "#F59E0B", glowColor: "rgba(245,158,11,0.3)", category: "EQUIPO", aiModule: "usuarios" },
   { id: "admin", label: "Admin", href: "/administracion", icon: Shield, color: "#F43F5E", glowColor: "rgba(244,63,94,0.3)", category: "EQUIPO", aiModule: "administracion" },
   { id: "ai", label: "GRIXI AI", href: "/ai", icon: Sparkles, color: "#A855F7", glowColor: "rgba(168,85,247,0.3)", category: "INTELIGENCIA", aiModule: "general" },
