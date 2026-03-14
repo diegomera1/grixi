@@ -15,6 +15,8 @@ import {
   Clock,
   Thermometer,
   X,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
@@ -225,6 +227,7 @@ function RackDetailContent({ rack, onClose }: { rack: Rack; onClose: () => void 
 export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProps) {
   const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
   const [selectedRack, setSelectedRack] = useState<Rack | null>(null);
+  const [is3DFullscreen, setIs3DFullscreen] = useState(false);
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
@@ -431,8 +434,16 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="h-[400px] md:h-[600px] overflow-hidden rounded-b-xl"
+                  className="relative h-[400px] md:h-[600px] overflow-hidden rounded-b-xl"
                 >
+                  {/* Fullscreen button */}
+                  <button
+                    onClick={() => setIs3DFullscreen(true)}
+                    className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-lg border border-white/20 bg-black/50 px-3 py-1.5 text-[10px] font-semibold text-white backdrop-blur-sm transition-all hover:bg-black/70 hover:border-white/30"
+                  >
+                    <Maximize2 size={12} />
+                    Pantalla Completa
+                  </button>
                   <Warehouse3DScene
                     racks={racks}
                     warehouse={warehouse}
@@ -491,6 +502,44 @@ export function WarehouseDetail({ warehouse, racks, stats }: WarehouseDetailProp
           )}
         </AnimatePresence>
       </div>
+
+      {/* 3D Fullscreen Overlay */}
+      <AnimatePresence>
+        {is3DFullscreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black"
+          >
+            {/* Top bar */}
+            <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/80 to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand)]">
+                  <Cuboid size={14} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">{warehouse.name}</p>
+                  <p className="text-[10px] text-white/50">Vista 3D Inmersiva</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIs3DFullscreen(false)}
+                className="flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20"
+              >
+                <Minimize2 size={12} />
+                Salir
+              </button>
+            </div>
+            {/* 3D Scene */}
+            <Warehouse3DScene
+              racks={racks}
+              warehouse={warehouse}
+              onRackSelect={(rack) => setSelectedRack(rack as unknown as Rack)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
