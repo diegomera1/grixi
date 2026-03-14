@@ -12,6 +12,7 @@ import type {
   LeaveRequest, PerformanceReview, RRHHKPIs,
 } from "../types";
 import { useRRHHRealtime } from "../hooks/use-rrhh-realtime";
+import { useRRHHDemo } from "../hooks/use-rrhh-demo";
 import { DashboardTab } from "./dashboard-tab";
 import { EmployeesTab } from "./employees-tab";
 import { OrgchartTab } from "./orgchart-tab";
@@ -19,6 +20,7 @@ import { AttendanceTab } from "./attendance-tab";
 import { PayrollTab } from "./payroll-tab";
 import { VacationsTab } from "./vacations-tab";
 import { EvaluationsTab } from "./evaluations-tab";
+import { LiveActivityFeed } from "./live-activity-feed";
 
 type Tab = "dashboard" | "empleados" | "organigrama" | "asistencia" | "nomina" | "vacaciones" | "evaluaciones";
 
@@ -48,8 +50,12 @@ export function RRHHContent({
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [leaves, setLeaves] = useState(initialLeaves);
+  const [attendance, setAttendance] = useState(initialAttendance);
 
-  // Realtime
+  // Demo simulation — generates live HR events
+  const { events, isRunning } = useRRHHDemo(true);
+
+  // Realtime subscriptions
   useRRHHRealtime({
     onLeaveChange: useCallback((leave: LeaveRequest) => {
       setLeaves((prev) => {
@@ -62,11 +68,22 @@ export function RRHHContent({
         return [leave, ...prev];
       });
     }, []),
+    onAttendanceChange: useCallback((record: AttendanceRecord) => {
+      setAttendance((prev) => {
+        const idx = prev.findIndex((a) => a.id === record.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...record };
+          return next;
+        }
+        return [record, ...prev];
+      });
+    }, []),
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4">
+      {/* Header + Tabs */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-sm font-bold text-[var(--text-primary)]">
@@ -104,6 +121,9 @@ export function RRHHContent({
         </div>
       </div>
 
+      {/* Live Activity Feed */}
+      <LiveActivityFeed events={events} isRunning={isRunning} />
+
       {/* Tab Content */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -135,7 +155,7 @@ export function RRHHContent({
           )}
           {activeTab === "asistencia" && (
             <AttendanceTab
-              attendance={initialAttendance}
+              attendance={attendance}
               employees={initialEmployees}
               departments={initialDepartments}
             />
