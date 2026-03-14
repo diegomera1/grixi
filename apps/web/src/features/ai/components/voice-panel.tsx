@@ -1,262 +1,143 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Mic, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useGrixiVoice, type VoiceState } from "@/features/ai/hooks/use-grixi-voice";
+import { GrixiAiLogo } from "@/features/ai/components/grixi-ai-logo";
 
-// ── Particle Orb (Canvas) ─────────────────────────────
-function ParticleOrb({
-  audioLevel,
-  state,
-}: {
-  audioLevel: number;
-  state: VoiceState;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<
-    { angle: number; radius: number; baseRadius: number; size: number; speed: number; opacity: number }[]
-  >([]);
-  const frameRef = useRef(0);
-  const timeRef = useRef(0);
+// ── Animated Dot Ring ─────────────────────────────────
+function DotRing({ audioLevel, state }: { audioLevel: number; state: VoiceState }) {
+  const isActive = state === "listening" || state === "speaking";
+  const dotCount = 24;
 
-  // Initialize particles
-  useEffect(() => {
-    const count = 64;
-    particlesRef.current = Array.from({ length: count }, (_, i) => ({
-      angle: (i / count) * Math.PI * 2,
-      radius: 60 + Math.random() * 20,
-      baseRadius: 60 + Math.random() * 20,
-      size: 1.5 + Math.random() * 2,
-      speed: 0.002 + Math.random() * 0.003,
-      opacity: 0.3 + Math.random() * 0.7,
-    }));
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    const dpr = window.devicePixelRatio || 1;
-
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-    };
-    resize();
-
-    const isActive = state === "listening" || state === "speaking" || state === "processing" || state === "connecting";
-
-    const draw = () => {
-      const rect = canvas.getBoundingClientRect();
-      const cx = rect.width / 2;
-      const cy = rect.height / 2;
-      timeRef.current += 0.016;
-      const t = timeRef.current;
-
-      ctx.clearRect(0, 0, rect.width, rect.height);
-
-      // Outer glow
-      if (isActive) {
-        const glowRadius = 85 + audioLevel * 40;
-        const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
-        gradient.addColorStop(0, `rgba(124, 58, 237, ${0.08 + audioLevel * 0.12})`);
-        gradient.addColorStop(0.5, `rgba(168, 85, 247, ${0.04 + audioLevel * 0.06})`);
-        gradient.addColorStop(1, "rgba(168, 85, 247, 0)");
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Core glow sphere
-      const coreGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 35 + audioLevel * 10);
-      if (state === "speaking") {
-        coreGradient.addColorStop(0, `rgba(168, 85, 247, ${0.35 + audioLevel * 0.2})`);
-        coreGradient.addColorStop(1, "rgba(124, 58, 237, 0)");
-      } else if (state === "listening") {
-        coreGradient.addColorStop(0, `rgba(16, 185, 129, ${0.3 + audioLevel * 0.25})`);
-        coreGradient.addColorStop(1, "rgba(6, 182, 212, 0)");
-      } else {
-        coreGradient.addColorStop(0, "rgba(124, 58, 237, 0.15)");
-        coreGradient.addColorStop(1, "rgba(124, 58, 237, 0)");
-      }
-      ctx.fillStyle = coreGradient;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 35 + audioLevel * 10, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Particles
-      const particles = particlesRef.current;
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-
-        // Orbit
-        p.angle += p.speed * (1 + audioLevel * 3);
-
-        // Radius reacts to audio
-        const audioExpand = state === "listening" ? audioLevel * 50 : state === "speaking" ? audioLevel * 30 : 0;
-        const breathe = Math.sin(t * 0.8 + i * 0.3) * 5;
-        const targetRadius = p.baseRadius + audioExpand + breathe;
-        p.radius += (targetRadius - p.radius) * 0.08;
-
-        const x = cx + Math.cos(p.angle) * p.radius;
-        const y = cy + Math.sin(p.angle) * p.radius;
-
-        // Color based on state
-        let r = 124, g = 58, b = 237;
-        if (state === "listening") {
-          r = 16; g = 185; b = 129;
-        } else if (state === "speaking") {
-          r = 168; g = 85; b = 247;
-        } else if (state === "processing") {
-          r = 245; g = 158; b = 11;
-        }
-
-        const alpha = p.opacity * (0.5 + audioLevel * 0.5);
-        const size = p.size * (1 + audioLevel * 1.2);
-
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        ctx.fill();
-
-        // Subtle trail
-        if (audioLevel > 0.1) {
-          const trailX = cx + Math.cos(p.angle - p.speed * 3) * p.radius;
-          const trailY = cy + Math.sin(p.angle - p.speed * 3) * p.radius;
-          ctx.beginPath();
-          ctx.arc(trailX, trailY, size * 0.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.3})`;
-          ctx.fill();
-        }
-      }
-
-      frameRef.current = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => cancelAnimationFrame(frameRef.current);
-  }, [audioLevel, state]);
+  const stateColor = useMemo(() => {
+    if (state === "listening") return "#10B981";
+    if (state === "speaking") return "#A855F7";
+    if (state === "processing") return "#F59E0B";
+    return "#7C3AED";
+  }, [state]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="h-[220px] w-[220px]"
-      style={{ imageRendering: "auto" }}
-    />
+    <div className="relative flex h-28 w-28 items-center justify-center">
+      {/* Glow pulse */}
+      {isActive && (
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          style={{ backgroundColor: stateColor }}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.06, 0.12, 0.06],
+          }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      )}
+
+      {/* Orbiting dots */}
+      {Array.from({ length: dotCount }).map((_, i) => {
+        const angle = (i / dotCount) * 360;
+        const baseRadius = 42;
+        const audioReact = isActive ? audioLevel * 16 : 0;
+        const radius = baseRadius + audioReact + (i % 3 === 0 ? 4 : 0);
+        const size = 2 + (isActive ? audioLevel * 2.5 : 0) + (i % 4 === 0 ? 1 : 0);
+        const delay = i * 0.03;
+
+        return (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: size,
+              height: size,
+              backgroundColor: stateColor,
+            }}
+            animate={{
+              x: Math.cos((angle * Math.PI) / 180) * radius,
+              y: Math.sin((angle * Math.PI) / 180) * radius,
+              opacity: isActive ? [0.4 + audioLevel * 0.5, 0.8, 0.4 + audioLevel * 0.5] : 0.25,
+              scale: isActive ? [1, 1 + audioLevel * 0.6, 1] : 1,
+            }}
+            transition={{
+              x: { duration: 0.15, ease: "easeOut" },
+              y: { duration: 0.15, ease: "easeOut" },
+              opacity: { duration: 1.5, repeat: Infinity, delay },
+              scale: { duration: 0.8, repeat: Infinity, delay },
+            }}
+          />
+        );
+      })}
+
+      {/* Center icon */}
+      <motion.div
+        className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full"
+        style={{
+          backgroundColor: `${stateColor}15`,
+          boxShadow: isActive ? `0 0 24px ${stateColor}25` : "none",
+        }}
+        animate={{ scale: 1 + audioLevel * 0.15 }}
+        transition={{ duration: 0.1 }}
+      >
+        {state === "connecting" || state === "processing" ? (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          >
+            <GrixiAiLogo size={24} showText={false} animate />
+          </motion.div>
+        ) : state === "speaking" ? (
+          <GrixiAiLogo size={24} showText={false} animate />
+        ) : (
+          <Mic size={22} style={{ color: isActive ? stateColor : "var(--text-muted)" }} />
+        )}
+      </motion.div>
+    </div>
   );
 }
 
-// ── Waveform Line (Canvas) ────────────────────────────
-function WaveformLine({
-  audioLevel,
-  state,
-}: {
-  audioLevel: number;
-  state: VoiceState;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const frameRef = useRef(0);
-  const timeRef = useRef(0);
+// ── Waveform Bars ─────────────────────────────────────
+function WaveformBars({ audioLevel, state }: { audioLevel: number; state: VoiceState }) {
+  const isActive = state === "listening" || state === "speaking";
+  const barCount = 32;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    const dpr = window.devicePixelRatio || 1;
-
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-    };
-    resize();
-
-    const isActive = state === "listening" || state === "speaking";
-
-    const draw = () => {
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-      const midY = h / 2;
-      timeRef.current += 0.03;
-      const t = timeRef.current;
-
-      ctx.clearRect(0, 0, w, h);
-
-      // Determine color
-      let r = 124, g = 58, b = 237;
-      if (state === "listening") { r = 16; g = 185; b = 129; }
-      else if (state === "speaking") { r = 168; g = 85; b = 247; }
-
-      // Draw main waveform
-      const amplitude = isActive ? 6 + audioLevel * 20 : 2;
-      const segments = 120;
-
-      ctx.beginPath();
-      ctx.moveTo(0, midY);
-
-      for (let i = 0; i <= segments; i++) {
-        const x = (i / segments) * w;
-        const progress = i / segments;
-
-        // Envelope — fade at edges
-        const envelope = Math.sin(progress * Math.PI);
-
-        // Multi-frequency wave
-        const wave =
-          Math.sin(progress * 8 + t * 2) * amplitude * 0.6 +
-          Math.sin(progress * 16 + t * 3.5) * amplitude * 0.3 * audioLevel +
-          Math.sin(progress * 24 + t * 5) * amplitude * 0.15 * audioLevel;
-
-        const y = midY + wave * envelope;
-        ctx.lineTo(x, y);
-      }
-
-      ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.4 + audioLevel * 0.5})`;
-      ctx.lineWidth = 1.5 + audioLevel * 1;
-      ctx.stroke();
-
-      // Secondary thinner wave
-      ctx.beginPath();
-      ctx.moveTo(0, midY);
-      for (let i = 0; i <= segments; i++) {
-        const x = (i / segments) * w;
-        const progress = i / segments;
-        const envelope = Math.sin(progress * Math.PI);
-        const wave =
-          Math.sin(progress * 12 + t * 1.5 + 1) * amplitude * 0.35 +
-          Math.sin(progress * 20 + t * 4) * amplitude * 0.2 * audioLevel;
-        ctx.lineTo(x, midY + wave * envelope);
-      }
-      ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.15 + audioLevel * 0.2})`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // Center dot
-      const dotSize = 2 + audioLevel * 3;
-      ctx.beginPath();
-      ctx.arc(w / 2, midY, dotSize, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.6 + audioLevel * 0.4})`;
-      ctx.fill();
-
-      frameRef.current = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => cancelAnimationFrame(frameRef.current);
-  }, [audioLevel, state]);
+  const stateColor = useMemo(() => {
+    if (state === "listening") return "#10B981";
+    if (state === "speaking") return "#A855F7";
+    if (state === "processing") return "#F59E0B";
+    return "#7C3AED";
+  }, [state]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="h-[40px] w-[280px] sm:w-[320px]"
-    />
+    <div className="flex h-8 items-center justify-center gap-[2px]">
+      {Array.from({ length: barCount }).map((_, i) => {
+        // Create a natural envelope shape — higher in middle
+        const center = barCount / 2;
+        const distFromCenter = Math.abs(i - center) / center;
+        const envelope = 1 - distFromCenter * distFromCenter;
+        const baseHeight = 3;
+        const audioHeight = isActive ? audioLevel * 20 * envelope : 0;
+        const height = baseHeight + audioHeight;
+
+        return (
+          <motion.div
+            key={i}
+            className="rounded-full"
+            style={{
+              width: 2,
+              backgroundColor: stateColor,
+            }}
+            animate={{
+              height,
+              opacity: isActive ? 0.4 + envelope * 0.5 * audioLevel : 0.15,
+            }}
+            transition={{
+              height: { duration: 0.08, ease: "easeOut" },
+              opacity: { duration: 0.15 },
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 
@@ -269,15 +150,23 @@ const STATE_LABELS: Record<VoiceState, string> = {
   processing: "Procesando...",
 };
 
-const STATE_COLORS: Record<VoiceState, string> = {
-  idle: "text-white/40",
-  connecting: "text-amber-400",
-  listening: "text-emerald-400",
-  speaking: "text-violet-400",
-  processing: "text-amber-400",
+const STATE_DOT_COLORS: Record<VoiceState, string> = {
+  idle: "bg-[var(--text-muted)]",
+  connecting: "bg-amber-500",
+  listening: "bg-emerald-500",
+  speaking: "bg-violet-500",
+  processing: "bg-amber-500",
 };
 
-// ── Main Voice Panel (Fullscreen Floating) ────────────
+const STATE_TEXT_COLORS: Record<VoiceState, string> = {
+  idle: "text-[var(--text-muted)]",
+  connecting: "text-amber-500",
+  listening: "text-emerald-500",
+  speaking: "text-violet-500",
+  processing: "text-amber-500",
+};
+
+// ── Main Voice Panel ──────────────────────────────────
 export function VoicePanel({
   isOpen,
   onClose,
@@ -301,140 +190,118 @@ export function VoicePanel({
     if (!isOpen && isActive) stop();
   }, [isOpen]);
 
-  const handleClose = useCallback(() => {
-    stop();
-    onClose();
-  }, [stop, onClose]);
-
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[60] flex flex-col items-center justify-center"
-          style={{
-            background: "radial-gradient(ellipse at center, rgba(124,58,237,0.08) 0%, rgba(0,0,0,0.85) 70%, rgba(0,0,0,0.95) 100%)",
-            backdropFilter: "blur(20px)",
-          }}
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="fixed bottom-20 left-4 z-[52] flex w-[320px] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)]/95 shadow-2xl backdrop-blur-xl md:w-[340px]"
         >
-          {/* Close button */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            onClick={handleClose}
-            className="absolute top-6 right-6 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
+          {/* Header */}
+          <div
+            className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5"
+            style={{
+              background: "linear-gradient(135deg, rgba(124,58,237,0.05), transparent)",
+            }}
           >
-            <X size={18} />
-          </motion.button>
+            <div className="flex items-center gap-2">
+              <GrixiAiLogo size={20} showText={false} animate={isActive} />
+              <div>
+                <p className="text-[11px] font-semibold text-[var(--text-primary)]">
+                  GRIXI Voice
+                </p>
+                <div className="flex items-center gap-1">
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      isActive ? "bg-emerald-500" : "bg-[var(--text-muted)]"
+                    )}
+                  />
+                  <span className="text-[8px] text-[var(--text-muted)]">
+                    {isActive ? "Conectado" : "Desconectado"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => { stop(); onClose(); }}
+              className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+            >
+              <X size={14} />
+            </button>
+          </div>
 
-          {/* GRIXI label */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="mb-8"
-          >
-            <p className="text-center font-serif text-lg font-semibold italic tracking-wide text-white/20">
-              GRIXI
-              <span className="ml-1.5 bg-gradient-to-r from-violet-400 to-purple-300 bg-clip-text text-transparent">
-                Voice
-              </span>
-            </p>
-          </motion.div>
+          {/* Visualization */}
+          <div className="flex flex-col items-center gap-2 px-4 py-5">
+            <DotRing audioLevel={audioLevel} state={state} />
+            <WaveformBars audioLevel={audioLevel} state={state} />
 
-          {/* Particle Orb */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.6 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.1 }}
-          >
-            <ParticleOrb audioLevel={audioLevel} state={state} />
-          </motion.div>
-
-          {/* Waveform Line */}
-          <motion.div
-            initial={{ opacity: 0, scaleX: 0.5 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            transition={{ delay: 0.25, duration: 0.4 }}
-            className="mt-4"
-          >
-            <WaveformLine audioLevel={audioLevel} state={state} />
-          </motion.div>
-
-          {/* Status */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35 }}
-            className="mt-6 flex items-center gap-2"
-          >
-            {(state === "listening" || state === "speaking") && (
-              <motion.div
-                className={cn(
-                  "h-1.5 w-1.5 rounded-full",
-                  state === "listening" ? "bg-emerald-400" : "bg-violet-400"
-                )}
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
-              />
-            )}
-            {state === "processing" && (
-              <motion.div
-                className="h-1.5 w-1.5 rounded-full bg-amber-400"
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ duration: 0.6, repeat: Infinity }}
-              />
-            )}
-            <span
-              className={cn(
-                "text-xs font-semibold uppercase tracking-[0.2em]",
-                STATE_COLORS[state]
+            {/* Status */}
+            <div className="mt-1 flex items-center gap-2">
+              {(state === "listening" || state === "speaking" || state === "processing") && (
+                <motion.div
+                  className={cn("h-1.5 w-1.5 rounded-full", STATE_DOT_COLORS[state])}
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
               )}
-            >
-              {STATE_LABELS[state]}
-            </span>
-          </motion.div>
+              <span
+                className={cn(
+                  "text-[10px] font-semibold uppercase tracking-wider",
+                  STATE_TEXT_COLORS[state]
+                )}
+              >
+                {STATE_LABELS[state]}
+              </span>
+            </div>
 
-          {/* Error */}
-          {error && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-3 text-[11px] text-red-400/80"
-            >
-              {error}
-            </motion.p>
-          )}
+            {error && (
+              <p className="mt-1 text-[9px] text-red-400">{error}</p>
+            )}
+          </div>
 
-          {/* Assistant response text */}
+          {/* Response text */}
           <AnimatePresence>
             {currentAssistantText && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                className="mx-auto mt-8 max-w-md px-6"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="border-t border-[var(--border)] px-4 py-3"
               >
-                <p className="text-center text-sm leading-relaxed text-white/70">
+                <p className="text-[11px] leading-relaxed text-[var(--text-secondary)]">
                   {currentAssistantText}
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Hint */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="absolute bottom-8 text-[10px] text-white/20"
-          >
-            Prueba: &quot;¿Cómo va la operación?&quot; · &quot;Llévame a almacenes&quot; · &quot;Dame un resumen&quot;
-          </motion.p>
+          {/* Hint + controls */}
+          <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-2.5">
+            <p className="text-[8px] text-[var(--text-muted)] max-w-[200px]">
+              Di: &quot;¿Cómo va la operación?&quot; o &quot;Llévame a almacenes&quot;
+            </p>
+            {isActive ? (
+              <button
+                onClick={stop}
+                className="flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-[10px] font-semibold text-red-400 transition-colors hover:bg-red-500/20"
+              >
+                <MicOff size={12} />
+                Detener
+              </button>
+            ) : (
+              <button
+                onClick={start}
+                className="flex items-center gap-1.5 rounded-lg bg-[#7C3AED]/10 px-3 py-1.5 text-[10px] font-semibold text-[#A855F7] transition-colors hover:bg-[#7C3AED]/20"
+              >
+                <Mic size={12} />
+                Iniciar
+              </button>
+            )}
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
