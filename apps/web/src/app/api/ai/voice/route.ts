@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
 import { buildVoiceSystemPrompt } from "@/features/ai/voice-functions";
 
@@ -85,9 +85,10 @@ RUTAS DE NAVEGACIÓN:
 Si el usuario pide navegar, agrega al final: [NAVEGAR:/ruta]
 `;
 
-    // Call Gemini with audio input
     const client = new GoogleGenAI({ apiKey });
-    const response = await client.models.generateContent({
+
+    // ── STEP 1: Gemini understands the audio and generates text response ──
+    const sttResponse = await client.models.generateContent({
       model: "gemini-2.0-flash",
       contents: [
         {
@@ -100,7 +101,7 @@ Si el usuario pide navegar, agrega al final: [NAVEGAR:/ruta]
               },
             },
             {
-              text: "Escucha este audio del usuario y responde en español como GRIXI, el asistente inteligente de la empresa. Responde de forma breve y natural, como si estuvieras hablando. Si el usuario pidió datos, usa los datos del sistema que tienes en tu contexto. Si no se entiende el audio, di 'No pude escucharte bien, ¿podrías repetir?'",
+              text: "Escucha este audio del usuario y responde en español como GRIXI, el asistente inteligente de la empresa. Responde de forma breve y natural, como si estuvieras hablando. Si el usuario pidió datos, usa los datos del sistema. Si no se entiende el audio, di 'No pude escucharte bien, ¿podrías repetir?'",
             },
           ],
         },
@@ -112,15 +113,49 @@ Si el usuario pide navegar, agrega al final: [NAVEGAR:/ruta]
       },
     });
 
-    const responseText = response.text || "No pude procesar tu solicitud.";
+    const responseText = sttResponse.text || "No pude procesar tu solicitud.";
 
-    // Extract navigation if present
+    // Extract navigation
     const navMatch = responseText.match(/\[NAVEGAR:(\/[^\]]+)\]/);
     const cleanText = responseText.replace(/\[NAVEGAR:[^\]]+\]/g, "").trim();
+
+    // ── STEP 2: Generate high-quality Google TTS audio ──
+    let ttsAudioBase64: string | null = null;
+
+    try {
+      const ttsResponse = await client.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: cleanText }],
+          },
+        ],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: "Kore" },
+            },
+          },
+        },
+      });
+
+      // Extract audio data from response
+      const audioPart = ttsResponse.candidates?.[0]?.content?.parts?.[0];
+      if (audioPart?.inlineData?.data) {
+        ttsAudioBase64 = audioPart.inlineData.data;
+      }
+    } catch (ttsErr) {
+      console.error("[Voice API] TTS error, falling back to browser TTS:", ttsErr);
+      // Fall back to browser SpeechSynthesis on client
+    }
 
     return NextResponse.json({
       text: cleanText,
       navigationRoute: navMatch?.[1] || null,
+      audioBase64: ttsAudioBase64,
+      audioMimeType: "audio/wav",
     });
   } catch (err) {
     console.error("[Voice API] Error:", err);
