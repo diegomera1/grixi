@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Grid3X3, List, X, Mail, Phone, MapPin, Calendar,
@@ -126,12 +127,23 @@ export function EmployeesTab({ employees, departments }: Props) {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white shrink-0"
-                          style={{ backgroundColor: getDeptColor(emp.department_id) }}
-                        >
-                          {emp.first_name.charAt(0)}{emp.last_name.charAt(0)}
-                        </div>
+                        {emp.avatar_url ? (
+                          <Image
+                            src={emp.avatar_url}
+                            alt={emp.full_name}
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 rounded-full object-cover shrink-0 ring-1.5 ring-[var(--border)]"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white shrink-0"
+                            style={{ backgroundColor: getDeptColor(emp.department_id) }}
+                          >
+                            {emp.first_name.charAt(0)}{emp.last_name.charAt(0)}
+                          </div>
+                        )}
                         <div>
                           <p className="font-medium text-[var(--text-primary)]">{emp.full_name}</p>
                           <p className="text-[10px] text-[var(--text-muted)]">{emp.employee_number}</p>
@@ -178,12 +190,23 @@ export function EmployeesTab({ employees, departments }: Props) {
             >
               <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: getDeptColor(emp.department_id) }} />
               <div className="flex flex-col items-center text-center pt-2">
-                <div
-                  className="flex h-14 w-14 items-center justify-center rounded-full text-sm font-bold text-white mb-3"
-                  style={{ backgroundColor: getDeptColor(emp.department_id) }}
-                >
-                  {emp.first_name.charAt(0)}{emp.last_name.charAt(0)}
-                </div>
+                {emp.avatar_url ? (
+                  <Image
+                    src={emp.avatar_url}
+                    alt={emp.full_name}
+                    width={56}
+                    height={56}
+                    className="h-14 w-14 rounded-full object-cover mb-3 ring-2 ring-[var(--border)]"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div
+                    className="flex h-14 w-14 items-center justify-center rounded-full text-sm font-bold text-white mb-3"
+                    style={{ backgroundColor: getDeptColor(emp.department_id) }}
+                  >
+                    {emp.first_name.charAt(0)}{emp.last_name.charAt(0)}
+                  </div>
+                )}
                 <p className="font-semibold text-[var(--text-primary)] text-sm">{emp.full_name}</p>
                 <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{emp.position}</p>
                 <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-medium"
@@ -222,12 +245,23 @@ export function EmployeesTab({ employees, departments }: Props) {
                 {/* Header */}
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
-                    <div
-                      className="flex h-16 w-16 items-center justify-center rounded-2xl text-lg font-bold text-white"
-                      style={{ backgroundColor: getDeptColor(selectedEmployee.department_id) }}
-                    >
-                      {selectedEmployee.first_name.charAt(0)}{selectedEmployee.last_name.charAt(0)}
-                    </div>
+                    {selectedEmployee.avatar_url ? (
+                      <Image
+                        src={selectedEmployee.avatar_url}
+                        alt={selectedEmployee.full_name}
+                        width={64}
+                        height={64}
+                        className="h-16 w-16 rounded-2xl object-cover ring-2 ring-[var(--border)]"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-16 w-16 items-center justify-center rounded-2xl text-lg font-bold text-white"
+                        style={{ backgroundColor: getDeptColor(selectedEmployee.department_id) }}
+                      >
+                        {selectedEmployee.first_name.charAt(0)}{selectedEmployee.last_name.charAt(0)}
+                      </div>
+                    )}
                     <div>
                       <h3 className="text-base font-bold text-[var(--text-primary)]">{selectedEmployee.full_name}</h3>
                       <p className="text-xs text-[var(--text-secondary)]">{selectedEmployee.position}</p>
