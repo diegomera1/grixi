@@ -20,8 +20,7 @@ export async function fetchEmployees(): Promise<Employee[]> {
     .from("hr_employees")
     .select(`
       *,
-      department:hr_departments!hr_employees_department_id_fkey(id, name, code, color, icon),
-      manager:hr_employees!hr_employees_manager_id_fkey(id, full_name, position)
+      department:hr_departments!hr_employees_department_id_fkey(id, name, code, color, icon)
     `)
     .order("employee_number");
 
@@ -29,7 +28,17 @@ export async function fetchEmployees(): Promise<Employee[]> {
     console.error("Error fetching employees:", error);
     return [];
   }
-  return (data || []) as unknown as Employee[];
+
+  // Resolve manager info client-side to avoid PostgREST self-ref FK issues
+  const emps = (data || []) as unknown as Employee[];
+  const empMap = new Map(emps.map((e) => [e.id, e]));
+  return emps.map((e) => {
+    if (e.manager_id && empMap.has(e.manager_id)) {
+      const mgr = empMap.get(e.manager_id)!;
+      return { ...e, manager: { id: mgr.id, full_name: mgr.full_name, position: mgr.position } };
+    }
+    return e;
+  });
 }
 
 // ── Departments ────────────────────────────────────
@@ -38,10 +47,7 @@ export async function fetchDepartments(): Promise<Department[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("hr_departments")
-    .select(`
-      *,
-      manager:hr_employees!fk_dept_manager(id, full_name, position, avatar_url)
-    `)
+    .select("*")
     .order("name");
 
   if (error) {
@@ -55,16 +61,14 @@ export async function fetchDepartments(): Promise<Department[]> {
 
 export async function fetchAttendanceRecords(): Promise<AttendanceRecord[]> {
   const supabase = await createClient();
-  // Fetch last 45 days
+  // Fetch last 45 days — limit to reasonable rows
   const since = new Date(Date.now() - 45 * 86400000).toISOString().split("T")[0];
   const { data, error } = await supabase
     .from("hr_attendance_records")
-    .select(`
-      *,
-      employee:hr_employees!hr_attendance_records_employee_id_fkey(id, full_name, employee_number, department_id)
-    `)
+    .select("*")
     .gte("date", since)
-    .order("date", { ascending: false });
+    .order("date", { ascending: false })
+    .limit(5000);
 
   if (error) {
     console.error("Error fetching attendance:", error);
@@ -79,10 +83,7 @@ export async function fetchPayrollRecords(): Promise<PayrollRecord[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("hr_payroll_records")
-    .select(`
-      *,
-      employee:hr_employees!hr_payroll_records_employee_id_fkey(id, full_name, employee_number, department_id, position)
-    `)
+    .select("*")
     .order("period_year", { ascending: false })
     .order("period_month", { ascending: false });
 
@@ -99,11 +100,7 @@ export async function fetchLeaveRequests(): Promise<LeaveRequest[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("hr_leave_requests")
-    .select(`
-      *,
-      employee:hr_employees!hr_leave_requests_employee_id_fkey(id, full_name, employee_number, position, avatar_url),
-      approver:hr_employees!hr_leave_requests_approved_by_fkey(id, full_name)
-    `)
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -141,11 +138,7 @@ export async function fetchPerformanceReviews(): Promise<PerformanceReview[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("hr_performance_reviews")
-    .select(`
-      *,
-      employee:hr_employees!hr_performance_reviews_employee_id_fkey(id, full_name, employee_number, position, avatar_url),
-      reviewer:hr_employees!hr_performance_reviews_reviewer_id_fkey(id, full_name)
-    `)
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
