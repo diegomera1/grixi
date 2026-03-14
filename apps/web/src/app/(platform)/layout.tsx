@@ -33,8 +33,8 @@ export default function PlatformLayout({
           className="flex flex-col bg-[var(--bg-primary)] overflow-hidden"
           style={{ height: "var(--app-height, 100vh)" }}
         >
-          <main className="platform-dot-grid relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden safe-area-all px-4 pt-6 pb-4 md:px-10 md:pt-10 md:pb-6 lg:px-20 lg:pt-12 lg:pb-8 xl:px-32">
-            <div className="relative z-10 mx-auto max-w-[1400px]">
+          <main className="platform-dot-grid relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden safe-area-all px-4 pt-6 pb-4 md:px-6 md:pt-6 md:pb-4 lg:px-8 lg:pt-8 lg:pb-6">
+            <div className="relative z-10">
               <PasskeyPromptBanner />
               <ActivityTrackerProvider>{children}</ActivityTrackerProvider>
             </div>
