@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mic, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -184,11 +184,27 @@ export function VoicePanel({
     isActive,
   } = useGrixiVoice();
 
-  // Auto-start/stop
+  // Stable refs to avoid stale closures
+  const startRef = useRef(start);
+  const stopRef = useRef(stop);
+  startRef.current = start;
+  stopRef.current = stop;
+
+  // Auto-start when panel opens, stop when closes
   useEffect(() => {
-    if (isOpen && state === "idle") start();
-    if (!isOpen && isActive) stop();
+    if (isOpen) {
+      // Small delay to ensure component is mounted
+      const timer = setTimeout(() => startRef.current(), 100);
+      return () => clearTimeout(timer);
+    } else {
+      stopRef.current();
+    }
   }, [isOpen]);
+
+  const handleClose = useCallback(() => {
+    stop();
+    onClose();
+  }, [stop, onClose]);
 
   return (
     <AnimatePresence>
@@ -227,7 +243,7 @@ export function VoicePanel({
               </div>
             </div>
             <button
-              onClick={() => { stop(); onClose(); }}
+              onClick={handleClose}
               className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
             >
               <X size={14} />
