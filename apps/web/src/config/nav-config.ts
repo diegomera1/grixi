@@ -6,6 +6,7 @@ import {
   Users,
   Shield,
   Sparkles,
+  Crosshair,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -30,6 +31,7 @@ export const PRIMARY_TABS: NavItem[] = [
 // ── Secondary Items ("Más" drawer on mobile) ─────
 
 export const SECONDARY_ITEMS: NavItem[] = [
+  { label: "Centro de Comando", href: "/command-center", icon: Crosshair, color: "#EC4899" },
   { label: "Usuarios", href: "/usuarios", icon: Users, color: "#F59E0B" },
   { label: "Administración", href: "/administracion", icon: Shield, color: "#F43F5E" },
   { label: "GRIXI AI", href: "/ai", icon: Sparkles, color: "#A855F7" },

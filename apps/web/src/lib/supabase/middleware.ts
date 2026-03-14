@@ -40,13 +40,13 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // ── Route protection ──────────────────────────────
-  const protectedPaths = ["/dashboard", "/usuarios", "/administracion", "/almacenes", "/finanzas", "/ai"];
+  const protectedPaths = ["/dashboard", "/command-center", "/usuarios", "/administracion", "/almacenes", "/finanzas", "/compras", "/ai"];
   const isProtectedRoute = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
 
-  // Redirect unauthenticated users to login
-  if (isProtectedRoute && !user) {
+  // Redirect unauthenticated users to login (page routes only, NOT API routes)
+  if (isProtectedRoute && !user && !request.nextUrl.pathname.startsWith("/api")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

@@ -13,6 +13,7 @@ import {
   Sparkles,
   DollarSign,
   ShoppingCart,
+  Crosshair,
   Search,
   Bell,
   Moon,
@@ -27,12 +28,14 @@ import {
   History,
   Plus,
   MessageSquare,
+  Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { createClient } from "@/lib/supabase/client";
 import { logLogoutEvent } from "@/lib/actions/audit";
 import { useThemeTransition } from "@/lib/hooks/use-theme-transition";
 import { GrixiAiLogo } from "@/features/ai/components/grixi-ai-logo";
+import { VoicePanel } from "@/features/ai/components/voice-panel";
 import { createConversation, listConversations, getConversationMessages } from "@/features/ai/actions/conversations";
 import type { AiModule, ChatMessage as ChatMessageType, Conversation } from "@/features/ai/types";
 import type { User } from "@supabase/supabase-js";
@@ -52,6 +55,7 @@ type NavModule = {
 
 const MODULES: NavModule[] = [
   { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "#06B6D4", glowColor: "rgba(6,182,212,0.3)", category: "PRINCIPAL", aiModule: "dashboard" },
+  { id: "command-center", label: "Centro de Comando", href: "/command-center", icon: Crosshair, color: "#EC4899", glowColor: "rgba(236,72,153,0.3)", category: "PRINCIPAL", aiModule: "general" },
   { id: "finanzas", label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.3)", category: "OPERACIONES", aiModule: "finanzas" },
   { id: "compras", label: "Compras", href: "/compras", icon: ShoppingCart, color: "#F97316", glowColor: "rgba(249,115,22,0.3)", category: "OPERACIONES", aiModule: "compras" },
   { id: "almacenes", label: "Almacenes", href: "/almacenes", icon: Warehouse, color: "#10B981", glowColor: "rgba(16,185,129,0.3)", category: "OPERACIONES", aiModule: "almacenes" },
@@ -85,6 +89,7 @@ export function GrixiOrb() {
 
   // AI Chat states
   const [aiOpen, setAiOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const [aiInput, setAiInput] = useState("");
   const [aiMessages, setAiMessages] = useState<ChatMessageType[]>([]);
   const [aiStreaming, setAiStreaming] = useState(false);
@@ -360,6 +365,9 @@ export function GrixiOrb() {
 
   return (
     <>
+      {/* ── GRIXI Voice Panel (floating, bottom-left above orb area) ── */}
+      <VoicePanel isOpen={voiceOpen && !isAiPage} onClose={() => setVoiceOpen(false)} />
+
       {/* ── AI Chat Panel (floating, bottom-left above orb area) ── */}
       <AnimatePresence>
         {aiOpen && !isAiPage && (
@@ -995,6 +1003,50 @@ export function GrixiOrb() {
                 className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border-[1.5px] border-[var(--bg-surface)]"
                 style={{ backgroundColor: activeColor }}
               />
+            </motion.button>
+          )}
+
+          {/* ── GRIXI Voice — AI Voice Satellite ── */}
+          {!isAiPage && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => { setVoiceOpen(!voiceOpen); if (aiOpen) setAiOpen(false); }}
+              className={cn(
+                "relative flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition-all",
+                voiceOpen
+                  ? "border-[#7C3AED]/50 bg-gradient-to-br from-[#7C3AED] to-[#A855F7] text-white shadow-[0_0_16px_rgba(124,58,237,0.4)]"
+                  : "border-[var(--border)] bg-[var(--bg-surface)] text-[#A78BFA] hover:border-[#7C3AED]/40 hover:text-[#7C3AED] hover:shadow-[0_0_12px_rgba(124,58,237,0.2)]"
+              )}
+              title="GRIXI Voice"
+            >
+              {/* Breathing pulse */}
+              {!voiceOpen && (
+                <motion.div
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.25, 0, 0.25] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  className="absolute inset-0 rounded-full border border-[#A78BFA]"
+                />
+              )}
+
+              {/* Icon: AudioLines (clean AI waveform) */}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative">
+                <path d="M2 10v3" />
+                <path d="M6 6v11" />
+                <path d="M10 3v18" />
+                <path d="M14 8v7" />
+                <path d="M18 5v13" />
+                <path d="M22 10v3" />
+              </svg>
+
+              {/* Active green dot */}
+              {voiceOpen && (
+                <motion.span
+                  className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-surface)] bg-emerald-400"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              )}
             </motion.button>
           )}
         </div>
