@@ -15,8 +15,8 @@ import {
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string; color: string }>; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-white/10 bg-[#0a0f1a]/95 px-3 py-2 text-[10px] shadow-xl backdrop-blur-md">
-      <p className="text-white/50 mb-1">{label}</p>
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)]/95 px-3 py-2 text-[10px] shadow-xl backdrop-blur-md">
+      <p className="text-[var(--text-muted)] mb-1">{label}</p>
       {payload.map((entry, i) => (
         <p key={i} style={{ color: entry.color }} className="font-bold">
           {entry.name}: {typeof entry.value === "number" ? entry.value.toLocaleString() : entry.value}

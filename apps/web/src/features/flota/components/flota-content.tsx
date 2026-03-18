@@ -30,7 +30,7 @@ import { VESSEL_STATUS_LABELS, VESSEL_STATUS_COLORS } from "../types";
 const Vessel3D = dynamic(() => import("./vessel-3d").then((m) => m.Vessel3D), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[450px] items-center justify-center rounded-xl border border-[var(--border)] bg-[#030712]">
+    <div className="flex h-[450px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
       <div className="flex flex-col items-center gap-2">
         <div className="h-6 w-6 rounded-full border-2 border-[#0EA5E9] border-t-transparent animate-spin" />
         <span className="text-xs text-[#0EA5E9]/60">Cargando visualización 3D...</span>
@@ -42,7 +42,7 @@ const Vessel3D = dynamic(() => import("./vessel-3d").then((m) => m.Vessel3D), {
 const Vessel3DInterior = dynamic(() => import("./vessel-3d-interior").then((m) => m.Vessel3DInterior), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[450px] items-center justify-center rounded-xl border border-[var(--border)] bg-[#030712]">
+    <div className="flex h-[450px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
       <div className="flex flex-col items-center gap-2">
         <div className="h-6 w-6 rounded-full border-2 border-[#0EA5E9] border-t-transparent animate-spin" />
         <span className="text-xs text-[#0EA5E9]/60">Cargando vista interior 3D...</span>

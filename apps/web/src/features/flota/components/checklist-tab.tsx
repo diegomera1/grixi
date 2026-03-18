@@ -239,10 +239,10 @@ export function ChecklistTab({ checklists }: { checklists: Checklist[] }) {
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between rounded-xl border border-[#0EA5E9]/20 bg-[#030712] p-4">
+      <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
         <div>
-          <p className="text-sm font-bold text-white">{activeData?.name}</p>
-          <p className="text-[10px] text-white/40">
+          <p className="text-sm font-bold text-[var(--text-primary)]">{activeData?.name}</p>
+          <p className="text-[10px] text-[var(--text-muted)]">
             Inicio: {new Date(execution.startedAt).toLocaleTimeString("es-EC")} · {execution.executorName}
           </p>
         </div>
@@ -250,7 +250,7 @@ export function ChecklistTab({ checklists }: { checklists: Checklist[] }) {
           {/* Progress ring */}
           <div className="relative h-10 w-10">
             <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2" />
+              <circle cx="18" cy="18" r="16" fill="none" stroke="var(--border)" strokeWidth="2" />
               <circle
                 cx="18" cy="18" r="16" fill="none"
                 stroke="#0EA5E9"
@@ -260,7 +260,7 @@ export function ChecklistTab({ checklists }: { checklists: Checklist[] }) {
                 className="transition-all duration-500"
               />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white">
+            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-[var(--text-primary)]">
               {completedCount}/{totalCount}
             </span>
           </div>
@@ -277,7 +277,7 @@ export function ChecklistTab({ checklists }: { checklists: Checklist[] }) {
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
                 allRequiredDone
                   ? "bg-[#0EA5E9] text-white hover:bg-[#0EA5E9]/80"
-                  : "bg-white/5 text-white/30 cursor-not-allowed"
+                  : "bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-not-allowed"
               )}
             >
               <Send size={12} />
