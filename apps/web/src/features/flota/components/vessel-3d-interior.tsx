@@ -2,7 +2,7 @@
 
 import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Float } from "@react-three/drei";
+import { OrbitControls, Text, Float, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import type { Equipment } from "../types";
 import { EQUIPMENT_STATUS_COLORS } from "../types";
@@ -27,32 +27,42 @@ function InteriorGrid() {
   );
 }
 
-// Room walls (wireframe box)
+// Room walls with textures
 function RoomStructure() {
   const wireRef = useRef<THREE.Mesh>(null);
+  const metalTexture = useTexture("/fleet/texture-metal-plate.png");
+  const floorTexture = useTexture("/fleet/texture-floor-grating.png");
+
+  // Configure texture wrapping
+  [metalTexture, floorTexture].forEach((t) => {
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  });
+  metalTexture.repeat.set(3, 2);
+  floorTexture.repeat.set(6, 4);
+
   useFrame(({ clock }) => {
     if (wireRef.current) {
-      (wireRef.current.material as THREE.MeshBasicMaterial).opacity = 0.08 + Math.sin(clock.elapsedTime * 0.4) * 0.02;
+      (wireRef.current.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.05 + Math.sin(clock.elapsedTime * 0.4) * 0.02;
     }
   });
 
   return (
     <group>
-      {/* Floor */}
+      {/* Floor with grating texture */}
       <mesh position={[0, -3, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[18, 12]} />
-        <meshBasicMaterial color="#0EA5E9" transparent opacity={0.03} />
+        <meshStandardMaterial map={floorTexture} roughness={0.8} metalness={0.6} color="#1a2535" />
       </mesh>
-      {/* Room wireframe */}
+      {/* Room wireframe with metal */}
       <mesh ref={wireRef} position={[0, 0.5, 0]}>
         <boxGeometry args={[18, 7, 12]} />
-        <meshBasicMaterial color="#0EA5E9" wireframe transparent opacity={0.08} />
+        <meshStandardMaterial map={metalTexture} transparent opacity={0.15} roughness={0.9} metalness={0.7} emissive="#0EA5E9" emissiveIntensity={0.05} side={THREE.BackSide} />
       </mesh>
       {/* Ceiling pipes */}
       {[-4, 0, 4].map((x) => (
         <mesh key={x} position={[x, 3.5, 0]} rotation={[0, 0, 0]}>
           <cylinderGeometry args={[0.08, 0.08, 12, 8]} />
-          <meshBasicMaterial color="#0EA5E9" transparent opacity={0.15} />
+          <meshStandardMaterial color="#2a5478" roughness={0.6} metalness={0.8} />
         </mesh>
       ))}
     </group>
@@ -178,7 +188,7 @@ function ControlPanel({ position }: { position: [number, number, number] }) {
       </mesh>
       {/* Indicator lights */}
       {[-0.6, -0.2, 0.2, 0.6].map((x) => (
-        <Float key={x} speed={1 + Math.random()} floatIntensity={0.05}>
+        <Float key={x} speed={1 + (x + 1) * 0.3} floatIntensity={0.05}>
           <mesh position={[x, -0.5, 0.2]}>
             <sphereGeometry args={[0.05, 8, 8]} />
             <meshBasicMaterial color={x < 0 ? "#10B981" : x === 0.2 ? "#F59E0B" : "#10B981"} />
@@ -195,11 +205,14 @@ function ControlPanel({ position }: { position: [number, number, number] }) {
 // Particle system for engine exhaust effect
 function ExhaustParticles() {
   const particles = useMemo(() => {
+    // Deterministic pseudo-random for ESLint purity
+    let seed = 42;
+    const rand = () => { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; };
     const positions = new Float32Array(200 * 3);
     for (let i = 0; i < 200; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 18;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 7;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 12;
+      positions[i * 3] = (rand() - 0.5) * 18;
+      positions[i * 3 + 1] = (rand() - 0.5) * 7;
+      positions[i * 3 + 2] = (rand() - 0.5) * 12;
     }
     return positions;
   }, []);
