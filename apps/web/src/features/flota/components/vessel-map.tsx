@@ -22,6 +22,18 @@ const VESSEL_SPEED = 12.4;
 
 const CESIUM_ION_TOKEN = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiYzQ0NDI0Zi1jOWNkLTRkYmUtYTc0ZS1kYzg2NWZiN2E3OGYiLCJpZCI6NDA1Mzg3LCJpYXQiOjE3NzM4MDA2NDh9.v1kGitn2z629Zudc6y3vws8uDkgeifH84XqPnEXDmgU";
 
+// Calculate route progress
+function getRouteProgress(): { pct: number; distanceTraveled: string; distanceRemaining: string } {
+  // Simplified — vessel near Manta heading to Guayaquil
+  const totalNm = 2850; // approx total nautical miles
+  const traveledNm = 180;
+  return {
+    pct: Math.round((traveledNm / totalNm) * 100),
+    distanceTraveled: `${traveledNm} nm`,
+    distanceRemaining: `${totalNm - traveledNm} nm`,
+  };
+}
+
 type VesselMapProps = {
   vesselName?: string;
   compact?: boolean;
@@ -109,8 +121,12 @@ export function VesselMap({ vesselName = "MV Grixi Pacífico", compact = false }
         viewer.scene.globe.enableLighting = true;
         viewer.scene.skyAtmosphere.show = true;
         viewer.scene.fog.enabled = true;
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#0a1628");
+        viewer.scene.globe.undergroundColor = Cesium.Color.fromCssColorString("#050a15");
+        viewer.scene.screenSpaceCameraController.minimumZoomDistance = 500;
+        viewer.scene.screenSpaceCameraController.maximumZoomDistance = 20000000;
 
-        // Vessel marker
+        // Vessel marker with pulsing ellipse
         viewer.entities.add({
           name: vesselName,
           position: Cesium.Cartesian3.fromDegrees(VESSEL_POSITION.lon, VESSEL_POSITION.lat, 0),
@@ -122,13 +138,21 @@ export function VesselMap({ vesselName = "MV Grixi Pacífico", compact = false }
           },
           label: {
             text: vesselName,
-            font: "11px Inter, sans-serif",
+            font: "12px Inter, sans-serif",
             fillColor: Cesium.Color.fromCssColorString("#0EA5E9"),
             outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 2,
+            outlineWidth: 3,
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             pixelOffset: new Cesium.Cartesian2(0, -22),
+          },
+          ellipse: {
+            semiMajorAxis: 8000,
+            semiMinorAxis: 8000,
+            material: Cesium.Color.fromCssColorString("#0EA5E9").withAlpha(0.15),
+            outline: true,
+            outlineColor: Cesium.Color.fromCssColorString("#0EA5E9").withAlpha(0.4),
+            outlineWidth: 1,
           },
         });
 
@@ -182,8 +206,9 @@ export function VesselMap({ vesselName = "MV Grixi Pacífico", compact = false }
 
         // Fly to vessel
         viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(VESSEL_POSITION.lon, VESSEL_POSITION.lat, 3000000),
-          duration: 2,
+          destination: Cesium.Cartesian3.fromDegrees(VESSEL_POSITION.lon, VESSEL_POSITION.lat, 1500000),
+          orientation: { heading: Cesium.Math.toRadians(0), pitch: Cesium.Math.toRadians(-45), roll: 0 },
+          duration: 2.5,
         });
 
         viewerRef.current = viewer;
@@ -203,6 +228,32 @@ export function VesselMap({ vesselName = "MV Grixi Pacífico", compact = false }
       }
     };
   }, [vesselName, createVesselIcon]);
+
+  // Fly to a port
+  const flyToPort = useCallback((lat: number, lon: number) => {
+    if (!viewerRef.current) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Cesium = (window as any).Cesium;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (viewerRef.current as any).camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat, 300000),
+      orientation: { heading: 0, pitch: Cesium.Math.toRadians(-30), roll: 0 },
+      duration: 1.5,
+    });
+  }, []);
+
+  const flyToVessel = useCallback(() => {
+    if (!viewerRef.current) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Cesium = (window as any).Cesium;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (viewerRef.current as any).camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(VESSEL_POSITION.lon, VESSEL_POSITION.lat, 500000),
+      duration: 1.5,
+    });
+  }, []);
+
+  const progress = getRouteProgress();
 
   const height = compact ? "h-[300px]" : isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "h-[450px]";
 
@@ -258,25 +309,45 @@ export function VesselMap({ vesselName = "MV Grixi Pacífico", compact = false }
             </div>
           </div>
 
-          <div className="absolute bottom-3 left-3 z-20 rounded-lg border border-white/10 bg-[#0a0f1a]/90 backdrop-blur-md px-3 py-2">
-            <p className="text-[8px] font-bold uppercase tracking-wider text-white/40 mb-1.5">Ruta</p>
-            <div className="space-y-1">
+          <div className="absolute bottom-3 left-3 z-20 rounded-lg border border-white/10 bg-[#0a0f1a]/90 backdrop-blur-md px-3 py-2 max-w-[180px]">
+            <p className="text-[8px] font-bold uppercase tracking-wider text-white/40 mb-1">Ruta · {progress.pct}%</p>
+            <div className="w-full h-1 bg-white/10 rounded-full mb-1.5 overflow-hidden">
+              <div className="h-full bg-[#10B981] rounded-full transition-all" style={{ width: `${progress.pct}%` }} />
+            </div>
+            <div className="flex justify-between text-[7px] text-white/30 mb-2">
+              <span>{progress.distanceTraveled}</span>
+              <span>{progress.distanceRemaining}</span>
+            </div>
+            <div className="space-y-0.5">
               {ROUTE_WAYPOINTS.map((wp, i) => (
-                <div key={wp.name} className="flex items-center gap-2">
-                  <span className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-[#10B981]" : "bg-[#F59E0B]"}`} />
-                  <span className="text-[9px] text-white/60">{wp.name}</span>
-                </div>
+                <button
+                  key={wp.name}
+                  onClick={() => flyToPort(wp.lat, wp.lon)}
+                  className="flex items-center gap-2 w-full text-left rounded px-1 py-0.5 hover:bg-white/5 transition-colors group"
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${i === 0 ? "bg-[#10B981]" : "bg-[#F59E0B]"}`} />
+                  <span className="text-[9px] text-white/60 group-hover:text-white/90 transition-colors">{wp.name}</span>
+                </button>
               ))}
             </div>
           </div>
 
           {!compact && (
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="absolute top-3 right-3 z-20 rounded-lg border border-white/10 bg-[#0a0f1a]/80 p-2 text-white/60 hover:text-white transition-colors"
-            >
-              {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            </button>
+            <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5">
+              <button
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="rounded-lg border border-white/10 bg-[#0a0f1a]/80 p-2 text-white/60 hover:text-white transition-colors"
+              >
+                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </button>
+              <button
+                onClick={flyToVessel}
+                className="rounded-lg border border-[#0EA5E9]/30 bg-[#0a0f1a]/80 p-2 text-[#0EA5E9]/60 hover:text-[#0EA5E9] transition-colors"
+                title="Centrar en buque"
+              >
+                <Navigation size={14} />
+              </button>
+            </div>
           )}
         </>
       )}
