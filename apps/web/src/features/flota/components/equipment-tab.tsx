@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import type { Equipment, VesselZone } from "../types";
+import { motion, AnimatePresence } from "framer-motion";
+import type { Equipment, VesselZone, WorkOrder } from "../types";
 import {
   EQUIPMENT_STATUS_LABELS, EQUIPMENT_STATUS_COLORS,
   EQUIPMENT_CRITICALITY_LABELS, EQUIPMENT_CRITICALITY_COLORS,
   ZONE_TYPE_COLORS,
 } from "../types";
+import { EquipmentDetailDrawer } from "./equipment-detail-drawer";
 
-export function EquipmentTab({ equipment, zones }: { equipment: Equipment[]; zones: VesselZone[] }) {
+export function EquipmentTab({ equipment, zones, workOrders }: { equipment: Equipment[]; zones: VesselZone[]; workOrders?: WorkOrder[] }) {
   const [search, setSearch] = useState("");
   const [zoneFilter, setZoneFilter] = useState("all");
   const [critFilter, setCritFilter] = useState("all");
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
 
   const filtered = equipment.filter((e) => {
     const matchSearch = !search || e.name.toLowerCase().includes(search.toLowerCase()) || e.code.toLowerCase().includes(search.toLowerCase());
@@ -71,9 +73,10 @@ export function EquipmentTab({ equipment, zones }: { equipment: Equipment[]; zon
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.02 }}
-                    className="border-b border-[var(--border)] hover:bg-[var(--bg-muted)]/30 cursor-pointer transition-colors"
+                    onClick={() => setSelectedEquipment(eq)}
+                    className="border-b border-[var(--border)] hover:bg-[#0EA5E9]/5 cursor-pointer transition-colors group"
                   >
-                    <td className="px-4 py-2.5 font-mono text-[#0EA5E9]">{eq.code}</td>
+                    <td className="px-4 py-2.5 font-mono text-[#0EA5E9] group-hover:text-[#0EA5E9]">{eq.code}</td>
                     <td className="px-4 py-2.5">
                       <p className="font-medium text-[var(--text-primary)]">{eq.name}</p>
                       {eq.model && <p className="text-[10px] text-[var(--text-muted)]">{eq.manufacturer} {eq.model}</p>}
@@ -107,6 +110,18 @@ export function EquipmentTab({ equipment, zones }: { equipment: Equipment[]; zon
           </table>
         </div>
       </div>
+
+      {/* Equipment Detail Drawer */}
+      <AnimatePresence>
+        {selectedEquipment && (
+          <EquipmentDetailDrawer
+            equipment={selectedEquipment}
+            zone={zones.find((z) => z.id === selectedEquipment.zone_id)}
+            workOrders={workOrders || []}
+            onClose={() => setSelectedEquipment(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -177,7 +177,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
             onToggleFullscreen={() => setFullscreen3D(true)}
           />
         )}
-        {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} />}
+        {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} workOrders={workOrders} />}
         {activeTab === "work-orders" && <WorkOrdersTab workOrders={workOrders} equipment={equipment} />}
         {activeTab === "checklists" && <ChecklistTab checklists={checklists} />}
         {activeTab === "crew" && <CrewTab crew={crew} />}
