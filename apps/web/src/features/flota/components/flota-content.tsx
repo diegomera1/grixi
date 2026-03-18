@@ -6,11 +6,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Ship, Gauge, Wrench, ClipboardCheck, Users, Package,
   BarChart3, Anchor, Activity, AlertTriangle,
-  DollarSign, Clock, TrendingUp, Waves,
+  DollarSign, Clock, TrendingUp, Waves, Cpu,
   ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useFlotaDemo } from "../hooks/use-flota-demo";
+import { useOfflineSync } from "../hooks/use-offline-sync";
+import { ChecklistTab } from "./checklist-tab";
+import { AITab } from "./ai-tab";
+import { OfflineIndicator } from "./offline-indicator";
 import type {
   Vessel, VesselZone, Equipment, WorkOrder,
   Checklist, CrewMember, KPISnapshot, FlotaKPIs,
@@ -43,9 +47,11 @@ const TABS = [
   { id: "vessel-3d", label: "Buque 3D", icon: Waves },
   { id: "equipment", label: "Equipos", icon: Wrench },
   { id: "work-orders", label: "Órdenes", icon: ClipboardCheck },
+  { id: "checklists", label: "Checklists", icon: ClipboardCheck },
   { id: "crew", label: "Tripulación", icon: Users },
   { id: "logistics", label: "Logística", icon: Package },
   { id: "analytics", label: "Analítica", icon: BarChart3 },
+  { id: "ai", label: "AI Predictivo", icon: Cpu },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -66,8 +72,9 @@ type FlotaData = {
 export function FlotaContent({ data }: { data: FlotaData }) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [fullscreen3D, setFullscreen3D] = useState(false);
-  const { vessel, zones, equipment, workOrders, crew, kpis, stats } = data;
+  const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats } = data;
   const { events, readings } = useFlotaDemo();
+  const { status: offlineStatus, syncNow } = useOfflineSync();
 
   // Fullscreen 3D overlay
   if (fullscreen3D) {
@@ -139,6 +146,9 @@ export function FlotaContent({ data }: { data: FlotaData }) {
         ))}
       </div>
 
+      {/* Offline Indicator */}
+      <OfflineIndicator status={offlineStatus} onSync={syncNow} />
+
       {/* Tab Bar */}
       <div className="flex gap-0.5 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-0.5">
         {TABS.map((tab) => (
@@ -168,11 +178,13 @@ export function FlotaContent({ data }: { data: FlotaData }) {
             onToggleFullscreen={() => setFullscreen3D(true)}
           />
         )}
+        {activeTab === "checklists" && <ChecklistTab checklists={checklists} />}
         {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} />}
         {activeTab === "work-orders" && <WorkOrdersTab workOrders={workOrders} equipment={equipment} />}
         {activeTab === "crew" && <CrewTab crew={crew} />}
         {activeTab === "logistics" && <LogisticsTab equipment={equipment} />}
         {activeTab === "analytics" && <AnalyticsTab kpis={kpis} equipment={equipment} workOrders={workOrders} />}
+        {activeTab === "ai" && <AITab equipment={equipment} workOrders={workOrders} kpis={kpis} />}
       </motion.div>
     </div>
   );
