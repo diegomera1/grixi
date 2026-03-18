@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Wrench, Package, Calendar, Activity,
@@ -13,6 +14,35 @@ import {
   WO_STATUS_LABELS, WO_STATUS_COLORS, WO_PRIORITY_COLORS,
   ZONE_TYPE_COLORS,
 } from "../types";
+
+// Map equipment codes to AI-generated photos
+const EQUIPMENT_IMAGE_MAP: Record<string, string> = {
+  "ENG": "/fleet/engine-main.png",
+  "GEN": "/fleet/engine-generator.png",
+  "PMP": "/fleet/engine-pump.png",
+  "CMP": "/fleet/engine-compressor.png",
+  "BLR": "/fleet/engine-boiler.png",
+  "CTL": "/fleet/engine-control-panel.png",
+  "PNL": "/fleet/engine-control-panel.png",
+};
+
+function getEquipmentImage(eq: Equipment): string | null {
+  if (eq.image_url) return eq.image_url;
+  const code = eq.code?.toUpperCase() || "";
+  for (const [prefix, img] of Object.entries(EQUIPMENT_IMAGE_MAP)) {
+    if (code.includes(prefix)) return img;
+  }
+  // Fallback by equipment_type
+  const typeMap: Record<string, string> = {
+    engine: "/fleet/engine-main.png",
+    generator: "/fleet/engine-generator.png",
+    pump: "/fleet/engine-pump.png",
+    compressor: "/fleet/engine-compressor.png",
+    boiler: "/fleet/engine-boiler.png",
+    panel: "/fleet/engine-control-panel.png",
+  };
+  return typeMap[eq.equipment_type?.toLowerCase()] || null;
+}
 
 type EquipmentDetailDrawerProps = {
   equipment: Equipment;
@@ -27,6 +57,7 @@ export function EquipmentDetailDrawer({ equipment: eq, zone, workOrders, onClose
   const bomItems = eq.bom_items || [];
   const plans = eq.maintenance_plans || [];
   const mpPoints = eq.measurement_points || [];
+  const equipmentImage = getEquipmentImage(eq);
 
   const toggleSection = (id: string) => {
     setExpandedSection((prev) => (prev === id ? null : id));
@@ -64,9 +95,9 @@ export function EquipmentDetailDrawer({ equipment: eq, zone, workOrders, onClose
 
         <div className="p-5 space-y-3">
           {/* Equipment Photo */}
-          {eq.image_url ? (
+          {equipmentImage ? (
             <div className="relative overflow-hidden rounded-xl border border-[var(--border)]">
-              <img src={eq.image_url} alt={eq.name} className="h-48 w-full object-cover" />
+              <Image src={equipmentImage} alt={eq.name} width={512} height={320} className="h-48 w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-3 left-3 flex items-center gap-2">
                 <span

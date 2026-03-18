@@ -12,6 +12,13 @@
 | 2 | [On-Premise Local](./alt-2-onpremise/01-overview.md) | `alt-2-onpremise/` | Mac Studio M4 Max + Docker + Coolify + Cloudflare Tunnel |
 | 3 | [Bare Metal Cloud](./alt-3-baremetal/01-overview.md) | `alt-3-baremetal/` | Hetzner Dedicated + Docker + Coolify + Cloudflare |
 
+## Documentos Transversales
+
+| Documento | Contenido |
+|---|---|
+| [00-benchmarks.md](./00-benchmarks.md) | Performance benchmarks: TTFB, throughput, DB speed |
+| [00-roadmap-migracion.md](./00-roadmap-migracion.md) | Timeline de migración por alternativa |
+
 ---
 
 ## Arquitectura Actual (Referencia)
@@ -22,7 +29,7 @@
 | Backend + DB + Auth | PostgreSQL 17 + Supabase Auth | Supabase Pro + PITR | $140 |
 | CDN + WAF + DNS | Cloudflare | Cloudflare Pro | $20 |
 | Repo + CI/CD | GitHub + Vercel Integration | GitHub Teams | $12 |
-| **Total** | | | **~$192/mes** |
+| **Total** | | | **~$193/mes** |
 
 ---
 
@@ -30,7 +37,7 @@
 
 | Criterio | Actual | Alt. 1 (SB+CF) | Alt. 2 (On-Prem) | Alt. 3 (Bare Metal) |
 |---|---|---|---|---|
-| **Costo/mes** | ~$192 | ~$182 | ~$40 | ~$110 |
+| **Costo/mes** | ~$193 | ~$181 | ~$41 | ~$108 |
 | **Costo inicial** | $0 | $0 | ~$2,900 | ~$300 |
 | **Uptime SLA** | 99.99% | 99.99% | Sin SLA | ~99.9% |
 | **Redundancia** | Multi-region | Multi-region | Single server | Single (ampliable) |
