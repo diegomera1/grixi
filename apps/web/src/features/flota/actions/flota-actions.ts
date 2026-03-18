@@ -21,13 +21,11 @@ export async function fetchVessel(): Promise<{
 } | null> {
   const supabase = await createClient();
 
-  // Get authenticated user's org
+  // Try to get authenticated user's org — but don't block if not logged in (demo data)
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const orgId = user?.user_metadata?.org_id || user?.app_metadata?.org_id;
 
-  const orgId = user.user_metadata?.org_id || user.app_metadata?.org_id;
-
-  // Get vessel filtered by org
+  // Get vessel — filtered by org if authenticated, otherwise first available (demo)
   let vesselQuery = supabase.from("fleet_vessels").select("*");
   if (orgId) vesselQuery = vesselQuery.eq("org_id", orgId);
   const { data: vessel } = await vesselQuery.limit(1).single();
