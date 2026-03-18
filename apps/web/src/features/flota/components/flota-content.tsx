@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Ship, Gauge, Wrench, ClipboardCheck, Users, Package,
-  BarChart3, Cuboid, Anchor, Fuel, Activity, AlertTriangle,
-  DollarSign, Clock, TrendingUp,
+  BarChart3, Anchor, Activity, AlertTriangle,
+  DollarSign, Clock, TrendingUp, Waves,
+  ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { useFlotaDemo } from "../hooks/use-flota-demo";
 import type {
   Vessel, VesselZone, Equipment, WorkOrder,
   Checklist, CrewMember, KPISnapshot, FlotaKPIs,
@@ -17,14 +20,27 @@ import {
   WO_STATUS_LABELS, WO_STATUS_COLORS, WO_PRIORITY_LABELS, WO_PRIORITY_COLORS,
   EQUIPMENT_STATUS_LABELS, EQUIPMENT_STATUS_COLORS,
   EQUIPMENT_CRITICALITY_LABELS, EQUIPMENT_CRITICALITY_COLORS,
-  ZONE_TYPE_LABELS, ZONE_TYPE_COLORS,
-  CREW_ROLE_LABELS,
+  ZONE_TYPE_COLORS,
 } from "../types";
+
+// Dynamic import to avoid SSR issues with R3F
+const Vessel3D = dynamic(() => import("./vessel-3d").then((m) => m.Vessel3D), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[450px] items-center justify-center rounded-xl border border-[var(--border)] bg-[#030712]">
+      <div className="flex flex-col items-center gap-2">
+        <div className="h-6 w-6 rounded-full border-2 border-[#0EA5E9] border-t-transparent animate-spin" />
+        <span className="text-xs text-[#0EA5E9]/60">Cargando visualización 3D...</span>
+      </div>
+    </div>
+  ),
+});
 
 // ── Tabs ────────────────────────────────────────
 
 const TABS = [
   { id: "dashboard", label: "Dashboard", icon: Gauge },
+  { id: "vessel-3d", label: "Buque 3D", icon: Waves },
   { id: "equipment", label: "Equipos", icon: Wrench },
   { id: "work-orders", label: "Órdenes", icon: ClipboardCheck },
   { id: "crew", label: "Tripulación", icon: Users },
@@ -49,7 +65,21 @@ type FlotaData = {
 
 export function FlotaContent({ data }: { data: FlotaData }) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
-  const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats } = data;
+  const [fullscreen3D, setFullscreen3D] = useState(false);
+  const { vessel, zones, equipment, workOrders, crew, kpis, stats } = data;
+  const { events, readings } = useFlotaDemo();
+
+  // Fullscreen 3D overlay
+  if (fullscreen3D) {
+    return (
+      <Vessel3D
+        zones={zones}
+        equipment={equipment}
+        fullscreenMode
+        onToggleFullscreen={() => setFullscreen3D(false)}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
@@ -130,7 +160,14 @@ export function FlotaContent({ data }: { data: FlotaData }) {
 
       {/* Tab Content */}
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        {activeTab === "dashboard" && <DashboardTab stats={stats} kpis={kpis} workOrders={workOrders} equipment={equipment} zones={zones} />}
+        {activeTab === "dashboard" && <DashboardTab stats={stats} kpis={kpis} workOrders={workOrders} equipment={equipment} zones={zones} events={events} readings={readings} />}
+        {activeTab === "vessel-3d" && (
+          <Vessel3D
+            zones={zones}
+            equipment={equipment}
+            onToggleFullscreen={() => setFullscreen3D(true)}
+          />
+        )}
         {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} />}
         {activeTab === "work-orders" && <WorkOrdersTab workOrders={workOrders} equipment={equipment} />}
         {activeTab === "crew" && <CrewTab crew={crew} />}
@@ -145,8 +182,10 @@ export function FlotaContent({ data }: { data: FlotaData }) {
 // TAB: Dashboard
 // ══════════════════════════════════════════════════
 
-function DashboardTab({ stats, kpis, workOrders, equipment, zones }: {
+function DashboardTab({ stats, kpis, workOrders, equipment, zones, events, readings }: {
   stats: FlotaKPIs; kpis: KPISnapshot[]; workOrders: WorkOrder[]; equipment: Equipment[]; zones: VesselZone[];
+  events: ReturnType<typeof useFlotaDemo>["events"];
+  readings: ReturnType<typeof useFlotaDemo>["readings"];
 }) {
   const activeWOs = workOrders.filter((wo) => ["in_progress", "assigned"].includes(wo.status)).slice(0, 5);
   const zoneEquipmentCounts = zones.map((z) => ({
@@ -155,8 +194,73 @@ function DashboardTab({ stats, kpis, workOrders, equipment, zones }: {
     alerts: equipment.filter((e) => e.zone_id === z.id && e.status !== "operational").length,
   }));
 
+  const TrendIcon = ({ trend }: { trend: string }) => {
+    if (trend === "up") return <ArrowUp size={8} className="text-red-400" />;
+    if (trend === "down") return <ArrowDown size={8} className="text-green-400" />;
+    return <Minus size={8} className="text-[var(--text-muted)]" />;
+  };
+
   return (
     <div className="grid gap-4 lg:grid-cols-3">
+      {/* Live Readings — Realtime */}
+      <div className="lg:col-span-2 rounded-xl border border-[#0EA5E9]/20 bg-[#030712] p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0EA5E9]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0EA5E9] animate-pulse" />
+            Lecturas en Tiempo Real
+          </h3>
+          <span className="text-[8px] text-white/30">Actualización cada 3s</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          {readings.slice(0, 8).map((r) => (
+            <motion.div
+              key={r.name}
+              className="rounded-lg border border-white/5 bg-white/[0.03] p-2"
+              animate={{ borderColor: r.trend !== "stable" ? "rgba(14,165,233,0.2)" : "rgba(255,255,255,0.05)" }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] text-white/40 truncate">{r.name}</span>
+                <TrendIcon trend={r.trend} />
+              </div>
+              <p className="mt-0.5 text-sm font-bold tabular-nums" style={{ color: r.color }}>
+                {r.value.toFixed(1)}
+                <span className="text-[8px] font-normal text-white/30 ml-0.5">{r.unit}</span>
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Live Event Feed */}
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 max-h-[350px] overflow-hidden">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+          Feed en Vivo
+        </h3>
+        <div className="space-y-1.5 overflow-y-auto max-h-[280px] pr-1">
+          <AnimatePresence initial={false}>
+            {events.slice(0, 10).map((evt) => (
+              <motion.div
+                key={evt.id}
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-start gap-2 rounded-md bg-[var(--bg-muted)]/30 px-2 py-1.5"
+              >
+                <span className="text-[10px] shrink-0 mt-0.5">{evt.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-medium text-[var(--text-primary)] truncate">{evt.title}</p>
+                  <p className="text-[8px] text-[var(--text-muted)] truncate">{evt.detail}</p>
+                </div>
+                <span className="text-[7px] text-[var(--text-muted)] shrink-0">
+                  {evt.timestamp.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                </span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+
       {/* Active Work Orders */}
       <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
         <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
@@ -222,7 +326,7 @@ function DashboardTab({ stats, kpis, workOrders, equipment, zones }: {
           Tendencia KPIs — Últimos 6 Meses
         </h3>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {kpis.map((kpi, i) => (
+          {kpis.map((kpi) => (
             <div key={kpi.id} className="text-center">
               <p className="text-[9px] text-[var(--text-muted)]">
                 {new Date(kpi.snapshot_date).toLocaleDateString("es-EC", { month: "short", year: "2-digit" })}
