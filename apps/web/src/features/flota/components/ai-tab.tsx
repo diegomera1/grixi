@@ -4,10 +4,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Cpu, AlertTriangle, TrendingUp, Zap, CheckCircle2,
-  ChevronRight, Clock, Activity,
+  ChevronRight, Activity,
 } from "lucide-react";
 import type { Equipment, WorkOrder, KPISnapshot } from "../types";
-import { EQUIPMENT_STATUS_COLORS, EQUIPMENT_CRITICALITY_COLORS } from "../types";
 
 // ── AI Analysis Types ───────────────────────────
 
@@ -75,7 +74,7 @@ function generatePredictions(equipment: Equipment[]): PredictiveInsight[] {
   });
 }
 
-function generateAnomalies(kpis: KPISnapshot[]): TrendAnomaly[] {
+function generateAnomalies(_kpis: KPISnapshot[]): TrendAnomaly[] {
   return [
     { id: "a1", kpi: "MTBF", direction: "deteriorating", detail: "MTBF bajó 12% en últimos 2 meses — posible degradación de programa preventivo", severity: "warning" },
     { id: "a2", kpi: "Disponibilidad", direction: "improving", detail: "Disponibilidad mejoró de 94.8% a 96.2% — resultado de overhauls Cyl 3 y 5", severity: "info" },
@@ -103,7 +102,7 @@ const RISK_COLORS: Record<string, string> = {
 
 // ── AI Tab Component ────────────────────────────
 
-export function AITab({ equipment, workOrders, kpis }: {
+export function AITab({ equipment, workOrders: _workOrders, kpis }: {
   equipment: Equipment[];
   workOrders: WorkOrder[];
   kpis: KPISnapshot[];

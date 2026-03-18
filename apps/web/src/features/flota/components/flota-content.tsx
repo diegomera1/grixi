@@ -4,7 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Ship, Gauge, Wrench, ClipboardCheck, Users, Package,
+  Ship, Gauge, Wrench, ClipboardCheck, ClipboardList, Users, Package,
   BarChart3, Anchor, Activity, AlertTriangle,
   DollarSign, Clock, TrendingUp, Waves, Cpu,
   ArrowUp, ArrowDown, Minus,
@@ -47,7 +47,7 @@ const TABS = [
   { id: "vessel-3d", label: "Buque 3D", icon: Waves },
   { id: "equipment", label: "Equipos", icon: Wrench },
   { id: "work-orders", label: "Órdenes", icon: ClipboardCheck },
-  { id: "checklists", label: "Checklists", icon: ClipboardCheck },
+  { id: "checklists", label: "Checklists", icon: ClipboardList },
   { id: "crew", label: "Tripulación", icon: Users },
   { id: "logistics", label: "Logística", icon: Package },
   { id: "analytics", label: "Analítica", icon: BarChart3 },
@@ -170,7 +170,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
 
       {/* Tab Content */}
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        {activeTab === "dashboard" && <DashboardTab stats={stats} kpis={kpis} workOrders={workOrders} equipment={equipment} zones={zones} events={events} readings={readings} />}
+        {activeTab === "dashboard" && <DashboardTab kpis={kpis} workOrders={workOrders} equipment={equipment} zones={zones} events={events} readings={readings} />}
         {activeTab === "vessel-3d" && (
           <Vessel3D
             zones={zones}
@@ -194,8 +194,8 @@ export function FlotaContent({ data }: { data: FlotaData }) {
 // TAB: Dashboard
 // ══════════════════════════════════════════════════
 
-function DashboardTab({ stats, kpis, workOrders, equipment, zones, events, readings }: {
-  stats: FlotaKPIs; kpis: KPISnapshot[]; workOrders: WorkOrder[]; equipment: Equipment[]; zones: VesselZone[];
+function DashboardTab({ kpis, workOrders, equipment, zones, events, readings }: {
+  kpis: KPISnapshot[]; workOrders: WorkOrder[]; equipment: Equipment[]; zones: VesselZone[];
   events: ReturnType<typeof useFlotaDemo>["events"];
   readings: ReturnType<typeof useFlotaDemo>["readings"];
 }) {
@@ -607,7 +607,6 @@ function LogisticsTab({ equipment }: { equipment: Equipment[] }) {
     (eq.bom_items || []).map((item) => ({ ...item, equipmentCode: eq.code, equipmentName: eq.name }))
   );
   const criticalLow = allBOM.filter((b) => b.critical && b.quantity_onboard < b.quantity_required);
-  const regularLow = allBOM.filter((b) => !b.critical && b.quantity_onboard === 0);
 
   return (
     <div className="space-y-4">
@@ -711,17 +710,17 @@ function AnalyticsTab({ kpis, equipment, workOrders }: { kpis: KPISnapshot[]; eq
           Tendencia MTBF (horas)
         </h3>
         <div className="flex items-end gap-3 h-32">
-          {kpis.map((kpi) => {
-            const maxMTBF = Math.max(...kpis.map((k) => k.mtbf_hours));
-            return (
-              <div key={kpi.id} className="flex flex-1 flex-col items-center gap-1">
-                <div className="w-full rounded-t-md bg-[#0EA5E9]" style={{ height: `${(kpi.mtbf_hours / maxMTBF) * 100}%` }} />
-                <span className="text-[8px] text-[var(--text-muted)]">
-                  {new Date(kpi.snapshot_date).toLocaleDateString("es-EC", { month: "short" })}
-                </span>
-              </div>
-            );
-          })}
+        {(() => {
+          const maxMTBF = Math.max(...kpis.map((k) => k.mtbf_hours));
+          return kpis.map((kpi) => (
+            <div key={kpi.id} className="flex flex-1 flex-col items-center gap-1">
+              <div className="w-full rounded-t-md bg-[#0EA5E9]" style={{ height: `${(kpi.mtbf_hours / maxMTBF) * 100}%` }} />
+              <span className="text-[8px] text-[var(--text-muted)]">
+                {new Date(kpi.snapshot_date).toLocaleDateString("es-EC", { month: "short" })}
+              </span>
+            </div>
+          ));
+        })()}
         </div>
       </div>
 
