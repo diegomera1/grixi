@@ -93,22 +93,22 @@ function ScanLine() {
 function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () => void }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const edgeRef = useRef<THREE.LineSegments>(null);
-  const metalTextureRaw = useTexture("/fleet/texture-metal-plate.png");
-  const rustTextureRaw = useTexture("/fleet/texture-rust-metal.png");
+  const hullTexRaw = useTexture("/fleet/texture-hull-paint.png");
+  const rustTexRaw = useTexture("/fleet/texture-rust-metal.png");
 
   // Configure textures — Three.js requires direct prop mutation
-  const metalTexture = useMemo(() => {
+  const hullTexture = useMemo(() => {
     // eslint-disable-next-line react-compiler/react-compiler
-    metalTextureRaw.wrapS = metalTextureRaw.wrapT = THREE.RepeatWrapping;
-    metalTextureRaw.repeat.set(4, 2);
-    return metalTextureRaw;
-  }, [metalTextureRaw]);
+    hullTexRaw.wrapS = hullTexRaw.wrapT = THREE.RepeatWrapping;
+    hullTexRaw.repeat.set(4, 2);
+    return hullTexRaw;
+  }, [hullTexRaw]);
   const rustTexture = useMemo(() => {
     // eslint-disable-next-line react-compiler/react-compiler
-    rustTextureRaw.wrapS = rustTextureRaw.wrapT = THREE.RepeatWrapping;
-    rustTextureRaw.repeat.set(3, 1.5);
-    return rustTextureRaw;
-  }, [rustTextureRaw]);
+    rustTexRaw.wrapS = rustTexRaw.wrapT = THREE.RepeatWrapping;
+    rustTexRaw.repeat.set(3, 1.5);
+    return rustTexRaw;
+  }, [rustTexRaw]);
 
   useFrame(({ clock }) => {
     if (edgeRef.current) {
@@ -143,12 +143,12 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
     <group onClick={onClick} position={[0, -2.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
       <mesh ref={meshRef} geometry={geometry}>
         <meshStandardMaterial
-          map={isSelected ? metalTexture : rustTexture}
-          color={isSelected ? "#1a7abd" : "#1a3450"}
-          roughness={0.7}
-          metalness={0.6}
+          map={isSelected ? hullTexture : rustTexture}
+          color={isSelected ? "#1a5a9e" : "#1a3450"}
+          roughness={0.65}
+          metalness={0.5}
           transparent
-          opacity={0.85}
+          opacity={0.9}
         />
       </mesh>
       <lineSegments ref={edgeRef} geometry={edgeGeometry}>
@@ -173,22 +173,22 @@ function Superstructure({ onClick }: { onClick: () => void }) {
     }
   });
 
-  const metalTexRaw = useTexture("/fleet/texture-metal-plate.png");
-  const metalTex = useMemo(() => {
+  const deckTexRaw = useTexture("/fleet/texture-deck-surface.png");
+  const deckTex = useMemo(() => {
     // eslint-disable-next-line react-compiler/react-compiler
-    metalTexRaw.wrapS = metalTexRaw.wrapT = THREE.RepeatWrapping;
-    metalTexRaw.repeat.set(2, 2);
-    return metalTexRaw;
-  }, [metalTexRaw]);
+    deckTexRaw.wrapS = deckTexRaw.wrapT = THREE.RepeatWrapping;
+    deckTexRaw.repeat.set(2, 2);
+    return deckTexRaw;
+  }, [deckTexRaw]);
 
   return (
     <group ref={groupRef} position={[-5.5, -0.5, 0]} onClick={onClick}>
       {/* Main accommodation */}
-      <TexturedBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#4a3a8a" tex={metalTex} />
+      <TexturedBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#5a5a6a" tex={deckTex} />
       {/* Bridge */}
-      <TexturedBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#1a6a7a" tex={metalTex} />
+      <TexturedBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#2a4a5a" tex={deckTex} />
       {/* Funnel */}
-      <TexturedBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#4a4a4a" tex={metalTex} />
+      <TexturedBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#3a3a3a" tex={deckTex} />
       {/* Radar mast */}
       <mesh position={[0.2, 2.8, 0]}>
         <cylinderGeometry args={[0.02, 0.02, 1.2]} />
@@ -265,33 +265,33 @@ function CargoTanks() {
 
 // Engine room equipment with textures
 function EngineRoom() {
-  const rustTexRaw = useTexture("/fleet/texture-rust-metal.png");
-  const metalTexRaw2 = useTexture("/fleet/texture-metal-plate.png");
-  const rustTex = useMemo(() => {
+  const engineTexRaw = useTexture("/fleet/texture-engine-metal.png");
+  const floorTexRaw = useTexture("/fleet/texture-floor-grating.png");
+  const engineTex = useMemo(() => {
     // eslint-disable-next-line react-compiler/react-compiler
-    rustTexRaw.wrapS = rustTexRaw.wrapT = THREE.RepeatWrapping;
-    rustTexRaw.repeat.set(2, 2);
-    return rustTexRaw;
-  }, [rustTexRaw]);
-  const metalTex = useMemo(() => {
+    engineTexRaw.wrapS = engineTexRaw.wrapT = THREE.RepeatWrapping;
+    engineTexRaw.repeat.set(2, 2);
+    return engineTexRaw;
+  }, [engineTexRaw]);
+  const floorTex = useMemo(() => {
     // eslint-disable-next-line react-compiler/react-compiler
-    metalTexRaw2.wrapS = metalTexRaw2.wrapT = THREE.RepeatWrapping;
-    metalTexRaw2.repeat.set(1, 1);
-    return metalTexRaw2;
-  }, [metalTexRaw2]);
+    floorTexRaw.wrapS = floorTexRaw.wrapT = THREE.RepeatWrapping;
+    floorTexRaw.repeat.set(1, 1);
+    return floorTexRaw;
+  }, [floorTexRaw]);
 
   return (
     <group position={[-3, -2.5, 0]}>
       {/* Main Engine — textured block */}
-      <TexturedBox size={[2, 1.8, 1.5]} position={[0, 0.9, 0]} color="#8a2020" tex={rustTex} />
+      <TexturedBox size={[2, 1.8, 1.5]} position={[0, 0.9, 0]} color="#7a3020" tex={engineTex} />
       <Float speed={2} rotationIntensity={0} floatIntensity={0.3}>
         <Text position={[0, 2.2, 0]} fontSize={0.15} color="#EF4444" anchorX="center">
           MOTOR PRINCIPAL
         </Text>
       </Float>
       {/* Generators — metallic */}
-      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, -0.5]} color="#1a5a6a" tex={metalTex} />
-      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, 0.5]} color="#1a5a6a" tex={metalTex} />
+      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, -0.5]} color="#2a5a6a" tex={floorTex} />
+      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, 0.5]} color="#2a5a6a" tex={floorTex} />
       <Text position={[1.8, 1.2, 0]} fontSize={0.1} color="#06B6D4" anchorX="center">
         GEN AUX
       </Text>

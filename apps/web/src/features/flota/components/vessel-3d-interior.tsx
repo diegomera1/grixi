@@ -30,7 +30,7 @@ function InteriorGrid() {
 // Room walls with textures
 function RoomStructure() {
   const wireRef = useRef<THREE.Mesh>(null);
-  const metalTexture = useTexture("/fleet/texture-metal-plate.png");
+  const metalTexture = useTexture("/fleet/texture-engine-metal.png");
   const floorTexture = useTexture("/fleet/texture-floor-grating.png");
 
   // Configure texture wrapping

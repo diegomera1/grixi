@@ -190,15 +190,18 @@ export function DashboardTab({ kpis, workOrders, equipment, zones, events, readi
               <div className="mt-2 flex items-center justify-center gap-4">
                 <div>
                   <p className="text-lg font-bold text-[#10B981]">{kpi.availability_pct}%</p>
-                  <p className="text-[9px] text-[var(--text-muted)]">Disp.</p>
+                  <p className="text-[9px] text-[var(--text-muted)]">Disponibilidad</p>
                 </div>
                 <div>
                   <p className="text-lg font-bold text-[#0EA5E9]">{kpi.mtbf_hours}h</p>
                   <p className="text-[9px] text-[var(--text-muted)]">MTBF</p>
                 </div>
               </div>
-              <div className="mt-2 rounded-full bg-[var(--bg-muted)]/50 px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
-                ${(kpi.maintenance_cost / 1000).toFixed(1)}k
+              <div className="mt-2 flex items-center justify-center gap-2">
+                <div className="rounded-full bg-[#F59E0B]/10 px-2 py-0.5 text-[10px] font-medium text-[#F59E0B]">
+                  ${(kpi.maintenance_cost / 1000).toFixed(1)}k
+                </div>
+                <span className="text-[8px] text-[var(--text-muted)]">Costo Mant.</span>
               </div>
             </div>
           ))}
