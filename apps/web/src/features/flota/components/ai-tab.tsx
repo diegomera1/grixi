@@ -1,95 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Cpu, AlertTriangle, TrendingUp, Zap, CheckCircle2,
-  ChevronRight, Activity,
+  ChevronRight, Activity, RefreshCw, Sparkles, Loader2,
 } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 import type { Equipment, WorkOrder, KPISnapshot } from "../types";
-
-// ── AI Analysis Types ───────────────────────────
-
-type PredictiveInsight = {
-  id: string;
-  equipment_code: string;
-  equipment_name: string;
-  risk_level: "critical" | "high" | "medium" | "low";
-  predicted_failure_days: number;
-  confidence: number;
-  recommendation: string;
-  reasoning: string;
-};
-
-type TrendAnomaly = {
-  id: string;
-  kpi: string;
-  direction: "deteriorating" | "improving";
-  detail: string;
-  severity: "warning" | "info";
-};
-
-type MaintenanceOptimization = {
-  id: string;
-  title: string;
-  savings_estimate: number;
-  detail: string;
-  type: "schedule" | "inventory" | "crew";
-};
-
-// ── Demo AI Predictions ─────────────────────────
-
-function generatePredictions(equipment: Equipment[]): PredictiveInsight[] {
-  const critical = equipment.filter((e) => e.criticality === "critical" || e.criticality === "high");
-  return critical.slice(0, 6).map((eq, i) => {
-    const risks: PredictiveInsight["risk_level"][] = ["low", "medium", "high", "critical", "medium", "low"];
-    const days = [120, 45, 15, 7, 60, 90];
-    const confs = [0.78, 0.85, 0.92, 0.96, 0.82, 0.71];
-    const recs = [
-      "Programar inspección preventiva en próximo puerto",
-      "Solicitar repuestos para overhaul — lead time 30 días",
-      "Reducir carga operativa al 80% — monitorear cada 4 horas",
-      "Mantenimiento correctivo urgente requerido — despatch crew",
-      "Incluir en próximo plan de mantenimiento trimestral",
-      "Mantener monitoreo estándar — sin acción inmediata",
-    ];
-    const reasons = [
-      "Patrón de vibración incremental detectado en últimas 200h de operación. Modelo predictivo basado en datos históricos similares del equipo.",
-      "Temperatura de operación 8% superior al baseline de los últimos 6 meses. Correlación con falla de empaquetaduras en equipos similares.",
-      "Presión diferencial aumentando progresivamente. El modelo detecta patrón similar a falla reportada en WO-2025-087.",
-      "Múltiples indicadores fuera de rango nominal simultáneamente. Probabilidad de falla compuesta basada en análisis bayesiano.",
-      "Horas de operación acercándose al intervalo de overhaul recomendado por fabricante (12,000h).",
-      "Lecturas estables dentro de parámetros. Modelo ML no detecta anomalías significativas.",
-    ];
-    return {
-      id: `pred-${i}`,
-      equipment_code: eq.code,
-      equipment_name: eq.name,
-      risk_level: risks[i],
-      predicted_failure_days: days[i],
-      confidence: confs[i],
-      recommendation: recs[i],
-      reasoning: reasons[i],
-    };
-  });
-}
-
-function generateAnomalies(_kpis: KPISnapshot[]): TrendAnomaly[] {
-  return [
-    { id: "a1", kpi: "MTBF", direction: "deteriorating", detail: "MTBF bajó 12% en últimos 2 meses — posible degradación de programa preventivo", severity: "warning" },
-    { id: "a2", kpi: "Disponibilidad", direction: "improving", detail: "Disponibilidad mejoró de 94.8% a 96.2% — resultado de overhauls Cyl 3 y 5", severity: "info" },
-    { id: "a3", kpi: "Costo Mtto", direction: "deteriorating", detail: "Costo de mantenimiento aumentó 23% vs. trimestre anterior — revisar eficiencia de proveedores", severity: "warning" },
-    { id: "a4", kpi: "WOs Atrasadas", direction: "deteriorating", detail: "3 WOs superaron fecha planificada — reasignar recursos de tripulación", severity: "warning" },
-  ];
-}
-
-function generateOptimizations(): MaintenanceOptimization[] {
-  return [
-    { id: "o1", title: "Consolidar OTs de Sala de Máquinas", savings_estimate: 4500, detail: "WO-001, WO-003 y WO-008 pueden ejecutarse en paralelo durante próxima parada — ahorro en mano de obra y downtime", type: "schedule" },
-    { id: "o2", title: "Compra anticipada de repuestos críticos", savings_estimate: 8200, detail: "5 repuestos con lead time >30d tienen stock bajo. Compra consolidada reduce costos de envío urgente al buque", type: "inventory" },
-    { id: "o3", title: "Redistribución de turnos de inspección", savings_estimate: 2100, detail: "Optimizar rondas de inspección del Chief Engineer: de 4h a 2.5h con ruta eficiente", type: "crew" },
-  ];
-}
+import { analyzeFleetPredictive } from "../actions/ai-fleet-action";
+import type { AIAnalysisResult, PredictiveInsight, TrendAnomaly, MaintenanceOptimization } from "../actions/ai-fleet-action";
 
 // ── Risk Color Map ──────────────────────────────
 
@@ -100,19 +20,47 @@ const RISK_COLORS: Record<string, string> = {
   low: "#10B981",
 };
 
+const RISK_LABELS: Record<string, string> = {
+  critical: "Crítico",
+  high: "Alto",
+  medium: "Medio",
+  low: "Bajo",
+};
+
 // ── AI Tab Component ────────────────────────────
 
-export function AITab({ equipment, workOrders: _workOrders, kpis }: {
+export function AITab({ equipment, workOrders, kpis }: {
   equipment: Equipment[];
   workOrders: WorkOrder[];
   kpis: KPISnapshot[];
 }) {
+  const [result, setResult] = useState<AIAnalysisResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [expandedPred, setExpandedPred] = useState<string | null>(null);
-  const predictions = generatePredictions(equipment);
-  const anomalies = generateAnomalies(kpis);
-  const optimizations = generateOptimizations();
 
-  const totalSavings = optimizations.reduce((sum, o) => sum + o.savings_estimate, 0);
+  const runAnalysis = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await analyzeFleetPredictive(equipment, workOrders, kpis);
+      setResult(data);
+      if (!data.predictions.length && !data.anomalies.length) {
+        setError(data.summary);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error desconocido al analizar");
+    } finally {
+      setLoading(false);
+    }
+  }, [equipment, workOrders, kpis]);
+
+  // Auto-analyze on mount
+  useEffect(() => {
+    runAnalysis();
+  }, [runAnalysis]);
+
+  const totalSavings = result?.optimizations?.reduce((sum, o) => sum + (o.savings_estimate || 0), 0) || 0;
 
   return (
     <div className="space-y-4">
@@ -120,137 +68,286 @@ export function AITab({ equipment, workOrders: _workOrders, kpis }: {
       <div className="rounded-xl border border-[#8B5CF6]/20 bg-gradient-to-r from-[#8B5CF6]/5 to-[#0EA5E9]/5 p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8B5CF6] shadow-lg shadow-[#8B5CF6]/20">
-            <Cpu size={18} className="text-white" />
+            {loading ? (
+              <Loader2 size={18} className="text-white animate-spin" />
+            ) : (
+              <Cpu size={18} className="text-white" />
+            )}
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="text-sm font-bold text-[var(--text-primary)]">GRIXI AI — Análisis Predictivo</h3>
             <p className="text-[10px] text-[var(--text-muted)]">
-              Powered by Gemini · {predictions.length} predicciones · {anomalies.length} anomalías detectadas
+              {loading
+                ? "Analizando datos con Gemini..."
+                : result
+                  ? `${result.predictions?.length || 0} predicciones · ${result.anomalies?.length || 0} anomalías · ${result.optimizations?.length || 0} optimizaciones`
+                  : "Powered by Gemini"
+              }
             </p>
           </div>
-          <div className="ml-auto flex items-center gap-1 rounded-full bg-[#8B5CF6]/10 px-2.5 py-0.5 text-[9px] font-bold text-[#8B5CF6]">
-            <Zap size={10} />
-            Actualizado hace 5 min
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Predictive Failures */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-          <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            <Activity size={12} />
-            Predicción de Fallas
-          </h3>
-          <div className="space-y-1.5">
-            {predictions.map((pred, i) => (
-              <motion.div
-                key={pred.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] overflow-hidden"
-              >
-                <button
-                  onClick={() => setExpandedPred(expandedPred === pred.id ? null : pred.id)}
-                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
-                >
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: RISK_COLORS[pred.risk_level] }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium text-[var(--text-primary)] truncate">{pred.equipment_name}</p>
-                    <p className="text-[9px] text-[#0EA5E9] font-mono">{pred.equipment_code}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-bold" style={{ color: RISK_COLORS[pred.risk_level] }}>
-                      {pred.predicted_failure_days}d
-                    </p>
-                    <p className="text-[8px] text-[var(--text-muted)]">{(pred.confidence * 100).toFixed(0)}% conf.</p>
-                  </div>
-                  <ChevronRight size={12} className={`text-[var(--text-muted)] transition-transform ${expandedPred === pred.id ? "rotate-90" : ""}`} />
-                </button>
-                {expandedPred === pred.id && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    className="border-t border-[var(--border)] px-3 py-2.5 bg-[var(--bg-muted)]/30"
-                  >
-                    <p className="text-[10px] text-[var(--text-secondary)] mb-1.5">{pred.reasoning}</p>
-                    <div className="flex items-start gap-1.5 rounded-md bg-[#0EA5E9]/5 px-2 py-1.5">
-                      <CheckCircle2 size={10} className="text-[#0EA5E9] mt-0.5 shrink-0" />
-                      <p className="text-[10px] text-[#0EA5E9] font-medium">{pred.recommendation}</p>
-                    </div>
-                  </motion.div>
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-4">
-          {/* Trend Anomalies */}
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              <TrendingUp size={12} />
-              Anomalías en Tendencias
-            </h3>
-            <div className="space-y-1.5">
-              {anomalies.map((a, i) => (
-                <motion.div
-                  key={a.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-start gap-2 rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2"
-                >
-                  {a.severity === "warning" ? (
-                    <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
-                  ) : (
-                    <TrendingUp size={12} className="text-green-500 mt-0.5 shrink-0" />
-                  )}
-                  <div>
-                    <p className="text-[10px] font-bold text-[var(--text-primary)]">{a.kpi}</p>
-                    <p className="text-[9px] text-[var(--text-muted)]">{a.detail}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Optimization Suggestions */}
-          <div className="rounded-xl border border-[#10B981]/20 bg-[#10B981]/5 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#10B981]">
-                <Zap size={12} />
-                Optimizaciones Sugeridas
-              </h3>
-              <span className="text-xs font-bold text-[#10B981]">
-                Ahorro est. ${totalSavings.toLocaleString()}
+          <div className="flex items-center gap-2">
+            {result?.generated_at && !loading && (
+              <span className="hidden sm:flex items-center gap-1 rounded-full bg-[#8B5CF6]/10 px-2.5 py-0.5 text-[9px] font-bold text-[#8B5CF6]">
+                <Sparkles size={10} />
+                {new Date(result.generated_at).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })}
               </span>
-            </div>
-            <div className="space-y-1.5">
-              {optimizations.map((opt, i) => (
-                <motion.div
-                  key={opt.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="rounded-lg bg-[var(--bg-surface)] px-3 py-2.5"
-                >
-                  <div className="flex items-center justify-between mb-0.5">
-                    <p className="text-[11px] font-semibold text-[var(--text-primary)]">{opt.title}</p>
-                    <span className="text-xs font-bold text-[#10B981]">+${opt.savings_estimate.toLocaleString()}</span>
-                  </div>
-                  <p className="text-[9px] text-[var(--text-muted)]">{opt.detail}</p>
-                </motion.div>
-              ))}
-            </div>
+            )}
+            <button
+              onClick={runAnalysis}
+              disabled={loading}
+              className={cn(
+                "flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-medium transition-all",
+                loading
+                  ? "bg-[#8B5CF6]/10 text-[#8B5CF6]/50 cursor-wait"
+                  : "bg-[#8B5CF6] text-white hover:bg-[#8B5CF6]/80"
+              )}
+            >
+              <RefreshCw size={10} className={cn(loading && "animate-spin")} />
+              {loading ? "Analizando..." : "Re-analizar"}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Summary */}
+      {result?.summary && !error && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-[#0EA5E9]/20 bg-[#0EA5E9]/5 px-4 py-3"
+        >
+          <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+            <Sparkles size={12} className="inline-block mr-1.5 text-[#0EA5E9]" />
+            {result.summary}
+          </p>
+        </motion.div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
+          <p className="text-xs text-red-500">
+            <AlertTriangle size={12} className="inline-block mr-1.5" />
+            {error}
+          </p>
+        </div>
+      )}
+
+      {/* Loading Skeleton */}
+      {loading && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 animate-pulse">
+              <div className="h-3 w-32 rounded bg-[var(--bg-muted)] mb-4" />
+              <div className="space-y-2">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="h-10 rounded-lg bg-[var(--bg-muted)]" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Results */}
+      {!loading && result && (result.predictions?.length > 0 || result.anomalies?.length > 0) && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Predictive Failures */}
+          {result.predictions?.length > 0 && (
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+              <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                <Activity size={12} />
+                Predicción de Fallas ({result.predictions.length})
+              </h3>
+              <div className="space-y-1.5">
+                {result.predictions.map((pred, i) => (
+                  <PredictionRow
+                    key={`${pred.equipment_code}-${i}`}
+                    pred={pred}
+                    index={i}
+                    expanded={expandedPred === `${pred.equipment_code}-${i}`}
+                    onToggle={() => setExpandedPred(
+                      expandedPred === `${pred.equipment_code}-${i}` ? null : `${pred.equipment_code}-${i}`
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Right Column */}
+          <div className="space-y-4">
+            {/* Trend Anomalies */}
+            {result.anomalies?.length > 0 && (
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+                <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  <TrendingUp size={12} />
+                  Anomalías en Tendencias ({result.anomalies.length})
+                </h3>
+                <div className="space-y-1.5">
+                  {result.anomalies.map((a, i) => (
+                    <AnomalyRow key={`${a.kpi}-${i}`} anomaly={a} index={i} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Optimization Suggestions */}
+            {result.optimizations?.length > 0 && (
+              <div className="rounded-xl border border-[#10B981]/20 bg-[#10B981]/5 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#10B981]">
+                    <Zap size={12} />
+                    Optimizaciones ({result.optimizations.length})
+                  </h3>
+                  {totalSavings > 0 && (
+                    <span className="text-xs font-bold text-[#10B981]">
+                      Ahorro est. ${totalSavings.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  {result.optimizations.map((opt, i) => (
+                    <OptimizationRow key={`${opt.title}-${i}`} opt={opt} index={i} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// ── Sub-components ──────────────────────────────
+
+function PredictionRow({ pred, index, expanded, onToggle }: {
+  pred: PredictiveInsight;
+  index: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const riskColor = RISK_COLORS[pred.risk_level] || "#6B7280";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] overflow-hidden"
+    >
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
+      >
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: riskColor }}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-medium text-[var(--text-primary)] truncate">{pred.equipment_name}</p>
+          <p className="text-[9px] text-[#0EA5E9] font-mono">{pred.equipment_code}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-xs font-bold" style={{ color: riskColor }}>
+            {pred.predicted_failure_days}d
+          </p>
+          <p className="text-[8px] text-[var(--text-muted)]">
+            {typeof pred.confidence === "number" ? `${(pred.confidence * 100).toFixed(0)}%` : "—"} conf.
+          </p>
+        </div>
+        <div className="flex flex-col items-center gap-0.5 shrink-0">
+          <span
+            className="rounded-full px-1.5 py-0.5 text-[7px] font-bold"
+            style={{ backgroundColor: `${riskColor}15`, color: riskColor }}
+          >
+            {RISK_LABELS[pred.risk_level] || pred.risk_level}
+          </span>
+          <ChevronRight size={12} className={cn("text-[var(--text-muted)] transition-transform", expanded && "rotate-90")} />
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-[var(--border)] px-3 py-2.5 bg-[var(--bg-muted)]/20">
+              {pred.reasoning && (
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1.5 leading-relaxed">{pred.reasoning}</p>
+              )}
+              {pred.recommendation && (
+                <div className="flex items-start gap-1.5 rounded-md bg-[#0EA5E9]/5 px-2 py-1.5">
+                  <CheckCircle2 size={10} className="text-[#0EA5E9] mt-0.5 shrink-0" />
+                  <p className="text-[10px] text-[#0EA5E9] font-medium">{pred.recommendation}</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function AnomalyRow({ anomaly, index }: { anomaly: TrendAnomaly; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="flex items-start gap-2 rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2"
+    >
+      {anomaly.severity === "warning" ? (
+        <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
+      ) : (
+        <TrendingUp size={12} className="text-green-500 mt-0.5 shrink-0" />
+      )}
+      <div>
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] font-bold text-[var(--text-primary)]">{anomaly.kpi}</p>
+          <span className={cn(
+            "rounded-full px-1.5 py-0.5 text-[7px] font-bold",
+            anomaly.direction === "deteriorating"
+              ? "bg-red-500/10 text-red-500"
+              : "bg-green-500/10 text-green-500"
+          )}>
+            {anomaly.direction === "deteriorating" ? "↓ Deterioro" : "↑ Mejora"}
+          </span>
+        </div>
+        <p className="text-[9px] text-[var(--text-muted)] mt-0.5 leading-relaxed">{anomaly.detail}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+function OptimizationRow({ opt, index }: { opt: MaintenanceOptimization; index: number }) {
+  const typeIcons: Record<string, string> = {
+    schedule: "📅",
+    inventory: "📦",
+    crew: "👥",
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="rounded-lg bg-[var(--bg-surface)] px-3 py-2.5"
+    >
+      <div className="flex items-center justify-between mb-0.5">
+        <p className="text-[11px] font-semibold text-[var(--text-primary)]">
+          {typeIcons[opt.type] || "⚡"} {opt.title}
+        </p>
+        {opt.savings_estimate > 0 && (
+          <span className="text-xs font-bold text-[#10B981]">+${opt.savings_estimate.toLocaleString()}</span>
+        )}
+      </div>
+      <p className="text-[9px] text-[var(--text-muted)] leading-relaxed">{opt.detail}</p>
+    </motion.div>
   );
 }
