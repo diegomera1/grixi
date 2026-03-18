@@ -8,6 +8,7 @@ import {
   Shield,
   Sparkles,
   Crosshair,
+  Ship,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -32,6 +33,7 @@ export const PRIMARY_TABS: NavItem[] = [
 // ── Secondary Items ("Más" drawer on mobile) ─────
 
 export const SECONDARY_ITEMS: NavItem[] = [
+  { label: "Flota", href: "/flota", icon: Ship, color: "#0EA5E9" },
   { label: "Recursos Humanos", href: "/rrhh", icon: Users2, color: "#06B6D4" },
   { label: "Centro de Comando", href: "/command-center", icon: Crosshair, color: "#EC4899" },
   { label: "Usuarios", href: "/usuarios", icon: Users, color: "#F59E0B" },
