@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
-const CACHE_VERSION = "grixi-v2";
+const CACHE_VERSION = "grixi-v3";
+const FLOTA_CACHE = "grixi-flota-v3";
 const STATIC_ASSETS = [
   "/brand/icon.png",
   "/brand/icon-192.png",
@@ -22,7 +23,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key.startsWith("grixi-") && key !== CACHE_VERSION)
+          .filter((key) => key.startsWith("grixi-") && key !== CACHE_VERSION && key !== FLOTA_CACHE)
           .map((key) => caches.delete(key))
       )
     )
@@ -35,18 +36,17 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and external requests
-  if (request.method !== "GET" || !url.origin.includes(self.location.origin)) {
-    return;
-  }
+  // Skip non-GET
+  if (request.method !== "GET") return;
+
+  // Allow CesiumJS CDN through (don't intercept external resources)
+  if (url.hostname === "cesium.com" || url.hostname.includes("cesiumjs")) return;
+
+  // Skip external requests
+  if (!url.origin.includes(self.location.origin)) return;
 
   // Skip _next/data and API routes — always network
-  if (
-    url.pathname.startsWith("/_next/data/") ||
-    url.pathname.startsWith("/api/")
-  ) {
-    return;
-  }
+  if (url.pathname.startsWith("/_next/data/") || url.pathname.startsWith("/api/")) return;
 
   // Static assets — cache first
   if (
@@ -90,4 +90,36 @@ self.addEventListener("fetch", (event) => {
 
   // Everything else — network only, silent fail
   event.respondWith(fetch(request).catch(() => new Response("", { status: 408 })));
+});
+
+// Listen for messages — Flota data caching
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+
+  // Cache Flota module data for offline use
+  if (event.data?.type === "CACHE_FLOTA_DATA") {
+    const data = event.data.payload;
+    caches.open(FLOTA_CACHE).then((cache) => {
+      cache.put(
+        new Request("/flota/cached-data"),
+        new Response(JSON.stringify({
+          data,
+          cachedAt: new Date().toISOString(),
+        }), {
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    });
+  }
+
+  // Retrieve cached Flota data
+  if (event.data?.type === "GET_FLOTA_CACHE") {
+    caches.open(FLOTA_CACHE).then(async (cache) => {
+      const response = await cache.match(new Request("/flota/cached-data"));
+      const data = response ? await response.json() : null;
+      event.source?.postMessage({ type: "FLOTA_CACHE_RESULT", payload: data });
+    });
+  }
 });
