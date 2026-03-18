@@ -2,7 +2,7 @@
 
 import { useRef, useState, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Float, Line } from "@react-three/drei";
+import { OrbitControls, Text, Float, Line, useTexture } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Maximize2, Minimize2, Layers, AlertTriangle,
@@ -89,10 +89,26 @@ function ScanLine() {
   );
 }
 
-// Hull shape
+// Hull shape with metal texture
 function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () => void }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const edgeRef = useRef<THREE.LineSegments>(null);
+  const metalTextureRaw = useTexture("/fleet/texture-metal-plate.png");
+  const rustTextureRaw = useTexture("/fleet/texture-rust-metal.png");
+
+  // Configure textures — Three.js requires direct prop mutation
+  const metalTexture = useMemo(() => {
+    // eslint-disable-next-line react-compiler/react-compiler
+    metalTextureRaw.wrapS = metalTextureRaw.wrapT = THREE.RepeatWrapping;
+    metalTextureRaw.repeat.set(4, 2);
+    return metalTextureRaw;
+  }, [metalTextureRaw]);
+  const rustTexture = useMemo(() => {
+    // eslint-disable-next-line react-compiler/react-compiler
+    rustTextureRaw.wrapS = rustTextureRaw.wrapT = THREE.RepeatWrapping;
+    rustTextureRaw.repeat.set(3, 1.5);
+    return rustTextureRaw;
+  }, [rustTextureRaw]);
 
   useFrame(({ clock }) => {
     if (edgeRef.current) {
@@ -126,12 +142,13 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
   return (
     <group onClick={onClick} position={[0, -2.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
       <mesh ref={meshRef} geometry={geometry}>
-        <meshPhysicalMaterial
-          color={isSelected ? "#0EA5E9" : "#0c4a6e"}
+        <meshStandardMaterial
+          map={isSelected ? metalTexture : rustTexture}
+          color={isSelected ? "#1a7abd" : "#1a3450"}
+          roughness={0.7}
+          metalness={0.6}
           transparent
-          opacity={0.12}
-          roughness={0.3}
-          metalness={0.8}
+          opacity={0.85}
         />
       </mesh>
       <lineSegments ref={edgeRef} geometry={edgeGeometry}>
@@ -156,28 +173,53 @@ function Superstructure({ onClick }: { onClick: () => void }) {
     }
   });
 
+  const metalTexRaw = useTexture("/fleet/texture-metal-plate.png");
+  const metalTex = useMemo(() => {
+    // eslint-disable-next-line react-compiler/react-compiler
+    metalTexRaw.wrapS = metalTexRaw.wrapT = THREE.RepeatWrapping;
+    metalTexRaw.repeat.set(2, 2);
+    return metalTexRaw;
+  }, [metalTexRaw]);
+
   return (
     <group ref={groupRef} position={[-5.5, -0.5, 0]} onClick={onClick}>
       {/* Main accommodation */}
-      <HoloBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#8B5CF6" />
+      <TexturedBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#4a3a8a" tex={metalTex} />
       {/* Bridge */}
-      <HoloBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#06B6D4" />
+      <TexturedBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#1a6a7a" tex={metalTex} />
       {/* Funnel */}
-      <HoloBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#6B7280" />
+      <TexturedBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#4a4a4a" tex={metalTex} />
       {/* Radar mast */}
       <mesh position={[0.2, 2.8, 0]}>
         <cylinderGeometry args={[0.02, 0.02, 1.2]} />
-        <meshBasicMaterial color="#0EA5E9" transparent opacity={0.6} />
+        <meshStandardMaterial color="#0EA5E9" metalness={0.9} roughness={0.2} />
       </mesh>
       <mesh position={[0.2, 3.3, 0]}>
         <cylinderGeometry args={[0.3, 0.3, 0.05]} />
-        <meshBasicMaterial color="#06B6D4" transparent opacity={0.6} />
+        <meshStandardMaterial color="#06B6D4" metalness={0.8} roughness={0.3} />
       </mesh>
     </group>
   );
 }
 
-// Holographic box helper
+// Textured box helper (solid with texture)
+function TexturedBox({ size, position, color, tex }: { size: [number, number, number]; position: [number, number, number]; color: string; tex: THREE.Texture }) {
+  const geometry = useMemo(() => new THREE.BoxGeometry(...size), [size]);
+  const edges = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
+
+  return (
+    <group position={position}>
+      <mesh geometry={geometry}>
+        <meshStandardMaterial map={tex} color={color} roughness={0.7} metalness={0.6} transparent opacity={0.9} />
+      </mesh>
+      <lineSegments geometry={edges}>
+        <lineBasicMaterial color="#0EA5E9" transparent opacity={0.3} />
+      </lineSegments>
+    </group>
+  );
+}
+
+// Holographic box helper (wireframe for labels)
 function HoloBox({ size, position, color }: { size: [number, number, number]; position: [number, number, number]; color: string }) {
   const geometry = useMemo(() => new THREE.BoxGeometry(...size), [size]);
   const edges = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
@@ -221,20 +263,35 @@ function CargoTanks() {
   );
 }
 
-// Engine room equipment
+// Engine room equipment with textures
 function EngineRoom() {
+  const rustTexRaw = useTexture("/fleet/texture-rust-metal.png");
+  const metalTexRaw2 = useTexture("/fleet/texture-metal-plate.png");
+  const rustTex = useMemo(() => {
+    // eslint-disable-next-line react-compiler/react-compiler
+    rustTexRaw.wrapS = rustTexRaw.wrapT = THREE.RepeatWrapping;
+    rustTexRaw.repeat.set(2, 2);
+    return rustTexRaw;
+  }, [rustTexRaw]);
+  const metalTex = useMemo(() => {
+    // eslint-disable-next-line react-compiler/react-compiler
+    metalTexRaw2.wrapS = metalTexRaw2.wrapT = THREE.RepeatWrapping;
+    metalTexRaw2.repeat.set(1, 1);
+    return metalTexRaw2;
+  }, [metalTexRaw2]);
+
   return (
     <group position={[-3, -2.5, 0]}>
-      {/* Main Engine */}
-      <HoloBox size={[2, 1.8, 1.5]} position={[0, 0.9, 0]} color="#EF4444" />
+      {/* Main Engine — textured block */}
+      <TexturedBox size={[2, 1.8, 1.5]} position={[0, 0.9, 0]} color="#8a2020" tex={rustTex} />
       <Float speed={2} rotationIntensity={0} floatIntensity={0.3}>
         <Text position={[0, 2.2, 0]} fontSize={0.15} color="#EF4444" anchorX="center">
           MOTOR PRINCIPAL
         </Text>
       </Float>
-      {/* Generators */}
-      <HoloBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, -0.5]} color="#06B6D4" />
-      <HoloBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, 0.5]} color="#06B6D4" />
+      {/* Generators — metallic */}
+      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, -0.5]} color="#1a5a6a" tex={metalTex} />
+      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, 0.5]} color="#1a5a6a" tex={metalTex} />
       <Text position={[1.8, 1.2, 0]} fontSize={0.1} color="#06B6D4" anchorX="center">
         GEN AUX
       </Text>

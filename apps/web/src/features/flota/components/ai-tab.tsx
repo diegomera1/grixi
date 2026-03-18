@@ -294,24 +294,48 @@ function PredictionRow({ pred, index, expanded, onToggle }: {
   );
 }
 
+// Format raw KPI field names to readable Spanish labels
+const KPI_LABELS: Record<string, string> = {
+  maintenance_cost: "Costo de Mantenimiento",
+  fuel_consumption: "Consumo de Combustible",
+  engine_temperature: "Temperatura del Motor",
+  operating_hours: "Horas de Operación",
+  mtbf: "Tiempo Medio Entre Fallas",
+  mttr: "Tiempo de Reparación",
+  availability: "Disponibilidad",
+  reliability: "Confiabilidad",
+  vibration_level: "Nivel de Vibración",
+  oil_pressure: "Presión de Aceite",
+  coolant_temp: "Temperatura del Refrigerante",
+  rpm: "RPM",
+  power_output: "Potencia de Salida",
+  exhaust_temp: "Temperatura de Escape",
+};
+
+function formatKpiLabel(raw: string): string {
+  if (KPI_LABELS[raw]) return KPI_LABELS[raw];
+  // Fallback: convert snake_case to Title Case
+  return raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function AnomalyRow({ anomaly, index }: { anomaly: TrendAnomaly; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="flex items-start gap-2 rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2"
+      className="flex items-start gap-2.5 rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2.5"
     >
       {anomaly.severity === "warning" ? (
-        <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
+        <AlertTriangle size={13} className="text-amber-500 mt-0.5 shrink-0" />
       ) : (
-        <TrendingUp size={12} className="text-green-500 mt-0.5 shrink-0" />
+        <TrendingUp size={13} className="text-green-500 mt-0.5 shrink-0" />
       )}
-      <div>
-        <div className="flex items-center gap-2">
-          <p className="text-[10px] font-bold text-[var(--text-primary)]">{anomaly.kpi}</p>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-[11px] font-bold text-[var(--text-primary)] truncate">{formatKpiLabel(anomaly.kpi)}</p>
           <span className={cn(
-            "rounded-full px-1.5 py-0.5 text-[7px] font-bold",
+            "rounded-full px-1.5 py-0.5 text-[7px] font-bold shrink-0",
             anomaly.direction === "deteriorating"
               ? "bg-red-500/10 text-red-500"
               : "bg-green-500/10 text-green-500"
@@ -319,7 +343,7 @@ function AnomalyRow({ anomaly, index }: { anomaly: TrendAnomaly; index: number }
             {anomaly.direction === "deteriorating" ? "↓ Deterioro" : "↑ Mejora"}
           </span>
         </div>
-        <p className="text-[9px] text-[var(--text-muted)] mt-0.5 leading-relaxed">{anomaly.detail}</p>
+        <p className="text-[9px] text-[var(--text-muted)] mt-1 leading-relaxed">{anomaly.detail}</p>
       </div>
     </motion.div>
   );
