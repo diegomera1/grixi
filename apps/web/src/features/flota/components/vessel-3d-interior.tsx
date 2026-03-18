@@ -323,7 +323,7 @@ function InteriorScene({ equipment }: InteriorProps) {
 
 export function Vessel3DInterior({ equipment }: InteriorProps) {
   return (
-    <div className="relative h-[450px] rounded-xl border border-[#0EA5E9]/20 bg-[#030712] overflow-hidden">
+    <div className="relative h-[450px] rounded-xl border border-[var(--border)] bg-black overflow-hidden">
       <Canvas
         camera={{ position: [10, 5, 8], fov: 50 }}
         gl={{ antialias: true, alpha: true }}
@@ -334,15 +334,15 @@ export function Vessel3DInterior({ equipment }: InteriorProps) {
 
       {/* HUD */}
       <div className="absolute top-3 left-3 z-10">
-        <div className="rounded-lg border border-white/10 bg-[#0a0f1a]/80 backdrop-blur-md px-3 py-2">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)]/90 backdrop-blur-md px-3 py-2">
           <p className="text-[10px] font-bold text-[#0EA5E9]">SALA DE MÁQUINAS</p>
-          <p className="text-[8px] text-white/40">Vista Interior · Holográfica</p>
+          <p className="text-[8px] text-[var(--text-muted)]">Vista Interior · Holográfica</p>
         </div>
       </div>
 
       {/* Equipment Legend */}
-      <div className="absolute bottom-3 right-3 z-10 rounded-lg border border-white/10 bg-[#0a0f1a]/80 backdrop-blur-md px-3 py-2">
-        <p className="text-[7px] font-bold uppercase tracking-wider text-white/40 mb-1">Componentes</p>
+      <div className="absolute bottom-3 right-3 z-10 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)]/90 backdrop-blur-md px-3 py-2">
+        <p className="text-[7px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">Componentes</p>
         <div className="space-y-0.5">
           {[
             { color: "#0EA5E9", label: "Motor Principal" },
@@ -354,7 +354,7 @@ export function Vessel3DInterior({ equipment }: InteriorProps) {
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-              <span className="text-[8px] text-white/60">{item.label}</span>
+              <span className="text-[8px] text-[var(--text-secondary)]">{item.label}</span>
             </div>
           ))}
         </div>

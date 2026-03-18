@@ -423,8 +423,8 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
 
   return (
     <div className={fullscreenMode
-      ? "fixed inset-0 z-50 bg-[#030712]"
-      : "relative h-[450px] md:h-[550px] rounded-xl border border-[var(--border)] bg-[#030712] overflow-hidden"
+      ? "fixed inset-0 z-50 bg-black"
+      : "relative h-[450px] md:h-[550px] rounded-xl border border-[var(--border)] bg-black overflow-hidden"
     }>
       {/* Canvas */}
       <Canvas
@@ -447,7 +447,7 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
         <div className="flex items-center gap-2">
           <Compass size={14} className="text-[#0EA5E9]" />
           <span className="text-xs font-bold text-[#0EA5E9]">HOLOGRAPHIC VIEW</span>
-          <span className="text-[10px] text-white/30">M/V GRIXI MARINER</span>
+          <span className="text-[10px] text-[var(--text-muted)]">M/V GRIXI MARINER</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1 rounded-full bg-[#10B981]/10 px-2 py-0.5 text-[9px] font-bold text-[#10B981]">
@@ -457,7 +457,7 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
           {onToggleFullscreen && (
             <button
               onClick={onToggleFullscreen}
-              className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-white/60 hover:bg-white/10 transition-all"
+              className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)]/80 backdrop-blur-md px-2 py-1 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-all"
             >
               {fullscreenMode ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
               {fullscreenMode ? "Salir" : "Expandir"}
@@ -467,8 +467,8 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
       </div>
 
       {/* Bottom Stats Bar */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 py-2 bg-gradient-to-t from-[#030712]/90 to-transparent">
-        <div className="flex items-center gap-4 text-[9px] text-white/40">
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 py-2 bg-gradient-to-t from-black/80 to-transparent">
+        <div className="flex items-center gap-4 text-[9px] text-[var(--text-muted)]">
           <span className="flex items-center gap-1">
             <Layers size={10} />
             {zones.length} zonas
@@ -482,7 +482,7 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
             {equipment.filter((e) => e.status !== "operational").length} alertas
           </span>
         </div>
-        <div className="text-[8px] text-white/20">
+        <div className="text-[8px] text-[var(--text-muted)]">
           Drag to rotate · Scroll to zoom · Click zones
         </div>
       </div>
@@ -494,7 +494,7 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="absolute top-14 right-3 w-64 max-h-[60%] overflow-y-auto rounded-xl border border-white/10 bg-[#030712]/90 p-3 backdrop-blur-xl"
+            className="absolute top-14 right-3 w-64 max-h-[60%] overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]/95 p-3 backdrop-blur-xl shadow-lg"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -502,19 +502,19 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: ZONE_TYPE_COLORS[selectedZoneData.zone_type] }}
                 />
-                <span className="text-xs font-bold text-white">{selectedZoneData.name}</span>
+                <span className="text-xs font-bold text-[var(--text-primary)]">{selectedZoneData.name}</span>
               </div>
-              <button onClick={() => setSelectedZone(null)} className="text-white/30 hover:text-white text-xs">✕</button>
+              <button onClick={() => setSelectedZone(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs">✕</button>
             </div>
-            <p className="text-[10px] text-white/40 mb-2">{selectedZoneData.description}</p>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-white/30 mb-1">
+            <p className="text-[10px] text-[var(--text-muted)] mb-2">{selectedZoneData.description}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
               Equipos ({zoneEquipment.length})
             </p>
             <div className="space-y-1">
               {zoneEquipment.map((eq) => (
-                <div key={eq.id} className="flex items-center justify-between rounded-md bg-white/5 px-2 py-1.5">
+                <div key={eq.id} className="flex items-center justify-between rounded-md bg-[var(--bg-muted)]/50 px-2 py-1.5">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-medium text-white/80 truncate">{eq.name}</p>
+                    <p className="text-[10px] font-medium text-[var(--text-primary)] truncate">{eq.name}</p>
                     <p className="text-[8px] text-[#0EA5E9]">{eq.code}</p>
                   </div>
                   <span
@@ -524,7 +524,7 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
                 </div>
               ))}
               {zoneEquipment.length === 0 && (
-                <p className="text-[9px] text-white/20 py-2 text-center">Sin equipos en esta zona</p>
+                <p className="text-[9px] text-[var(--text-muted)] py-2 text-center">Sin equipos en esta zona</p>
               )}
             </div>
           </motion.div>

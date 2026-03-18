@@ -115,7 +115,7 @@ export function EquipmentDetailDrawer({ equipment: eq, zone, workOrders, onClose
               </div>
             </div>
           ) : (
-            <div className="flex h-32 items-center justify-center rounded-xl border border-[var(--border)] bg-[#030712]">
+            <div className="flex h-32 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]">
               <div className="text-center">
                 <Wrench size={28} className="mx-auto text-[#0EA5E9]/30" />
                 <p className="mt-1 text-[10px] text-[var(--text-muted)]">Sin imagen</p>
