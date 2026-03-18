@@ -1,9 +1,9 @@
 "use client";
 
-
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowUp, ArrowDown, Minus,
+  ArrowUp, ArrowDown, Minus, MapPin,
 } from "lucide-react";
 import type { KPISnapshot, WorkOrder, Equipment, VesselZone } from "../types";
 import {
@@ -12,6 +12,18 @@ import {
   ZONE_TYPE_COLORS,
 } from "../types";
 import type { useFlotaDemo } from "../hooks/use-flota-demo";
+
+const VesselMap = dynamic(() => import("./vessel-map").then((m) => m.VesselMap), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[300px] items-center justify-center rounded-xl border border-[#0EA5E9]/20 bg-[#030712]">
+      <div className="flex flex-col items-center gap-2">
+        <MapPin size={20} className="text-[#0EA5E9]/40 animate-pulse" />
+        <span className="text-[10px] text-[#0EA5E9]/40">Cargando mapa...</span>
+      </div>
+    </div>
+  ),
+});
 
 type DashboardTabProps = {
   kpis: KPISnapshot[];
@@ -95,6 +107,11 @@ export function DashboardTab({ kpis, workOrders, equipment, zones, events, readi
             ))}
           </AnimatePresence>
         </div>
+      </div>
+
+      {/* Vessel Map — CesiumJS Globe */}
+      <div className="lg:col-span-3">
+        <VesselMap compact />
       </div>
 
       {/* Active Work Orders */}
