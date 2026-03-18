@@ -37,11 +37,14 @@ function HolographicGrid() {
 function HoloParticles() {
   const points = useRef<THREE.Points>(null);
   const positions = useMemo(() => {
+    // Deterministic pseudo-random for ESLint purity
+    let seed = 7;
+    const rand = () => { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; };
     const arr = new Float32Array(300 * 3);
     for (let i = 0; i < 300; i++) {
-      arr[i * 3] = (Math.random() - 0.5) * 30;
-      arr[i * 3 + 1] = (Math.random() - 0.5) * 15;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 20;
+      arr[i * 3] = (rand() - 0.5) * 30;
+      arr[i * 3 + 1] = (rand() - 0.5) * 15;
+      arr[i * 3 + 2] = (rand() - 0.5) * 20;
     }
     return arr;
   }, []);

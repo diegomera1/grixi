@@ -1,6 +1,6 @@
-# Alternativa 1 — Costos
+# Alternativa 1 — Costos Detallados
 
-> Desglose completo de costos mensuales, precios unitarios por servicio, y proyección a 3 años.
+> Desglose completo con precios verificados, stack de trabajo, y proyección a 3 años.
 
 ---
 
@@ -8,167 +8,133 @@
 
 | Concepto | Costo |
 |---|---|
-| Migración de código (tiempo dev) | $0 (interno) |
+| Migración de código (tiempo dev interno) | $0 |
 | **Total** | **$0** |
-
-> Sin inversión inicial. Solo se paga la suscripción mensual.
 
 ---
 
-## Costos Recurrentes — Desglose Detallado
+## Infraestructura — Costos Fijos Mensuales
 
-### Supabase Pro ($140/mes)
+### Supabase Pro ($175/mes)
 
-| Componente | Incluido | Precio |
+| Componente | Specs | Precio |
 |---|---|---|
-| **Plan Pro base** | 8 GB DB, 250 GB bandwidth, 100K MAUs | $25/mes |
+| **Plan Pro base** | 8 GB DB, 250 GB BW, 100K MAUs | $25/mes |
+| **Compute Medium** | 2 vCPU ARM, 4 GB RAM dedicado | $60/mes |
+| Crédito compute (incluido en Pro) | — | -$10/mes |
 | **PITR** (7 días) | Point-in-Time Recovery | $100/mes |
-| **Compute Small** | 2 vCPU, 1 GB RAM dedicado | $15/mes |
-| **Crédito compute** | Incluido en Pro | -$10/mes (ya aplicado) |
 | Edge Functions | 2M invocaciones/mes | Incluido |
 | Realtime | 500 concurrent connections | Incluido |
 | Storage | 100 GB archivos | Incluido |
-| **Subtotal** | | **$140/mes** |
+| **Subtotal Supabase** | | **$175/mes** |
 
-### Cloudflare Pro ($20/mes)
+### Cloudflare ($27/mes)
 
 | Componente | Incluido | Precio |
 |---|---|---|
-| **Plan Pro** | CDN, WAF, DDoS, DNS, Analytics | $20/mes |
-| SSL Full (Strict) | Certificado edge + origin | Incluido |
-| Page Rules | 20 reglas | Incluido |
-| DNS | Unlimited queries | Incluido |
+| **Cloudflare Pro** | CDN, WAF, DDoS, DNS, Analytics | $20/mes |
+| **Workers Paid** | 10M requests, 30M CPU ms | $5/mes |
+| **Workers KV** | 10M reads, 1 GB storage | ~$2/mes |
+| **R2** (cache de Storage) | 10 GB free, $0.015/GB, cero egress | ~$0-1/mes |
+| **Subtotal Cloudflare** | | **~$27/mes** |
+
+### Servicios de Comunicación y AI ($65/mes)
+
+| Servicio | Detalle | Precio |
+|---|---|---|
+| **Discord** Level 2 | 7 boosts (con impuestos) | ~$40/mes |
+| **Gemini API** | ~20-30$/mes inicial, escala con uso | ~$25/mes |
+| **Subtotal** | | **~$65/mes** |
+
+### Email & Monitoreo ($20/mes)
+
+| Servicio | Plan | Precio |
+|---|---|---|
+| **Resend** | Pro — 50K emails/mes | $20/mes |
+| **Sentry** | Developer (free) — 5K errors/mes | $0 |
+| **Jira** | Free — hasta 10 usuarios | $0 |
 | **Subtotal** | | **$20/mes** |
 
-### Cloudflare Workers Paid ($5-10/mes)
+### Otros ($1/mes)
 
-| Componente | Incluido gratis | Precio overage | Estimado GRIXI |
-|---|---|---|---|
-| **Plan base** | — | — | $5/mes |
-| **Requests** | 10M/mes | $0.30 por 1M adicional | ~$0 (< 10M) |
-| **CPU time** | 30M ms/mes | $0.02 por 1M ms | ~$0 |
-| **Egress** | Ilimitado | $0 | $0 |
-| **Subtotal** | | | **~$5-7/mes** |
+| Servicio | Detalle | Precio |
+|---|---|---|
+| **Dominio** grixi.com | ~$12/año | ~$1/mes |
 
-> [!NOTE]
-> Con < 10M requests/mes y SSR ligero, los costos de Workers se mantienen en el mínimo de **$5/mes**. Solo escalaría si GRIXI supera 10M requests, que equivale a ~333K/día — muy por encima del uso esperado.
+---
 
-### Cloudflare Workers KV ($0-5/mes)
+## Costos por Usuario
 
-| Componente | Incluido gratis | Precio overage | Estimado GRIXI |
-|---|---|---|---|
-| **Reads** | 10M/mes | $0.50 por 1M | ~$0 |
-| **Writes** | 1M/mes | $5 por 1M | ~$0 |
-| **Storage** | 1 GB | $0.50 por GB | ~$0.50 |
-| **Subtotal** | | | **~$0-2/mes** |
-
-### Cloudflare R2 (Cache de Storage, Opcional)
-
-| Componente | Incluido gratis | Precio | Estimado GRIXI |
-|---|---|---|---|
-| **Storage** | 10 GB/mes | $0.015 por GB | ~$0-1 |
-| **Class A ops** (PUT) | 1M/mes | $4.50 por 1M | ~$0 |
-| **Class B ops** (GET) | 10M/mes | $0.36 por 1M | ~$0 |
-| **Egress** | Ilimitado | $0 | $0 |
-| **Subtotal** | | | **~$0-1/mes** |
-
-### GitHub Teams ($12/mes)
-
-| Componente | Precio |
+| Servicio | Precio/usuario/mes |
 |---|---|
-| **3 usuarios** | $4/user/mes = $12/mes |
+| **GitHub Team** | $4/usuario |
+| **Google Workspace Standard** | $14/usuario (anual) |
+| **Total por usuario** | **$18/usuario/mes** |
 
 ---
 
-## Resumen de Costos Mensuales
+## Resumen Total
 
-| Servicio | Costo/mes |
+| Categoría | Costo/mes |
 |---|---|
-| **Supabase Pro** (Pro + PITR + Compute Small) | $140 |
-| **Cloudflare Pro** (CDN + WAF + DNS) | $20 |
-| **Cloudflare Workers Paid** (SSR) | ~$5 |
-| **Cloudflare Workers KV** (cache) | ~$2 |
-| **Cloudflare R2** (storage cache, opcional) | ~$1 |
-| **GitHub Teams** (3 users) | $12 |
-| **Dominio** grixi.com (anual/12) | ~$1 |
-| **Total** | **~$181/mes** |
+| Supabase Pro (Medium + PITR) | $175 |
+| Cloudflare (Pro + Workers + KV + R2) | $27 |
+| Discord Level 2 | $40 |
+| Gemini API | $25 |
+| Resend Pro | $20 |
+| Dominio | $1 |
+| Sentry + Jira | $0 |
+| **Costos fijos** | **$288/mes** |
+| **+ por usuario** | **$18/usuario/mes** |
+
+| Ejemplo con equipo | Total/mes |
+|---|---|
+| 1 persona | $306/mes |
+| 3 personas | $342/mes |
+| 5 personas | $378/mes |
 
 ---
 
-## Comparación con Arquitectura Actual — Línea por Línea
+## Comparación con Arquitectura Actual
 
-| Concepto | Actual | Alt. 1 | Diferencia |
+| Concepto | Actual (Vercel) | Alt. 1 (CF Workers) | Diferencia |
 |---|---|---|---|
-| Vercel Pro (hosting) | $20/mes | **$0** | -$20 ✅ |
-| CF Workers Paid (SSR) | $0 | ~$5 | +$5 |
-| CF Workers KV (cache) | $0 | ~$2 | +$2 |
-| CF R2 (storage cache) | $0 | ~$1 | +$1 |
-| Supabase Pro (backend) | $140/mes | $140/mes | $0 |
-| Cloudflare Pro (CDN) | $20/mes | $20/mes | $0 |
-| GitHub Teams (repo) | $12/mes | $12/mes | $0 |
-| Dominio | ~$1/mes | ~$1/mes | $0 |
-| **Total** | **$193/mes** | **~$181/mes** | **-$12/mes** ✅ |
+| Vercel Pro | $20 | **$0** | -$20 ✅ |
+| CF Workers + KV + R2 | $0 | $27 | +$27 |
+| Supabase (Pro + Medium + PITR) | $175 | $175 | $0 |
+| Cloudflare Pro | $20 | $20 | $0 |
+| Discord Level 2 | $40 | $40 | $0 |
+| Gemini API | $25 | $25 | $0 |
+| Resend Pro | $20 | $20 | $0 |
+| GitHub Team (per user) | $4/user | $4/user | $0 |
+| Google Workspace (per user) | $14/user | $14/user | $0 |
+| Dominio | $1 | $1 | $0 |
+| **Total fijo** | **$301/mes** | **$288/mes** | **-$13/mes** ✅ |
+| **Total 3 personas** | **$355/mes** | **$342/mes** | **-$13/mes** |
 
 ---
 
-## Break-Even
+## Proyección a 3 Años (3 personas)
 
-```
-Ahorro mensual: $193 - $181 = $12/mes
-Inversión inicial: $0
-Break-even: Inmediato — desde el mes 1 se ahorra
-```
-
-> El ahorro inicia desde el día 1 porque no hay costo inicial.
-
----
-
-## Proyección a 3 Años
-
-| Horizonte | Actual | Alt. 1 | Ahorro acumulado |
+| Horizonte | Actual | Alt. 1 | Ahorro |
 |---|---|---|---|
-| **6 meses** | $1,158 | $1,086 | **$72** |
-| **1 año** | $2,316 | $2,172 | **$144** |
-| **2 años** | $4,632 | $4,344 | **$288** |
-| **3 años** | $6,948 | $6,516 | **$432** |
-
----
-
-## Comparación con Todas las Alternativas
-
-| Concepto | Actual | Alt. 1 (SB+CF) | Alt. 2 (On-Prem) | Alt. 3 (AX52) |
-|---|---|---|---|---|
-| Costo mensual | $193 | **$181** | ~$41 | ~$108 |
-| Costo inicial | $0 | **$0** | ~$2,910 | ~$290 |
-| **1 año** | $2,316 | **$2,172** | $3,402 | $1,586 |
-| **2 años** | $4,632 | **$4,344** | $3,894 | $2,882 |
-| **3 años** | $6,948 | **$6,516** | $4,386 | $4,178 |
+| **6 meses** | $2,130 | $2,052 | **$78** |
+| **1 año** | $4,260 | $4,104 | **$156** |
+| **2 años** | $8,520 | $8,208 | **$312** |
+| **3 años** | $12,780 | $12,312 | **$468** |
 
 ---
 
 ## Escenarios de Escalado
 
-| Escenario | Impacto en costo |
+| Escenario | Impacto |
 |---|---|
-| **10M → 50M requests/mes** | Workers: +$12/mes ($0.30 × 40M) |
-| **100+ tenants (más DB)** | Supabase: upgrade compute Medium (+$45/mes) |
-| **Heavy AI usage** | Gemini: via Edge Functions, sin impacto en Workers |
-| **10 GB → 50 GB storage cache** | R2: +$0.60/mes (40 GB × $0.015) |
-| **Equipo crece a 10 devs** | GitHub Team: +$28/mes ($4 × 7 users más) |
-
-> [!TIP]
-> **El costo escala linealmente y de forma predecible.** No hay sorpresas tipo "Vercel bandwidth overage". Cloudflare no cobra egress ni en Workers, ni en R2, ni en KV.
-
----
-
-## ¿Por Qué Elegir Alt. 1 en Costos?
-
-| ✅ A favor | ❌ En contra |
-|---|---|
-| Sin inversión inicial ($0) | Ahorro mensual modesto ($12/mes) |
-| Pricing predecible — sin egress fees | Supabase sigue siendo el costo principal ($140) |
-| Escalado gradual (pay-per-use) | No es la opción más barata a largo plazo |
-| Break-even inmediato | — |
+| **+1 usuario (dev/designer)** | +$18/mes (GitHub + Workspace) |
+| **Supabase Medium → Large** | +$50/mes (cuando hay +30 tenants) |
+| **50M requests/mes en Workers** | +$12/mes ($0.30 × 40M extra) |
+| **Gemini heavy usage (~100 tenants)** | +$20-50/mes |
+| **Resend → 100K emails/mes** | +$20/mes (upgrade a Pro Plus) |
+| **Sentry → Team plan** | +$26/mes (cuando hay +5K errors/mes) |
 
 > [!NOTE]
-> **El verdadero valor de Alt. 1 no es el ahorro en costos** (que es modesto), sino la **mejora en latencia** (0ms cold starts, 310+ PoPs), la **eliminación de Vercel como vendor**, y el **pricing sin egress fees** que escala sin sorpresas.
+> **El verdadero valor de Alt. 1 no es el ahorro** (~$13/mes), sino: **0ms cold starts** (Workers), **310+ PoPs globales**, **cero egress fees** en todo Cloudflare, y la **eliminación de Vercel** como vendor.
