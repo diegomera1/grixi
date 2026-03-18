@@ -60,3 +60,4 @@ Usuario → Cloudflare Edge (310+ PoPs globales)
 | [05-cloudflare-workers.md](./05-cloudflare-workers.md) | Cloudflare Workers: config, deploy, CI/CD |
 | [06-seguridad.md](./06-seguridad.md) | Capas de seguridad |
 | [07-costos.md](./07-costos.md) | Desglose de costos |
+| [08-avanzado.md](./08-avanzado.md) | Workers KV cache, R2, environments, rollback, limitaciones |

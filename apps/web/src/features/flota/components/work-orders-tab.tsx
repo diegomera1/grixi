@@ -11,7 +11,7 @@ import {
 } from "../types";
 import { WorkOrderForm } from "./work-order-form";
 
-export function WorkOrdersTab({ workOrders, equipment, crew }: { workOrders: WorkOrder[]; equipment: Equipment[]; crew?: CrewMember[] }) {
+export function WorkOrdersTab({ vesselId, workOrders, equipment, crew }: { vesselId: string; workOrders: WorkOrder[]; equipment: Equipment[]; crew?: CrewMember[] }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
 
@@ -107,6 +107,7 @@ export function WorkOrdersTab({ workOrders, equipment, crew }: { workOrders: Wor
       <AnimatePresence>
         {showForm && (
           <WorkOrderForm
+            vesselId={vesselId}
             equipment={equipment}
             crew={crew}
             onClose={() => setShowForm(false)}

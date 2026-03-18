@@ -3,6 +3,7 @@
 import {
   AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  ReferenceLine,
 } from "recharts";
 import type { KPISnapshot, Equipment, WorkOrder } from "../types";
 import {
@@ -77,6 +78,7 @@ export function AnalyticsTab({ kpis, equipment, workOrders }: { kpis: KPISnapsho
             <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} tickLine={false} />
             <YAxis domain={[80, 100]} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} tickLine={false} width={30} />
             <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine y={95} stroke="#F59E0B" strokeDasharray="4 4" strokeWidth={1} label={{ value: "Meta 95%", position: "right", fill: "#F59E0B", fontSize: 9 }} />
             <Area
               type="monotone"
               dataKey="disponibilidad"
@@ -107,6 +109,7 @@ export function AnalyticsTab({ kpis, equipment, workOrders }: { kpis: KPISnapsho
             <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} tickLine={false} width={35} />
             <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine y={500} stroke="#F59E0B" strokeDasharray="4 4" strokeWidth={1} label={{ value: "Meta 500h", position: "right", fill: "#F59E0B", fontSize: 9 }} />
             <Area
               type="monotone"
               dataKey="mtbf"

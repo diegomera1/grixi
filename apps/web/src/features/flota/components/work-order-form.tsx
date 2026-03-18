@@ -6,8 +6,10 @@ import { X, Plus, CloudOff } from "lucide-react";
 import type { Equipment, CrewMember, WOPriority } from "../types";
 import { WO_PRIORITY_LABELS, WO_PRIORITY_COLORS } from "../types";
 import { useOfflineSync } from "../hooks/use-offline-sync";
+import { createWorkOrder } from "../actions/create-work-order";
 
 type WorkOrderFormProps = {
+  vesselId: string;
   equipment: Equipment[];
   crew?: CrewMember[];
   onClose: () => void;
@@ -38,7 +40,7 @@ const INITIAL_FORM: FormData = {
   cost_estimated: "",
 };
 
-export function WorkOrderForm({ equipment, crew, onClose, onCreated }: WorkOrderFormProps) {
+export function WorkOrderForm({ vesselId, equipment, crew, onClose, onCreated }: WorkOrderFormProps) {
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -63,21 +65,30 @@ export function WorkOrderForm({ equipment, crew, onClose, onCreated }: WorkOrder
     setSubmitting(true);
 
     try {
-      const woNumber = `WO-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
-      await queueAction("work_order", "create", {
-        wo_number: woNumber,
-        title: form.title.trim(),
-        description: form.description.trim() || null,
-        priority: form.priority,
-        equipment_id: form.equipment_id || null,
-        assigned_to: form.assigned_to || null,
-        planned_start: form.planned_start || null,
-        planned_end: form.planned_end || null,
-        hours_estimated: form.hours_estimated ? parseFloat(form.hours_estimated) : 0,
-        cost_estimated: form.cost_estimated ? parseFloat(form.cost_estimated) : 0,
-        status: "planned",
-        created_offline: !status.isOnline,
-      });
+      if (status.isOnline) {
+        // Online: persist to Supabase directly
+        const result = await createWorkOrder({
+          vessel_id: vesselId,
+          title: form.title.trim(),
+          description: form.description.trim() || undefined,
+          priority: form.priority,
+          equipment_id: form.equipment_id || undefined,
+          assigned_to: form.assigned_to || undefined,
+          planned_start: form.planned_start || undefined,
+          planned_end: form.planned_end || undefined,
+          hours_estimated: form.hours_estimated ? parseFloat(form.hours_estimated) : undefined,
+          cost_estimated: form.cost_estimated ? parseFloat(form.cost_estimated) : undefined,
+        });
+
+        if (result.error) {
+          console.error("[WO Form] Server error:", result.error);
+          // Fallback to offline queue on server error
+          await queueToOffline();
+        }
+      } else {
+        // Offline: queue for sync
+        await queueToOffline();
+      }
 
       setSubmitted(true);
       setTimeout(() => {
@@ -86,9 +97,29 @@ export function WorkOrderForm({ equipment, crew, onClose, onCreated }: WorkOrder
       }, 1500);
     } catch (err) {
       console.error("[WO Form] Error:", err);
+      // Last resort: queue offline
+      await queueToOffline();
+      setSubmitted(true);
+      setTimeout(() => { onCreated?.(); onClose(); }, 1500);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const queueToOffline = async () => {
+    await queueAction("work_order", "create", {
+      vessel_id: vesselId,
+      title: form.title.trim(),
+      description: form.description.trim() || null,
+      priority: form.priority,
+      equipment_id: form.equipment_id || null,
+      assigned_to: form.assigned_to || null,
+      planned_start: form.planned_start || null,
+      planned_end: form.planned_end || null,
+      hours_estimated: form.hours_estimated ? parseFloat(form.hours_estimated) : 0,
+      cost_estimated: form.cost_estimated ? parseFloat(form.cost_estimated) : 0,
+      status: "planned",
+    });
   };
 
   if (submitted) {

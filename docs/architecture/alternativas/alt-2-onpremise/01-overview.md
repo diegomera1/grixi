@@ -67,3 +67,8 @@ Internet → Cloudflare Edge (WAF + CDN + DNS)
 | [07-seguridad.md](./07-seguridad.md) | Capas de seguridad |
 | [08-backups.md](./08-backups.md) | Backups y disaster recovery |
 | [09-costos.md](./09-costos.md) | Desglose de costos |
+| [10-multi-tenant.md](./10-multi-tenant.md) | Multi-tenant: RLS, Better Auth, org switching |
+| [11-edge-functions-migration.md](./11-edge-functions-migration.md) | Migración de 14 Edge Functions a API Routes + BullMQ |
+| [12-realtime-storage.md](./12-realtime-storage.md) | Socket.io + pg_notify, MinIO buckets |
+| [13-monitoreo.md](./13-monitoreo.md) | Prometheus, Grafana, alertas |
+| [14-database-migration.md](./14-database-migration.md) | Migraciones SQL de Supabase a PG standalone |

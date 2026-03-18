@@ -217,6 +217,7 @@ function ExhaustParticles() {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
+          args={[particles, 3]}
           count={200}
           array={particles}
           itemSize={3}

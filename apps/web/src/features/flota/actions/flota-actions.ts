@@ -21,11 +21,16 @@ export async function fetchVessel(): Promise<{
 } | null> {
   const supabase = await createClient();
 
-  // Get demo vessel
-  const { data: vessel } = await supabase
-    .from("fleet_vessels")
-    .select("*")
-    .single();
+  // Get authenticated user's org
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const orgId = user.user_metadata?.org_id || user.app_metadata?.org_id;
+
+  // Get vessel filtered by org
+  let vesselQuery = supabase.from("fleet_vessels").select("*");
+  if (orgId) vesselQuery = vesselQuery.eq("org_id", orgId);
+  const { data: vessel } = await vesselQuery.limit(1).single();
 
   if (!vessel) return null;
 
@@ -43,7 +48,7 @@ export async function fetchVessel(): Promise<{
   ] = await Promise.all([
     supabase.from("fleet_vessel_zones").select("*").eq("vessel_id", vessel.id).order("deck_level", { ascending: false }),
     supabase.from("fleet_equipment").select("*").eq("vessel_id", vessel.id).order("code"),
-    supabase.from("fleet_work_orders").select("*").eq("vessel_id", vessel.id).order("created_at", { ascending: false }),
+    supabase.from("fleet_work_orders").select("*").eq("vessel_id", vessel.id).order("created_at", { ascending: false }).limit(50),
     supabase.from("fleet_checklists").select("*").eq("vessel_id", vessel.id),
     supabase.from("fleet_crew").select("*, employee:hr_employees(id, full_name, avatar_url, position)").eq("vessel_id", vessel.id),
     supabase.from("fleet_kpi_snapshots").select("*").eq("vessel_id", vessel.id).order("snapshot_date"),
@@ -72,7 +77,7 @@ export async function fetchVessel(): Promise<{
     openWOs,
     criticalAlerts: (workOrders || []).filter((wo) => wo.priority === "critical" && wo.status !== "completed" && wo.status !== "closed").length,
     maintenanceCostMonth: latestKPI?.maintenance_cost || 0,
-    hoursOperated: 48250,
+    hoursOperated: vessel.hours_operated ?? 0,
     crewOnboard: (crew || []).filter((c) => c.status === "onboard").length,
   };
 
