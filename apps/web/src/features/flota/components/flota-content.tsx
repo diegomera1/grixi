@@ -178,7 +178,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
           />
         )}
         {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} workOrders={workOrders} />}
-        {activeTab === "work-orders" && <WorkOrdersTab workOrders={workOrders} equipment={equipment} />}
+        {activeTab === "work-orders" && <WorkOrdersTab workOrders={workOrders} equipment={equipment} crew={crew} />}
         {activeTab === "checklists" && <ChecklistTab checklists={checklists} />}
         {activeTab === "crew" && <CrewTab crew={crew} />}
         {activeTab === "logistics" && <LogisticsTab equipment={equipment} />}

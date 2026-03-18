@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import type { WorkOrder, Equipment } from "../types";
+import type { WorkOrder, Equipment, CrewMember } from "../types";
 import {
   WO_STATUS_LABELS, WO_STATUS_COLORS,
   WO_PRIORITY_LABELS, WO_PRIORITY_COLORS,
 } from "../types";
+import { WorkOrderForm } from "./work-order-form";
 
-export function WorkOrdersTab({ workOrders, equipment }: { workOrders: WorkOrder[]; equipment: Equipment[] }) {
+export function WorkOrdersTab({ workOrders, equipment, crew }: { workOrders: WorkOrder[]; equipment: Equipment[]; crew?: CrewMember[] }) {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showForm, setShowForm] = useState(false);
 
   const filtered = workOrders.filter((wo) => statusFilter === "all" || wo.status === statusFilter);
   const statusCounts = {
@@ -22,19 +25,28 @@ export function WorkOrdersTab({ workOrders, equipment }: { workOrders: WorkOrder
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-1.5">
-        {(["all", "planned", "in_progress", "completed"] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={cn(
-              "rounded-full px-3 py-1 text-[10px] font-medium transition-all",
-              statusFilter === s ? "bg-[#0EA5E9] text-white" : "bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-            )}
-          >
-            {s === "all" ? "Todas" : WO_STATUS_LABELS[s]} ({statusCounts[s]})
-          </button>
-        ))}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-1.5">
+          {(["all", "planned", "in_progress", "completed"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={cn(
+                "rounded-full px-3 py-1 text-[10px] font-medium transition-all",
+                statusFilter === s ? "bg-[#0EA5E9] text-white" : "bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              )}
+            >
+              {s === "all" ? "Todas" : WO_STATUS_LABELS[s]} ({statusCounts[s]})
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-1.5 rounded-lg bg-[#0EA5E9] px-3 py-1.5 text-[10px] font-bold text-white shadow-lg shadow-[#0EA5E9]/20 hover:bg-[#0EA5E9]/90 transition-all"
+        >
+          <Plus size={12} />
+          Nueva OT
+        </button>
       </div>
 
       <div className="space-y-2">
@@ -57,6 +69,9 @@ export function WorkOrdersTab({ workOrders, equipment }: { workOrders: WorkOrder
                       {WO_PRIORITY_LABELS[wo.priority]}
                     </span>
                     {eq && <span className="text-[10px] text-[var(--text-muted)]">· {eq.code} {eq.name}</span>}
+                    {wo.created_offline && (
+                      <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[7px] font-bold text-amber-500">OFFLINE</span>
+                    )}
                   </div>
                   <p className="text-sm font-semibold text-[var(--text-primary)]">{wo.title}</p>
                   {wo.description && (
@@ -67,6 +82,14 @@ export function WorkOrdersTab({ workOrders, equipment }: { workOrders: WorkOrder
                     {wo.cost_estimated > 0 && <span>💰 ${wo.cost_estimated.toLocaleString()}</span>}
                     {wo.planned_start && (
                       <span>📅 {new Date(wo.planned_start).toLocaleDateString("es-EC", { day: "numeric", month: "short" })}</span>
+                    )}
+                    {wo.assignee && (
+                      <span className="flex items-center gap-1">
+                        <span className="h-3 w-3 rounded-full bg-[#0EA5E9]/20 text-[7px] text-[#0EA5E9] flex items-center justify-center font-bold">
+                          {wo.assignee.full_name.slice(0, 1)}
+                        </span>
+                        {wo.assignee.full_name}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -79,6 +102,17 @@ export function WorkOrdersTab({ workOrders, equipment }: { workOrders: WorkOrder
           );
         })}
       </div>
+
+      {/* Work Order Form Modal */}
+      <AnimatePresence>
+        {showForm && (
+          <WorkOrderForm
+            equipment={equipment}
+            crew={crew}
+            onClose={() => setShowForm(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
