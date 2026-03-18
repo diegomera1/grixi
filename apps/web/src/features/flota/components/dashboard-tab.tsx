@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowUp, ArrowDown, Minus, MapPin,
+  ArrowUp, ArrowDown, Minus, MapPin, Activity,
 } from "lucide-react";
 import type { KPISnapshot, WorkOrder, Equipment, VesselZone } from "../types";
 import {
@@ -16,10 +16,10 @@ import type { useFlotaDemo } from "../hooks/use-flota-demo";
 const VesselMap = dynamic(() => import("./vessel-map").then((m) => m.VesselMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[300px] items-center justify-center rounded-xl border border-[#0EA5E9]/20 bg-[#030712]">
+    <div className="flex h-[350px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
       <div className="flex flex-col items-center gap-2">
-        <MapPin size={20} className="text-[#0EA5E9]/40 animate-pulse" />
-        <span className="text-[10px] text-[#0EA5E9]/40">Cargando mapa...</span>
+        <MapPin size={20} className="text-[var(--text-muted)] animate-pulse" />
+        <span className="text-[10px] text-[var(--text-muted)]">Cargando mapa...</span>
       </div>
     </div>
   ),
@@ -35,9 +35,9 @@ type DashboardTabProps = {
 };
 
 function TrendIcon({ trend }: { trend: string }) {
-  if (trend === "up") return <ArrowUp size={8} className="text-red-400" />;
-  if (trend === "down") return <ArrowDown size={8} className="text-green-400" />;
-  return <Minus size={8} className="text-[var(--text-muted)]" />;
+  if (trend === "up") return <ArrowUp size={10} className="text-red-400" />;
+  if (trend === "down") return <ArrowDown size={10} className="text-green-400" />;
+  return <Minus size={10} className="text-[var(--text-muted)]" />;
 }
 
 export function DashboardTab({ kpis, workOrders, equipment, zones, events, readings }: DashboardTabProps) {
@@ -50,37 +50,40 @@ export function DashboardTab({ kpis, workOrders, equipment, zones, events, readi
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      {/* Live Readings — Realtime */}
-      <div className="lg:col-span-2 rounded-xl border border-[#0EA5E9]/20 bg-[#030712] p-4">
-        <div className="flex items-center justify-between mb-3">
+      {/* ── Live Readings — Realtime — Full Width ── */}
+      <div className="lg:col-span-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0EA5E9]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#0EA5E9] animate-pulse" />
+            <Activity size={13} />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
             Lecturas en Tiempo Real
           </h3>
-          <span className="text-[8px] text-white/30">Actualización cada 3s</span>
+          <span className="text-[9px] text-[var(--text-muted)]">Actualización cada 3s</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
           {readings.slice(0, 8).map((r) => (
             <motion.div
               key={r.name}
-              className="rounded-lg border border-white/5 bg-white/[0.03] p-2"
-              animate={{ borderColor: r.trend !== "stable" ? "rgba(14,165,233,0.2)" : "rgba(255,255,255,0.05)" }}
+              className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/40 p-3 transition-colors"
+              animate={{
+                borderColor: r.trend !== "stable" ? "rgba(14,165,233,0.3)" : undefined,
+              }}
               transition={{ duration: 0.5 }}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[8px] text-white/40 truncate">{r.name}</span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-medium text-[var(--text-secondary)] truncate">{r.name}</span>
                 <TrendIcon trend={r.trend} />
               </div>
-              <p className="mt-0.5 text-sm font-bold tabular-nums" style={{ color: r.color }}>
+              <p className="text-xl font-bold tabular-nums leading-tight" style={{ color: r.color }}>
                 {r.value.toFixed(1)}
-                <span className="text-[8px] font-normal text-white/30 ml-0.5">{r.unit}</span>
+                <span className="text-[10px] font-normal text-[var(--text-muted)] ml-1">{r.unit}</span>
               </p>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Live Event Feed */}
+      {/* ── Live Event Feed ── */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 max-h-[350px] overflow-hidden">
         <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
           Feed en Vivo
@@ -109,12 +112,37 @@ export function DashboardTab({ kpis, workOrders, equipment, zones, events, readi
         </div>
       </div>
 
-      {/* Vessel Map — CesiumJS Globe */}
+      {/* ── Zones Overview ── */}
+      <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+          Zonas del Buque
+        </h3>
+        <div className="grid grid-cols-2 gap-2">
+          {zoneEquipmentCounts.filter((z) => z.count > 0).map((z) => (
+            <div key={z.id} className="flex items-center justify-between rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ZONE_TYPE_COLORS[z.zone_type] }} />
+                <span className="text-[11px] font-medium text-[var(--text-primary)]">{z.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-[var(--text-muted)]">{z.count} eq.</span>
+                {z.alerts > 0 && (
+                  <span className="rounded-full bg-red-500/10 px-1.5 py-0.5 text-[8px] font-bold text-red-500">
+                    {z.alerts} ⚠
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Vessel Map — CesiumJS Globe ── */}
       <div className="lg:col-span-3">
         <VesselMap compact />
       </div>
 
-      {/* Active Work Orders */}
+      {/* ── Active Work Orders ── */}
       <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
         <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
           Órdenes de Trabajo Activas
@@ -148,53 +176,28 @@ export function DashboardTab({ kpis, workOrders, equipment, zones, events, readi
         </div>
       </div>
 
-      {/* Zones Overview */}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-          Zonas del Buque
-        </h3>
-        <div className="space-y-1.5">
-          {zoneEquipmentCounts.filter((z) => z.count > 0).map((z) => (
-            <div key={z.id} className="flex items-center justify-between rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: ZONE_TYPE_COLORS[z.zone_type] }} />
-                <span className="text-[11px] font-medium text-[var(--text-primary)]">{z.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[var(--text-muted)]">{z.count} eq.</span>
-                {z.alerts > 0 && (
-                  <span className="rounded-full bg-red-500/10 px-1.5 py-0.5 text-[8px] font-bold text-red-500">
-                    {z.alerts} ⚠
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* KPI Trend */}
-      <div className="lg:col-span-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+      {/* ── KPI Trend — Full Width ── */}
+      <div className="lg:col-span-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
+        <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
           Tendencia KPIs — Últimos 6 Meses
         </h3>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {kpis.map((kpi) => (
-            <div key={kpi.id} className="text-center">
-              <p className="text-[9px] text-[var(--text-muted)]">
+            <div key={kpi.id} className="rounded-lg bg-[var(--bg-muted)]/30 p-3 text-center">
+              <p className="text-[10px] font-medium text-[var(--text-secondary)]">
                 {new Date(kpi.snapshot_date).toLocaleDateString("es-EC", { month: "short", year: "2-digit" })}
               </p>
-              <div className="mt-1 flex items-center justify-center gap-3">
+              <div className="mt-2 flex items-center justify-center gap-4">
                 <div>
-                  <p className="text-base font-bold text-[#10B981]">{kpi.availability_pct}%</p>
-                  <p className="text-[8px] text-[var(--text-muted)]">Disp.</p>
+                  <p className="text-lg font-bold text-[#10B981]">{kpi.availability_pct}%</p>
+                  <p className="text-[9px] text-[var(--text-muted)]">Disp.</p>
                 </div>
                 <div>
-                  <p className="text-base font-bold text-[#0EA5E9]">{kpi.mtbf_hours}h</p>
-                  <p className="text-[8px] text-[var(--text-muted)]">MTBF</p>
+                  <p className="text-lg font-bold text-[#0EA5E9]">{kpi.mtbf_hours}h</p>
+                  <p className="text-[9px] text-[var(--text-muted)]">MTBF</p>
                 </div>
               </div>
-              <div className="mt-1 text-[10px] text-[var(--text-muted)]">
+              <div className="mt-2 rounded-full bg-[var(--bg-muted)]/50 px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
                 ${(kpi.maintenance_cost / 1000).toFixed(1)}k
               </div>
             </div>
