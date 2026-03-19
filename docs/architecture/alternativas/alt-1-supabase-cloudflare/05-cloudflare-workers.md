@@ -1,6 +1,6 @@
 # Alternativa 1 — Cloudflare Workers: Deployment y CI/CD
 
-> Configuración de Cloudflare Workers para ejecutar React Router v7, incluyendo wrangler.toml, CI/CD con GitHub Actions, y preview deployments.
+> Configuración de Cloudflare Workers para ejecutar React Router v7 (Vite 8 + Rolldown build), incluyendo wrangler.toml, CI/CD con GitHub Actions, y preview deployments.
 
 ---
 
@@ -10,7 +10,7 @@
 
 ```toml
 name = "grixi"
-compatibility_date = "2025-09-01"
+compatibility_date = "2026-03-01"
 compatibility_flags = ["nodejs_compat"]
 main = ".react-router/worker.ts"
 
@@ -50,8 +50,8 @@ wrangler secret put GEMINI_API_KEY
 ### Deploy Manual
 
 ```bash
-# Build React Router v7 para Cloudflare
-pnpm build
+# Build React Router v7 con Vite 8 (Rolldown bundler)
+pnpm build    # ~5-10 segundos (vs ~60-90s con Vite 7)
 
 # Deploy a Workers
 wrangler deploy
@@ -103,7 +103,7 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      # Build
+      # Build con Vite 8 + Rolldown (~5-10s)
       - name: Build
         run: pnpm build
 
@@ -188,5 +188,7 @@ custom_domain = true
 |---|---|
 | **Cloudflare Workers Analytics** | Requests, CPU time, errors, latencia |
 | **Cloudflare Logs** | Request logs, Worker exceptions |
+| **Sentry** | Error tracking, crashes, performance |
 | **wrangler tail** | Logs en tiempo real (desarrollo) |
 | **Supabase Dashboard** | DB, Auth, Realtime, Storage (sin cambios) |
+| **Vite 8 Devtools** | Module graph, plugin transforms (opt-in dev) |

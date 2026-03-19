@@ -1,6 +1,7 @@
 # Alternativa 1 — Stack Tecnológico Completo
 
 > Comparación detallada de cada capa tecnológica: qué cambia, qué se mantiene, y por qué.
+> **Actualizado:** Alineado con Vite 8 + Rolldown (released 12 Marzo 2026).
 
 ---
 
@@ -9,6 +10,10 @@
 | Capa | Tecnología | ¿Cambia? | Justificación |
 |---|---|---|---|
 | **Framework** | React Router v7 (framework mode) | ✅ Cambia | Adapter oficial GA de Cloudflare. Loaders/Actions nativos |
+| **Build Tool** | **Vite 8** | ✅ Cambia | Build unificado con Rolldown (Rust). 10-30x más rápido |
+| **Bundler** | **Rolldown** (via Vite 8) | ✅ Nuevo | Reemplaza esbuild+Rollup. Un solo bundler dev+prod |
+| **JS Transforms** | **Oxc** (via Vite 8) | ✅ Nuevo | React Refresh sin Babel. Cold starts más rápidos |
+| **CSS Minifier** | **Lightning CSS** (via Vite 8) | ✅ Nuevo | CSS moderno, output más pequeño que esbuild |
 | **Runtime** | Cloudflare Workers | ✅ Cambia | 310+ PoPs, 0ms cold starts, reemplaza Vercel Serverless |
 | **Lenguaje** | TypeScript (strict mode) | ❌ Igual | Ecosistema estándar, Zod, Drizzle — todo TypeScript |
 | **UI Library** | React 19 | ❌ Igual | React Router v7 usa React — todos los componentes se reutilizan |
@@ -26,7 +31,7 @@
 | **Cache** | Cloudflare Workers KV | ✅ Nuevo | ISR / cache de datos en el edge |
 | **AI** | Gemini 2.0 Flash Lite | ❌ Igual | Llamada vía loader/action server-side |
 | **CDN + WAF** | Cloudflare Pro | ❌ Igual | Ya pagamos CF, ahora también es nuestro host |
-| **CI/CD** | GitHub Actions → wrangler deploy | ✅ Cambia | Wrangler CLI en vez de Vercel GitHub Integration |
+| **CI/CD** | GitHub Actions → Vite 8 build → wrangler deploy | ✅ Cambia | Build ~5-10s (Rolldown). Wrangler deploy al edge |
 | **Repo** | GitHub Teams | ❌ Igual | — |
 | **Fuentes** | Instrument Serif + Geist Sans + Geist Mono | ❌ Igual | Vía `@fontsource` o CDN |
 | **Validación** | Zod | ❌ Igual | Client + Server, en loaders/actions |
@@ -37,11 +42,30 @@
 
 ## Resumen de Migración
 
-| Categoría | Cantidad de técnologías |
+| Categoría | Cantidad de tecnologías |
 |---|---|
 | **Se mantiene sin cambios** | 16 |
-| **Cambia o se agrega** | 7 |
+| **Cambia o se agrega** | 11 (incluye Vite 8 toolchain) |
 | **Se elimina** | 1 (Vercel) |
+
+### 🆕 Vite 8 Toolchain Unificado
+
+```
+Vite 8 (orchestrador)
+  ├── Rolldown (bundler — Rust, reemplaza esbuild + Rollup)
+  ├── Oxc (transforms JS/TS — Rust, reemplaza Babel)
+  └── Lightning CSS (minifier CSS — Rust, reemplaza esbuild CSS)
+
+Todo mantenido por VoidZero (Evan You). Un solo equipo, un toolchain.
+```
+
+| Métrica | Antes (Vite 7) | Ahora (Vite 8) |
+|---|---|---|
+| **Production build** | ~60-90s | **~5-10s** (Rolldown) |
+| **Dev server start** | ~2-3s | **~500ms** |
+| **React Refresh** | Babel-based | **Babel-free** (Oxc) |
+| **CSS output** | esbuild | **Lightning CSS** (más pequeño) |
+| **Dev/Prod consistency** | ⚠️ Diferente bundler | ✅ **Mismo bundler** (Rolldown) |
 
 ---
 

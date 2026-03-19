@@ -144,11 +144,9 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
       <mesh ref={meshRef} geometry={geometry}>
         <meshStandardMaterial
           map={isSelected ? hullTexture : rustTexture}
-          color={isSelected ? "#1a5a9e" : "#1a3450"}
+          color={isSelected ? "#6aafe6" : "#4a6a8a"}
           roughness={0.65}
           metalness={0.5}
-          transparent
-          opacity={0.9}
         />
       </mesh>
       <lineSegments ref={edgeRef} geometry={edgeGeometry}>
@@ -184,11 +182,11 @@ function Superstructure({ onClick }: { onClick: () => void }) {
   return (
     <group ref={groupRef} position={[-5.5, -0.5, 0]} onClick={onClick}>
       {/* Main accommodation */}
-      <TexturedBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#5a5a6a" tex={deckTex} />
+      <TexturedBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#8a8a9a" tex={deckTex} />
       {/* Bridge */}
-      <TexturedBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#2a4a5a" tex={deckTex} />
+      <TexturedBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#5a7a8a" tex={deckTex} />
       {/* Funnel */}
-      <TexturedBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#3a3a3a" tex={deckTex} />
+      <TexturedBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#6a6a6a" tex={deckTex} />
       {/* Radar mast */}
       <mesh position={[0.2, 2.8, 0]}>
         <cylinderGeometry args={[0.02, 0.02, 1.2]} />
@@ -210,7 +208,7 @@ function TexturedBox({ size, position, color, tex }: { size: [number, number, nu
   return (
     <group position={position}>
       <mesh geometry={geometry}>
-        <meshStandardMaterial map={tex} color={color} roughness={0.7} metalness={0.6} transparent opacity={0.9} />
+        <meshStandardMaterial map={tex} color={color} roughness={0.6} metalness={0.5} />
       </mesh>
       <lineSegments geometry={edges}>
         <lineBasicMaterial color="#0EA5E9" transparent opacity={0.3} />
@@ -283,15 +281,15 @@ function EngineRoom() {
   return (
     <group position={[-3, -2.5, 0]}>
       {/* Main Engine — textured block */}
-      <TexturedBox size={[2, 1.8, 1.5]} position={[0, 0.9, 0]} color="#7a3020" tex={engineTex} />
+      <TexturedBox size={[2, 1.8, 1.5]} position={[0, 0.9, 0]} color="#aa5030" tex={engineTex} />
       <Float speed={2} rotationIntensity={0} floatIntensity={0.3}>
         <Text position={[0, 2.2, 0]} fontSize={0.15} color="#EF4444" anchorX="center">
           MOTOR PRINCIPAL
         </Text>
       </Float>
       {/* Generators — metallic */}
-      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, -0.5]} color="#2a5a6a" tex={floorTex} />
-      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, 0.5]} color="#2a5a6a" tex={floorTex} />
+      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, -0.5]} color="#5a8a9a" tex={floorTex} />
+      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, 0.5]} color="#5a8a9a" tex={floorTex} />
       <Text position={[1.8, 1.2, 0]} fontSize={0.1} color="#06B6D4" anchorX="center">
         GEN AUX
       </Text>

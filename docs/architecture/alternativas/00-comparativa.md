@@ -85,6 +85,7 @@
 | Capa | Actual | Alt. 1 | Alt. 2 | Alt. 3 |
 |---|---|---|---|---|
 | **Framework** | Next.js 16 | **React Router v7** | Next.js 16 | Next.js 16 |
+| **Build Tool** | Turbopack | **Vite 8 + Rolldown** | Turbopack | Turbopack |
 | **Runtime** | Vercel Serverless | **CF Workers** | Node.js Docker | Node.js Docker |
 | **DB** | Supabase PG | Supabase PG | **PG self-hosted** | **PG self-hosted** |
 | **Auth** | Supabase Auth | Supabase Auth | **Better Auth** | **Better Auth** |

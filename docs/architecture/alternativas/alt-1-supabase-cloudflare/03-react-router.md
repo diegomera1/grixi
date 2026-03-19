@@ -1,6 +1,6 @@
-# Alternativa 1 — React Router v7 (ex-Remix)
+# Alternativa 1 — React Router v7 + Vite 8 (ex-Remix)
 
-> Guía de migración de Next.js 16 App Router a React Router v7 framework mode sobre Cloudflare Workers.
+> Guía de migración de Next.js 16 App Router a React Router v7 framework mode (powered by Vite 8 + Rolldown) sobre Cloudflare Workers.
 
 ---
 
@@ -23,12 +23,14 @@ React Router v7 es la **evolución de Remix**. En 2024, Remix se fusionó oficia
 |---|---|---|
 | **Adapter** | `@opennextjs/cloudflare` (community) | ✅ **Adapter oficial Cloudflare (GA)** |
 | **Mantenido por** | Comunidad open-source | Cloudflare + Shopify |
+| **Build tool** | Turbopack (RSC + Webpack legacy) | ✅ **Vite 8 + Rolldown** (10-30x más rápido) |
 | **Acceso a CF APIs** | Limitado | ✅ Workers KV, D1, R2, Durable Objects nativos |
 | **Bundle size** | ~85KB base | ~60KB base |
 | **Data fetching** | Mezcla: RSC + fetch + use | Un solo pattern: `loader()` + `action()` |
 | **Forms** | react-hook-form + Server Actions | ✅ `<Form>` nativo, progressive enhancement |
 | **Error handling** | Requiere config manual | ✅ `ErrorBoundary` built-in por ruta |
 | **Streaming** | Soportado | ✅ `defer()` con streaming SSR |
+| **Dev/Prod parity** | ⚠️ Diferente comportamiento | ✅ **Mismo bundler** (Rolldown) en dev y prod |
 
 ---
 
@@ -191,12 +193,48 @@ app/
 
 | Fase | Tareas | Tiempo |
 |---|---|---|
-| **1. Setup** | Crear proyecto React Router v7 + wrangler.toml + Cloudflare config | 1 día |
+| **1. Setup** | Crear proyecto React Router v7 + Vite 8 + wrangler.toml + `@cloudflare/vite-plugin` | 1 día |
 | **2. Layout** | Migrar root layout, sidebar, topbar, theme provider | 2 días |
 | **3. Rutas Core** | Migrar rutas principales (dashboard, warehouses, compras) a loaders/actions | 3-4 días |
 | **4. Componentes** | Copiar componentes UI (son React, funcionan igual) | 1 día |
 | **5. Auth** | Configurar Supabase Auth con middleware de React Router | 1-2 días |
 | **6. Realtime** | Migrar suscripciones de Supabase Realtime | 1 día |
-| **7. Testing** | Verificar todas las rutas, forms, auth, realtime | 2-3 días |
-| **8. Deploy** | Configurar CI/CD con GitHub Actions + Wrangler | 1 día |
+| **7. Testing** | Verificar todas las rutas, forms, auth, realtime con **Vitest** | 2-3 días |
+| **8. Deploy** | CI/CD con GitHub Actions + Vite 8 build + Wrangler deploy | 1 día |
 | **Total** | | **~2-3 semanas** |
+
+---
+
+## 7. Vite 8 Config para Cloudflare
+
+```typescript
+// vite.config.ts
+import { reactRouter } from '@react-router/dev/vite'
+import { cloudflare } from '@cloudflare/vite-plugin'
+import { defineConfig } from 'vite'
+import tsconfigPaths from 'vite-tsconfig-paths'
+
+export default defineConfig({
+  plugins: [
+    cloudflare({ viteEnvironment: { name: 'ssr' } }),
+    reactRouter(),
+    tsconfigPaths(),  // Built-in en Vite 8 también via resolve.tsconfigPaths
+  ],
+  // Vite 8: Rolldown es el bundler por defecto
+  // No se necesita configuración extra para activar Rolldown
+})
+```
+
+```typescript
+// react-router.config.ts
+import type { Config } from '@react-router/dev/config'
+
+export default {
+  future: {
+    unstable_viteEnvironmentApi: true,  // Usa Cloudflare Vite plugin
+  },
+} satisfies Config
+```
+
+> [!NOTE]
+> **Void (VoidZero)** es una plataforma de deployment construida sobre Cloudflare Workers que automatiza el build + deploy de apps Vite. Actualmente en alpha — monitorear como alternativa futura a wrangler + GitHub Actions.

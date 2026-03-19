@@ -1,6 +1,6 @@
 # Alternativa 1 — Supabase + Cloudflare: Overview
 
-> **Filosofía:** Supabase como backend completo (DB, Auth, Realtime, Storage) + Cloudflare Workers como plataforma de ejecución del frontend. Se cambia Next.js por React Router v7 que tiene soporte **oficial GA** en Cloudflare.
+> **Filosofía:** Supabase como backend completo (DB, Auth, Realtime, Storage) + Cloudflare Workers como plataforma de ejecución del frontend. Se cambia Next.js por **React Router v7** (powered by **Vite 8 + Rolldown**) que tiene soporte **oficial GA** en Cloudflare.
 
 ---
 
@@ -25,13 +25,14 @@
 | Cloudflare Workers Paid | Ejecutar React Router v7 SSR | ~$5-10/mes |
 | Cloudflare Workers KV | Cache ISR/datos en el edge | ~$0-5/mes |
 | Drizzle ORM | Reemplaza queries complejas de supabase-js | $0 (open-source) |
+| Vite 8 + Rolldown | Build toolchain unificado (10-30x más rápido) | $0 (open-source) |
 
 ## Diagrama de Arquitectura
 
 ```
 Usuario → Cloudflare Edge (310+ PoPs globales)
   │
-  ├── Worker (React Router v7 SSR — adapter oficial)
+  ├── Worker (React Router v7 SSR — Vite 8 + Rolldown build)
   │     ├── Loaders → fetch a Supabase (PostgREST + Drizzle)
   │     ├── Actions → mutations en Supabase
   │     └── Middleware → auth check + tenant resolution

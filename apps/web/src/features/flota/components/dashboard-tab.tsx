@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowUp, ArrowDown, Minus, MapPin, Activity,
+  DollarSign, TrendingUp, Gauge,
 } from "lucide-react";
 import type { KPISnapshot, WorkOrder, Equipment, VesselZone } from "../types";
 import {
@@ -16,7 +17,7 @@ import type { useFlotaDemo } from "../hooks/use-flota-demo";
 const VesselMap = dynamic(() => import("./vessel-map").then((m) => m.VesselMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[350px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
+    <div className="flex h-[380px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
       <div className="flex flex-col items-center gap-2">
         <MapPin size={20} className="text-[var(--text-muted)] animate-pulse" />
         <span className="text-[10px] text-[var(--text-muted)]">Cargando mapa...</span>
@@ -47,11 +48,12 @@ export function DashboardTab({ kpis, workOrders, equipment, zones, events, readi
     count: equipment.filter((e) => e.zone_id === z.id).length,
     alerts: equipment.filter((e) => e.zone_id === z.id && e.status !== "operational").length,
   }));
+  const latestKPI = kpis[kpis.length - 1];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      {/* ── Live Readings — Realtime — Full Width ── */}
-      <div className="lg:col-span-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+    <div className="space-y-4">
+      {/* ── Row 1: Live Readings (Full Width) ── */}
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0EA5E9]">
             <Activity size={13} />
@@ -83,101 +85,156 @@ export function DashboardTab({ kpis, workOrders, equipment, zones, events, readi
         </div>
       </div>
 
-      {/* ── Live Event Feed ── */}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 max-h-[350px] overflow-hidden">
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-          Feed en Vivo
-        </h3>
-        <div className="space-y-1.5 overflow-y-auto max-h-[280px] pr-1">
-          <AnimatePresence initial={false}>
-            {events.slice(0, 10).map((evt) => (
-              <motion.div
-                key={evt.id}
-                initial={{ opacity: 0, height: 0, y: -10 }}
-                animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex items-start gap-2 rounded-md bg-[var(--bg-muted)]/30 px-2 py-1.5"
-              >
-                <span className="text-[10px] shrink-0 mt-0.5">{evt.icon}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-medium text-[var(--text-primary)] truncate">{evt.title}</p>
-                  <p className="text-[8px] text-[var(--text-muted)] truncate">{evt.detail}</p>
+      {/* ── Row 2: KPI Summary Cards + Event Feed ── */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* KPI Summary Cards */}
+        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            {
+              label: "Disponibilidad",
+              value: `${latestKPI?.availability_pct ?? 0}%`,
+              icon: Gauge,
+              color: "#10B981",
+              bg: "rgba(16,185,129,0.1)",
+            },
+            {
+              label: "MTBF",
+              value: `${latestKPI?.mtbf_hours ?? 0}h`,
+              icon: TrendingUp,
+              color: "#0EA5E9",
+              bg: "rgba(14,165,233,0.1)",
+            },
+            {
+              label: "MTTR",
+              value: `${latestKPI?.mttr_hours ?? 0}h`,
+              icon: Activity,
+              color: "#8B5CF6",
+              bg: "rgba(139,92,246,0.1)",
+            },
+            {
+              label: "Costo Mant. Mensual",
+              value: `$${((latestKPI?.maintenance_cost ?? 0) / 1000).toFixed(1)}k`,
+              icon: DollarSign,
+              color: "#F59E0B",
+              bg: "rgba(245,158,11,0.1)",
+            },
+          ].map((card) => (
+            <div
+              key={card.label}
+              className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 flex flex-col gap-2"
+            >
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg p-1.5" style={{ backgroundColor: card.bg }}>
+                  <card.icon size={14} style={{ color: card.color }} />
                 </div>
-                <span className="text-[7px] text-[var(--text-muted)] shrink-0">
-                  {evt.timestamp.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                  {card.label}
                 </span>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* ── Zones Overview ── */}
-      <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-          Zonas del Buque
-        </h3>
-        <div className="grid grid-cols-2 gap-2">
-          {zoneEquipmentCounts.filter((z) => z.count > 0).map((z) => (
-            <div key={z.id} className="flex items-center justify-between rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2.5">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ZONE_TYPE_COLORS[z.zone_type] }} />
-                <span className="text-[11px] font-medium text-[var(--text-primary)]">{z.name}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[var(--text-muted)]">{z.count} eq.</span>
-                {z.alerts > 0 && (
-                  <span className="rounded-full bg-red-500/10 px-1.5 py-0.5 text-[8px] font-bold text-red-500">
-                    {z.alerts} ⚠
-                  </span>
-                )}
-              </div>
+              <p className="text-2xl font-bold tabular-nums" style={{ color: card.color }}>
+                {card.value}
+              </p>
             </div>
           ))}
         </div>
+
+        {/* Event Feed */}
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 max-h-[250px] overflow-hidden">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            Feed en Vivo
+          </h3>
+          <div className="space-y-1.5 overflow-y-auto max-h-[180px] pr-1">
+            <AnimatePresence initial={false}>
+              {events.slice(0, 8).map((evt) => (
+                <motion.div
+                  key={evt.id}
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex items-start gap-2 rounded-md bg-[var(--bg-muted)]/30 px-2 py-1.5"
+                >
+                  <span className="text-[10px] shrink-0 mt-0.5">{evt.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-medium text-[var(--text-primary)] truncate">{evt.title}</p>
+                    <p className="text-[8px] text-[var(--text-muted)] truncate">{evt.detail}</p>
+                  </div>
+                  <span className="text-[7px] text-[var(--text-muted)] shrink-0">
+                    {evt.timestamp.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  </span>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
 
-      {/* ── Vessel Map — CesiumJS Globe ── */}
-      <div className="lg:col-span-3">
-        <VesselMap compact />
-      </div>
+      {/* ── Row 3: Map (Full Width) ── */}
+      <VesselMap compact />
 
-      {/* ── Active Work Orders ── */}
-      <div className="lg:col-span-2 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-          Órdenes de Trabajo Activas
-        </h3>
-        <div className="space-y-2">
-          {activeWOs.map((wo) => (
-            <div key={wo.id} className="flex items-center justify-between rounded-lg bg-[var(--bg-muted)]/50 p-3">
-              <div className="min-w-0 flex-1">
+      {/* ── Row 4: Zones + Active Work Orders ── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Zones Overview */}
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            Zonas del Buque
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            {zoneEquipmentCounts.filter((z) => z.count > 0).map((z) => (
+              <div key={z.id} className="flex items-center justify-between rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] text-[#0EA5E9]">{wo.wo_number}</span>
-                  <span
-                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-bold"
-                    style={{ backgroundColor: `${WO_PRIORITY_COLORS[wo.priority]}15`, color: WO_PRIORITY_COLORS[wo.priority] }}
-                  >
-                    {WO_PRIORITY_LABELS[wo.priority]}
-                  </span>
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ZONE_TYPE_COLORS[z.zone_type] }} />
+                  <span className="text-[11px] font-medium text-[var(--text-primary)]">{z.name}</span>
                 </div>
-                <p className="mt-0.5 text-xs font-medium text-[var(--text-primary)] truncate">{wo.title}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-[var(--text-muted)]">{z.count} eq.</span>
+                  {z.alerts > 0 && (
+                    <span className="rounded-full bg-red-500/10 px-1.5 py-0.5 text-[8px] font-bold text-red-500">
+                      {z.alerts} ⚠
+                    </span>
+                  )}
+                </div>
               </div>
-              <span
-                className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-medium"
-                style={{ backgroundColor: `${WO_STATUS_COLORS[wo.status]}15`, color: WO_STATUS_COLORS[wo.status] }}
-              >
-                {WO_STATUS_LABELS[wo.status]}
-              </span>
-            </div>
-          ))}
-          {activeWOs.length === 0 && (
-            <p className="py-6 text-center text-xs text-[var(--text-muted)]">No hay OT activas</p>
-          )}
+            ))}
+          </div>
+        </div>
+
+        {/* Active Work Orders */}
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            Órdenes de Trabajo Activas
+          </h3>
+          <div className="space-y-2">
+            {activeWOs.map((wo) => (
+              <div key={wo.id} className="flex items-center justify-between rounded-lg bg-[var(--bg-muted)]/50 p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-[#0EA5E9]">{wo.wo_number}</span>
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-bold"
+                      style={{ backgroundColor: `${WO_PRIORITY_COLORS[wo.priority]}15`, color: WO_PRIORITY_COLORS[wo.priority] }}
+                    >
+                      {WO_PRIORITY_LABELS[wo.priority]}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs font-medium text-[var(--text-primary)] truncate">{wo.title}</p>
+                </div>
+                <span
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-medium"
+                  style={{ backgroundColor: `${WO_STATUS_COLORS[wo.status]}15`, color: WO_STATUS_COLORS[wo.status] }}
+                >
+                  {WO_STATUS_LABELS[wo.status]}
+                </span>
+              </div>
+            ))}
+            {activeWOs.length === 0 && (
+              <p className="py-6 text-center text-xs text-[var(--text-muted)]">No hay OT activas</p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── KPI Trend — Full Width ── */}
-      <div className="lg:col-span-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
+      {/* ── Row 5: KPI Trend — Full Width ── */}
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
         <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
           Tendencia KPIs — Últimos 6 Meses
         </h3>
