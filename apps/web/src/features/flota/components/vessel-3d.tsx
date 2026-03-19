@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Float, Line, useTexture } from "@react-three/drei";
+import { OrbitControls, Text, Float, Line } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Maximize2, Minimize2, Layers, AlertTriangle,
@@ -11,6 +11,23 @@ import {
 import * as THREE from "three";
 import type { VesselZone, Equipment } from "../types";
 import { ZONE_TYPE_COLORS, EQUIPMENT_STATUS_COLORS } from "../types";
+// ── Imperative Texture Loader ───────────────────
+// React compiler strips mutations on hook returns (useTexture).
+// This hook loads textures inside useEffect callbacks which the compiler cannot touch.
+function useImperativeTexture(url: string, repeatX = 1, repeatY = 1): THREE.Texture | null {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    loader.load(url, (tex) => {
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repeatX, repeatY);
+      tex.needsUpdate = true;
+      setTexture(tex);
+    });
+  }, [url, repeatX, repeatY]);
+  return texture;
+}
 
 // ── Holographic Ship Scene ──────────────────────
 
@@ -93,24 +110,8 @@ function ScanLine() {
 function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () => void }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const edgeRef = useRef<THREE.LineSegments>(null);
-  const hullTexRaw = useTexture("/fleet/texture-hull-paint.png");
-  const rustTexRaw = useTexture("/fleet/texture-rust-metal.png");
-
-  // Clone textures so we can configure them without React compiler stripping mutations
-  const hullTexture = useMemo(() => {
-    const t = hullTexRaw.clone();
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(4, 2);
-    t.needsUpdate = true;
-    return t;
-  }, [hullTexRaw]);
-  const rustTexture = useMemo(() => {
-    const t = rustTexRaw.clone();
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(3, 1.5);
-    t.needsUpdate = true;
-    return t;
-  }, [rustTexRaw]);
+  const hullTexture = useImperativeTexture("/fleet/texture-hull-paint.png", 4, 2);
+  const rustTexture = useImperativeTexture("/fleet/texture-rust-metal.png", 3, 1.5);
 
   useFrame(({ clock }) => {
     if (edgeRef.current) {
@@ -121,7 +122,6 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
 
   const hullShape = useMemo(() => {
     const shape = new THREE.Shape();
-    // Tanker hull outline (top-down)
     shape.moveTo(-8, -1.5);
     shape.lineTo(-7.5, -1.8);
     shape.lineTo(5, -1.8);
@@ -141,14 +141,16 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
   const geometry = useMemo(() => new THREE.ExtrudeGeometry(hullShape, extrudeSettings), [hullShape, extrudeSettings]);
   const edgeGeometry = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
 
+  const activeTexture = isSelected ? hullTexture : rustTexture;
+
   return (
     <group onClick={onClick} position={[0, -2.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
       <mesh ref={meshRef} geometry={geometry}>
         <meshStandardMaterial
-          map={isSelected ? hullTexture : rustTexture}
-          color={isSelected ? "#6aafe6" : "#4a6a8a"}
-          roughness={0.65}
-          metalness={0.5}
+          map={activeTexture}
+          color={isSelected ? "#8ac0f0" : "#6a8aaa"}
+          roughness={0.6}
+          metalness={0.4}
         />
       </mesh>
       <lineSegments ref={edgeRef} geometry={edgeGeometry}>
@@ -173,24 +175,13 @@ function Superstructure({ onClick }: { onClick: () => void }) {
     }
   });
 
-  const deckTexRaw = useTexture("/fleet/texture-deck-surface.png");
-  const deckTex = useMemo(() => {
-    const t = deckTexRaw.clone();
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(2, 2);
-    t.needsUpdate = true;
-    return t;
-  }, [deckTexRaw]);
+  const deckTex = useImperativeTexture("/fleet/texture-deck-surface.png", 2, 2);
 
   return (
     <group ref={groupRef} position={[-5.5, -0.5, 0]} onClick={onClick}>
-      {/* Main accommodation */}
       <TexturedBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#8a8a9a" tex={deckTex} />
-      {/* Bridge */}
       <TexturedBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#5a7a8a" tex={deckTex} />
-      {/* Funnel */}
       <TexturedBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#6a6a6a" tex={deckTex} />
-      {/* Radar mast */}
       <mesh position={[0.2, 2.8, 0]}>
         <cylinderGeometry args={[0.02, 0.02, 1.2]} />
         <meshStandardMaterial color="#0EA5E9" metalness={0.9} roughness={0.2} />
@@ -204,7 +195,7 @@ function Superstructure({ onClick }: { onClick: () => void }) {
 }
 
 // Textured box helper (solid with texture)
-function TexturedBox({ size, position, color, tex }: { size: [number, number, number]; position: [number, number, number]; color: string; tex: THREE.Texture }) {
+function TexturedBox({ size, position, color, tex }: { size: [number, number, number]; position: [number, number, number]; color: string; tex: THREE.Texture | null }) {
   const geometry = useMemo(() => new THREE.BoxGeometry(...size), [size]);
   const edges = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
 
@@ -266,22 +257,8 @@ function CargoTanks() {
 
 // Engine room equipment with textures
 function EngineRoom() {
-  const engineTexRaw = useTexture("/fleet/texture-engine-metal.png");
-  const floorTexRaw = useTexture("/fleet/texture-floor-grating.png");
-  const engineTex = useMemo(() => {
-    const t = engineTexRaw.clone();
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(2, 2);
-    t.needsUpdate = true;
-    return t;
-  }, [engineTexRaw]);
-  const floorTex = useMemo(() => {
-    const t = floorTexRaw.clone();
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(1, 1);
-    t.needsUpdate = true;
-    return t;
-  }, [floorTexRaw]);
+  const engineTex = useImperativeTexture("/fleet/texture-engine-metal.png", 2, 2);
+  const floorTex = useImperativeTexture("/fleet/texture-floor-grating.png", 1, 1);
 
   return (
     <group position={[-3, -2.5, 0]}>

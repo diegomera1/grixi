@@ -1,9 +1,25 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Float, useTexture } from "@react-three/drei";
+import { OrbitControls, Text, Float } from "@react-three/drei";
 import * as THREE from "three";
+
+// Imperative texture loader — bypasses React compiler mutation stripping
+function useImperativeTexture(url: string, repeatX = 1, repeatY = 1): THREE.Texture | null {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    loader.load(url, (tex) => {
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repeatX, repeatY);
+      tex.needsUpdate = true;
+      setTexture(tex);
+    });
+  }, [url, repeatX, repeatY]);
+  return texture;
+}
 import type { Equipment } from "../types";
 import { EQUIPMENT_STATUS_COLORS } from "../types";
 
@@ -30,24 +46,8 @@ function InteriorGrid() {
 // Room walls with textures
 function RoomStructure() {
   const wireRef = useRef<THREE.Mesh>(null);
-  const metalTexRaw = useTexture("/fleet/texture-engine-metal.png");
-  const floorTexRaw = useTexture("/fleet/texture-floor-grating.png");
-
-  // Clone textures to bypass React compiler mutation stripping
-  const metalTexture = useMemo(() => {
-    const t = metalTexRaw.clone();
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(3, 2);
-    t.needsUpdate = true;
-    return t;
-  }, [metalTexRaw]);
-  const floorTexture = useMemo(() => {
-    const t = floorTexRaw.clone();
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(6, 4);
-    t.needsUpdate = true;
-    return t;
-  }, [floorTexRaw]);
+  const metalTexture = useImperativeTexture("/fleet/texture-engine-metal.png", 3, 2);
+  const floorTexture = useImperativeTexture("/fleet/texture-floor-grating.png", 6, 4);
 
   useFrame(({ clock }) => {
     if (wireRef.current) {
