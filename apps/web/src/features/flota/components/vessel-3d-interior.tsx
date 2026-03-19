@@ -30,15 +30,24 @@ function InteriorGrid() {
 // Room walls with textures
 function RoomStructure() {
   const wireRef = useRef<THREE.Mesh>(null);
-  const metalTexture = useTexture("/fleet/texture-engine-metal.png");
-  const floorTexture = useTexture("/fleet/texture-floor-grating.png");
+  const metalTexRaw = useTexture("/fleet/texture-engine-metal.png");
+  const floorTexRaw = useTexture("/fleet/texture-floor-grating.png");
 
-  // Configure texture wrapping
-  [metalTexture, floorTexture].forEach((t) => {
+  // Clone textures to bypass React compiler mutation stripping
+  const metalTexture = useMemo(() => {
+    const t = metalTexRaw.clone();
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  });
-  metalTexture.repeat.set(3, 2);
-  floorTexture.repeat.set(6, 4);
+    t.repeat.set(3, 2);
+    t.needsUpdate = true;
+    return t;
+  }, [metalTexRaw]);
+  const floorTexture = useMemo(() => {
+    const t = floorTexRaw.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(6, 4);
+    t.needsUpdate = true;
+    return t;
+  }, [floorTexRaw]);
 
   useFrame(({ clock }) => {
     if (wireRef.current) {

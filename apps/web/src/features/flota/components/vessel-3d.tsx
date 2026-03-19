@@ -96,18 +96,20 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
   const hullTexRaw = useTexture("/fleet/texture-hull-paint.png");
   const rustTexRaw = useTexture("/fleet/texture-rust-metal.png");
 
-  // Configure textures — Three.js requires direct prop mutation
+  // Clone textures so we can configure them without React compiler stripping mutations
   const hullTexture = useMemo(() => {
-    // eslint-disable-next-line react-compiler/react-compiler
-    hullTexRaw.wrapS = hullTexRaw.wrapT = THREE.RepeatWrapping;
-    hullTexRaw.repeat.set(4, 2);
-    return hullTexRaw;
+    const t = hullTexRaw.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(4, 2);
+    t.needsUpdate = true;
+    return t;
   }, [hullTexRaw]);
   const rustTexture = useMemo(() => {
-    // eslint-disable-next-line react-compiler/react-compiler
-    rustTexRaw.wrapS = rustTexRaw.wrapT = THREE.RepeatWrapping;
-    rustTexRaw.repeat.set(3, 1.5);
-    return rustTexRaw;
+    const t = rustTexRaw.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(3, 1.5);
+    t.needsUpdate = true;
+    return t;
   }, [rustTexRaw]);
 
   useFrame(({ clock }) => {
@@ -173,10 +175,11 @@ function Superstructure({ onClick }: { onClick: () => void }) {
 
   const deckTexRaw = useTexture("/fleet/texture-deck-surface.png");
   const deckTex = useMemo(() => {
-    // eslint-disable-next-line react-compiler/react-compiler
-    deckTexRaw.wrapS = deckTexRaw.wrapT = THREE.RepeatWrapping;
-    deckTexRaw.repeat.set(2, 2);
-    return deckTexRaw;
+    const t = deckTexRaw.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(2, 2);
+    t.needsUpdate = true;
+    return t;
   }, [deckTexRaw]);
 
   return (
@@ -266,16 +269,18 @@ function EngineRoom() {
   const engineTexRaw = useTexture("/fleet/texture-engine-metal.png");
   const floorTexRaw = useTexture("/fleet/texture-floor-grating.png");
   const engineTex = useMemo(() => {
-    // eslint-disable-next-line react-compiler/react-compiler
-    engineTexRaw.wrapS = engineTexRaw.wrapT = THREE.RepeatWrapping;
-    engineTexRaw.repeat.set(2, 2);
-    return engineTexRaw;
+    const t = engineTexRaw.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(2, 2);
+    t.needsUpdate = true;
+    return t;
   }, [engineTexRaw]);
   const floorTex = useMemo(() => {
-    // eslint-disable-next-line react-compiler/react-compiler
-    floorTexRaw.wrapS = floorTexRaw.wrapT = THREE.RepeatWrapping;
-    floorTexRaw.repeat.set(1, 1);
-    return floorTexRaw;
+    const t = floorTexRaw.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(1, 1);
+    t.needsUpdate = true;
+    return t;
   }, [floorTexRaw]);
 
   return (
