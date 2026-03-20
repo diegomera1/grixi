@@ -2,7 +2,7 @@
 
 import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Float, Environment } from "@react-three/drei";
+import { OrbitControls, Text, Float } from "@react-three/drei";
 import * as THREE from "three";
 import type { Equipment } from "../types";
 import { EQUIPMENT_STATUS_COLORS } from "../types";
@@ -126,7 +126,7 @@ function MainEngine() {
       </mesh>
       {/* Label */}
       <Float speed={2} rotationIntensity={0} floatIntensity={0.2}>
-        <Text position={[0, 2.6, 0]} fontSize={0.25} color="#0EA5E9" anchorX="center" font="/fonts/GeistSans-Bold.woff">
+        <Text position={[0, 2.6, 0]} fontSize={0.25} color="#0EA5E9" anchorX="center">
           MOTOR PRINCIPAL
         </Text>
         <Text position={[0, 2.2, 0]} fontSize={0.15} color="#10B981" anchorX="center">
@@ -233,13 +233,12 @@ function EquipmentStatusLEDs({ equipment }: { equipment: Equipment[] }) {
 function InteriorScene({ equipment }: InteriorProps) {
   return (
     <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[5, 10, 5]} intensity={1.0} color="#ffffff" castShadow />
-      <directionalLight position={[-5, 8, -3]} intensity={0.4} color="#e8dcd0" />
-      <pointLight position={[0, 3, 0]} intensity={0.6} color="#0EA5E9" />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[5, 10, 5]} intensity={1.2} color="#ffffff" castShadow />
+      <directionalLight position={[-5, 8, -3]} intensity={0.5} color="#e8dcd0" />
+      <pointLight position={[0, 3, 0]} intensity={0.5} color="#0EA5E9" />
       <pointLight position={[-5, 1, 0]} intensity={0.3} color="#EF4444" />
-
-      <Environment preset="warehouse" />
+      <hemisphereLight args={["#b1e1ff", "#1a2535", 0.5]} />
 
       <GridFloor />
       <RoomStructure />

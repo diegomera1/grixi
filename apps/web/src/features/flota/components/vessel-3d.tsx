@@ -2,7 +2,7 @@
 
 import { useRef, useState, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Float, Environment } from "@react-three/drei";
+import { OrbitControls, Text, Float } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Maximize2, Minimize2, Layers, AlertTriangle,
@@ -241,7 +241,7 @@ function ZoneLabels({ zones, selectedZone, onSelect }: {
               fontSize={isActive ? 0.14 : 0.1}
               color={isActive ? "#ffffff" : color}
               anchorX="center"
-              font="/fonts/GeistSans-Bold.woff"
+
             >
               {zone.name}
             </Text>
@@ -294,13 +294,11 @@ function VesselScene({ zones, equipment, selectedZone, onSelectZone }: {
   return (
     <>
       {/* Lighting — bright and warm */}
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[10, 15, 10]} intensity={1.2} color="#ffffff" castShadow />
-      <directionalLight position={[-8, 8, -5]} intensity={0.5} color="#e8dcd0" />
-      <pointLight position={[0, 5, 0]} intensity={0.3} color="#ffffff" />
-
-      {/* Environment reflections */}
-      <Environment preset="city" />
+      <ambientLight intensity={1.0} />
+      <directionalLight position={[10, 15, 10]} intensity={1.5} color="#ffffff" castShadow />
+      <directionalLight position={[-8, 8, -5]} intensity={0.6} color="#e8dcd0" />
+      <pointLight position={[0, 5, 0]} intensity={0.4} color="#ffffff" />
+      <hemisphereLight args={["#b1e1ff", "#1a2a3a", 0.6]} />
 
       {/* Ocean */}
       <OceanPlane />
