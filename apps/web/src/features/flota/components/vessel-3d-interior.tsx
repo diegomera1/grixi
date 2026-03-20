@@ -60,12 +60,12 @@ function RoomStructure() {
       {/* Floor with grating texture */}
       <mesh position={[0, -3, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[18, 12]} />
-        <meshStandardMaterial map={floorTexture} roughness={0.8} metalness={0.6} color="#1a2535" />
+        <meshStandardMaterial key={floorTexture?.id ?? "floor-no"} map={floorTexture} roughness={0.8} metalness={0.6} color="#ffffff" />
       </mesh>
       {/* Room wireframe with metal */}
       <mesh ref={wireRef} position={[0, 0.5, 0]}>
         <boxGeometry args={[18, 7, 12]} />
-        <meshStandardMaterial map={metalTexture} transparent opacity={0.15} roughness={0.9} metalness={0.7} emissive="#0EA5E9" emissiveIntensity={0.05} side={THREE.BackSide} />
+        <meshStandardMaterial key={metalTexture?.id ?? "wall-no"} map={metalTexture} transparent opacity={0.4} roughness={0.7} metalness={0.5} color="#ffffff" side={THREE.BackSide} />
       </mesh>
       {/* Ceiling pipes */}
       {[-4, 0, 4].map((x) => (
@@ -92,19 +92,19 @@ function MainEngine({ onClick }: { onClick?: () => void }) {
       {/* Engine block */}
       <mesh ref={meshRef}>
         <boxGeometry args={[5, 4, 3]} />
-        <meshBasicMaterial color="#0EA5E9" wireframe transparent opacity={0.2} />
+        <meshStandardMaterial color="#3a4a5a" roughness={0.7} metalness={0.5} />
       </mesh>
       {/* Engine cylinders */}
       {[-1.5, -0.5, 0.5, 1.5].map((x) => (
         <mesh key={x} position={[x, 1.5, 0]}>
           <cylinderGeometry args={[0.3, 0.3, 1.2, 8]} />
-          <meshBasicMaterial color="#10B981" transparent opacity={0.25} />
+          <meshStandardMaterial color="#4a6a5a" roughness={0.5} metalness={0.6} />
         </mesh>
       ))}
       {/* Crankshaft */}
       <mesh position={[0, -1.8, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.15, 0.15, 5, 8]} />
-        <meshBasicMaterial color="#F59E0B" transparent opacity={0.3} />
+        <meshStandardMaterial color="#8a7a3a" roughness={0.4} metalness={0.7} />
       </mesh>
       {/* Label */}
       <Text position={[0, 2.8, 0]} fontSize={0.3} color="#0EA5E9" anchorX="center">

@@ -72,6 +72,7 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
     <group onClick={onClick} position={[0, -2.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
       <mesh ref={meshRef} geometry={geometry}>
         <meshStandardMaterial
+          key={activeTexture?.id ?? "hull-no-tex"}
           map={activeTexture}
           color={"#ffffff"}
           roughness={0.55}
@@ -126,7 +127,7 @@ function TexturedBox({ size, position, color, tex }: { size: [number, number, nu
   return (
     <group position={position}>
       <mesh geometry={geometry}>
-        <meshStandardMaterial map={tex} color={color} roughness={0.55} metalness={0.3} />
+        <meshStandardMaterial key={tex?.id ?? "box-no-tex"} map={tex} color={color} roughness={0.55} metalness={0.3} />
       </mesh>
     </group>
   );
