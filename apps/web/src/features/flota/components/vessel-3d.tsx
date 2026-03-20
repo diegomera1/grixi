@@ -29,82 +29,7 @@ function useImperativeTexture(url: string, repeatX = 1, repeatY = 1): THREE.Text
   return texture;
 }
 
-// ── Holographic Ship Scene ──────────────────────
-
-function HolographicGrid() {
-  const gridRef = useRef<THREE.GridHelper>(null);
-
-  useFrame(({ clock }) => {
-    if (gridRef.current) {
-      gridRef.current.position.y = -4;
-      (gridRef.current.material as THREE.Material).opacity = 0.15 + Math.sin(clock.elapsedTime * 0.5) * 0.05;
-    }
-  });
-
-  return (
-    <gridHelper
-      ref={gridRef}
-      args={[40, 40, "#0EA5E9", "#0EA5E9"]}
-      position={[0, -4, 0]}
-    />
-  );
-}
-
-// Floating particles for holographic effect
-function HoloParticles() {
-  const points = useRef<THREE.Points>(null);
-  const positions = useMemo(() => {
-    // Deterministic pseudo-random for ESLint purity
-    let seed = 7;
-    const rand = () => { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; };
-    const arr = new Float32Array(300 * 3);
-    for (let i = 0; i < 300; i++) {
-      arr[i * 3] = (rand() - 0.5) * 30;
-      arr[i * 3 + 1] = (rand() - 0.5) * 15;
-      arr[i * 3 + 2] = (rand() - 0.5) * 20;
-    }
-    return arr;
-  }, []);
-
-  useFrame(({ clock }) => {
-    if (points.current) {
-      points.current.rotation.y = clock.elapsedTime * 0.02;
-      (points.current.material as THREE.PointsMaterial).opacity =
-        0.3 + Math.sin(clock.elapsedTime) * 0.1;
-    }
-  });
-
-  return (
-    <points ref={points}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-      </bufferGeometry>
-      <pointsMaterial size={0.04} color="#0EA5E9" transparent opacity={0.3} sizeAttenuation />
-    </points>
-  );
-}
-
-// Scanline effect plane
-function ScanLine() {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    if (meshRef.current) {
-      const y = ((clock.elapsedTime * 0.8) % 8) - 4;
-      meshRef.current.position.y = y;
-    }
-  });
-
-  return (
-    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[30, 0.03]} />
-      <meshBasicMaterial color="#0EA5E9" transparent opacity={0.4} />
-    </mesh>
-  );
-}
+// ── Vessel 3D Scene ──────────────────────
 
 // Hull shape with metal texture
 function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () => void }) {
@@ -148,13 +73,13 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
       <mesh ref={meshRef} geometry={geometry}>
         <meshStandardMaterial
           map={activeTexture}
-          color={isSelected ? "#8ac0f0" : "#6a8aaa"}
-          roughness={0.6}
-          metalness={0.4}
+          color={"#ffffff"}
+          roughness={0.55}
+          metalness={0.3}
         />
       </mesh>
       <lineSegments ref={edgeRef} geometry={edgeGeometry}>
-        <lineBasicMaterial color="#0EA5E9" transparent opacity={0.6} />
+        <lineBasicMaterial color="#1a3a5a" transparent opacity={0.15} />
       </lineSegments>
     </group>
   );
@@ -179,9 +104,9 @@ function Superstructure({ onClick }: { onClick: () => void }) {
 
   return (
     <group ref={groupRef} position={[-5.5, -0.5, 0]} onClick={onClick}>
-      <TexturedBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#8a8a9a" tex={deckTex} />
-      <TexturedBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#5a7a8a" tex={deckTex} />
-      <TexturedBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#6a6a6a" tex={deckTex} />
+      <TexturedBox size={[2, 2.5, 2.8]} position={[0, 0, 0]} color="#ffffff" tex={deckTex} />
+      <TexturedBox size={[1.5, 1, 3]} position={[0.2, 1.7, 0]} color="#ffffff" tex={deckTex} />
+      <TexturedBox size={[0.8, 1.5, 0.8]} position={[-0.8, 1.5, 0]} color="#dddddd" tex={deckTex} />
       <mesh position={[0.2, 2.8, 0]}>
         <cylinderGeometry args={[0.02, 0.02, 1.2]} />
         <meshStandardMaterial color="#0EA5E9" metalness={0.9} roughness={0.2} />
@@ -197,16 +122,12 @@ function Superstructure({ onClick }: { onClick: () => void }) {
 // Textured box helper (solid with texture)
 function TexturedBox({ size, position, color, tex }: { size: [number, number, number]; position: [number, number, number]; color: string; tex: THREE.Texture | null }) {
   const geometry = useMemo(() => new THREE.BoxGeometry(...size), [size]);
-  const edges = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
 
   return (
     <group position={position}>
       <mesh geometry={geometry}>
-        <meshStandardMaterial map={tex} color={color} roughness={0.6} metalness={0.5} />
+        <meshStandardMaterial map={tex} color={color} roughness={0.55} metalness={0.3} />
       </mesh>
-      <lineSegments geometry={edges}>
-        <lineBasicMaterial color="#0EA5E9" transparent opacity={0.3} />
-      </lineSegments>
     </group>
   );
 }
@@ -263,15 +184,15 @@ function EngineRoom() {
   return (
     <group position={[-3, -2.5, 0]}>
       {/* Main Engine — textured block */}
-      <TexturedBox size={[2, 1.8, 1.5]} position={[0, 0.9, 0]} color="#aa5030" tex={engineTex} />
+      <TexturedBox size={[2, 1.8, 1.5]} position={[0, 0.9, 0]} color="#ffffff" tex={engineTex} />
       <Float speed={2} rotationIntensity={0} floatIntensity={0.3}>
         <Text position={[0, 2.2, 0]} fontSize={0.15} color="#EF4444" anchorX="center">
           MOTOR PRINCIPAL
         </Text>
       </Float>
       {/* Generators — metallic */}
-      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, -0.5]} color="#5a8a9a" tex={floorTex} />
-      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, 0.5]} color="#5a8a9a" tex={floorTex} />
+      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, -0.5]} color="#ffffff" tex={floorTex} />
+      <TexturedBox size={[0.8, 0.7, 0.6]} position={[1.8, 0.5, 0.5]} color="#ffffff" tex={floorTex} />
       <Text position={[1.8, 1.2, 0]} fontSize={0.1} color="#06B6D4" anchorX="center">
         GEN AUX
       </Text>
@@ -354,13 +275,10 @@ function VesselScene({ zones, equipment, selectedZone, onSelectZone }: {
 }) {
   return (
     <>
-      <ambientLight intensity={0.3} />
-      <pointLight position={[10, 10, 10]} intensity={0.5} color="#0EA5E9" />
-      <pointLight position={[-10, -5, -10]} intensity={0.3} color="#8B5CF6" />
-
-      <HolographicGrid />
-      <HoloParticles />
-      <ScanLine />
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[10, 15, 10]} intensity={1.5} color="#ffffff" castShadow />
+      <directionalLight position={[-5, 8, -5]} intensity={0.6} color="#e8e0d0" />
+      <pointLight position={[0, 5, 0]} intensity={0.4} color="#ffffff" />
 
       <group position={[0, 0, 0]}>
         <ShipHull isSelected={!selectedZone} onClick={() => onSelectZone("")} />
@@ -412,8 +330,8 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
       >
-        <color attach="background" args={["#030712"]} />
-        <fog attach="fog" args={["#030712", 20, 40]} />
+        <color attach="background" args={["#1a2a3a"]} />
+        <fog attach="fog" args={["#1a2a3a", 30, 60]} />
         <VesselScene
           zones={zones}
           equipment={equipment}
@@ -426,8 +344,8 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-[#030712]/90 to-transparent">
         <div className="flex items-center gap-2">
           <Compass size={14} className="text-[#0EA5E9]" />
-          <span className="text-xs font-bold text-[#0EA5E9]">HOLOGRAPHIC VIEW</span>
-          <span className="text-[10px] text-[var(--text-muted)]">M/V GRIXI MARINER</span>
+          <span className="text-xs font-bold text-[#0EA5E9]">VISTA 3D</span>
+          <span className="text-[10px] text-white/50">M/V GRIXI MARINER</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1 rounded-full bg-[#10B981]/10 px-2 py-0.5 text-[9px] font-bold text-[#10B981]">
