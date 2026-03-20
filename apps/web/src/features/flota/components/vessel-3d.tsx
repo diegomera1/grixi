@@ -1,8 +1,13 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Float } from "@react-three/drei";
+import React, {
+  useRef,
+  useState,
+  useMemo,
+  Suspense,
+} from "react";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { OrbitControls, Text, Html } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Maximize2, Minimize2, Layers, AlertTriangle,
@@ -12,36 +17,59 @@ import * as THREE from "three";
 import type { VesselZone, Equipment } from "../types";
 import { ZONE_TYPE_COLORS, EQUIPMENT_STATUS_COLORS } from "../types";
 
-// ── Animated Ocean Plane ────────────────────────
+// ─── Texture Hook (same pattern as warehouse-3d.tsx) ────
 
-function OceanPlane() {
+function useVesselTextures() {
+  const [hull, deck, metal] = useLoader(THREE.TextureLoader, [
+    "/textures/metal.png",
+    "/textures/concrete.png",
+    "/textures/wall.png",
+  ]);
+
+  useMemo(() => {
+    hull.wrapS = THREE.RepeatWrapping;
+    hull.wrapT = THREE.RepeatWrapping;
+    hull.repeat.set(6, 3);
+    deck.wrapS = THREE.RepeatWrapping;
+    deck.wrapT = THREE.RepeatWrapping;
+    deck.repeat.set(4, 2);
+    metal.wrapS = THREE.RepeatWrapping;
+    metal.wrapT = THREE.RepeatWrapping;
+    metal.repeat.set(2, 2);
+  }, [hull, deck, metal]);
+
+  return { hull, deck, metal };
+}
+
+// ─── Ocean Surface ──────────────────────────────────────
+
+function OceanSurface() {
   const meshRef = useRef<THREE.Mesh>(null);
-
   useFrame(({ clock }) => {
     if (meshRef.current) {
-      meshRef.current.position.y = -3.3 + Math.sin(clock.elapsedTime * 0.5) * 0.05;
+      meshRef.current.position.y = -3.2 + Math.sin(clock.elapsedTime * 0.4) * 0.06;
     }
   });
 
   return (
-    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -3.3, 0]}>
-      <planeGeometry args={[60, 60]} />
-      <meshPhysicalMaterial
-        color="#0a2a4a"
-        roughness={0.2}
-        metalness={0.1}
-        transparent
-        opacity={0.6}
-      />
+    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -3.2, 0]}>
+      <planeGeometry args={[80, 80]} />
+      <meshStandardMaterial color="#0a2a4a" roughness={0.3} metalness={0.1} transparent opacity={0.7} />
     </mesh>
   );
 }
 
-// ── Ship Hull ───────────────────────────────────
+// ─── Ship Hull ──────────────────────────────────────────
 
-function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () => void }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-
+const ShipHull = React.memo(function ShipHull({
+  textures,
+  isSelected,
+  onClick,
+}: {
+  textures: ReturnType<typeof useVesselTextures>;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
   const hullShape = useMemo(() => {
     const shape = new THREE.Shape();
     shape.moveTo(-8, -1.5);
@@ -64,73 +92,77 @@ function ShipHull({ isSelected, onClick }: { isSelected: boolean; onClick: () =>
 
   return (
     <group onClick={onClick} position={[0, -2.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
-      {/* Main hull */}
-      <mesh ref={meshRef} geometry={geometry}>
-        <meshPhysicalMaterial
-          color={isSelected ? "#3a6a9a" : "#2a4a6a"}
-          roughness={0.4}
+      <mesh geometry={geometry} castShadow>
+        <meshStandardMaterial
+          map={textures.hull}
+          color={isSelected ? "#4a7aaa" : "#3a5a7a"}
+          roughness={0.6}
           metalness={0.3}
-          clearcoat={0.3}
-          clearcoatRoughness={0.4}
         />
       </mesh>
       {/* Waterline stripe */}
-      <mesh position={[1, 0, 0.3]} rotation={[0, 0, 0]}>
-        <boxGeometry args={[16, 3.4, 0.05]} />
-        <meshStandardMaterial color="#8B2020" roughness={0.6} />
+      <mesh position={[1, 0, 0.3]}>
+        <boxGeometry args={[16, 3.4, 0.06]} />
+        <meshStandardMaterial color="#8B2020" roughness={0.7} />
       </mesh>
     </group>
   );
-}
+});
 
-// ── Superstructure ──────────────────────────────
+// ─── Superstructure ─────────────────────────────────────
 
-function Superstructure({ onClick }: { onClick: () => void }) {
+const SuperstructureBlock = React.memo(function SuperstructureBlock({
+  textures,
+  onClick,
+}: {
+  textures: ReturnType<typeof useVesselTextures>;
+  onClick: () => void;
+}) {
   return (
     <group position={[-5.5, -0.5, 0]} onClick={onClick}>
-      {/* Accommodation block */}
-      <mesh position={[0, 0, 0]}>
+      {/* Accommodation */}
+      <mesh castShadow>
         <boxGeometry args={[2, 2.5, 2.8]} />
-        <meshPhysicalMaterial color="#5a6a7a" roughness={0.3} metalness={0.4} clearcoat={0.2} />
+        <meshStandardMaterial map={textures.metal} color="#7a8a9a" roughness={0.5} metalness={0.4} />
       </mesh>
       {/* Bridge */}
-      <mesh position={[0.2, 1.7, 0]}>
+      <mesh position={[0.2, 1.7, 0]} castShadow>
         <boxGeometry args={[1.5, 1, 3]} />
-        <meshPhysicalMaterial color="#6a7a8a" roughness={0.3} metalness={0.4} clearcoat={0.3} />
+        <meshStandardMaterial map={textures.metal} color="#8a9aaa" roughness={0.4} metalness={0.4} />
       </mesh>
-      {/* Bridge windows — emissive strip */}
+      {/* Bridge windows */}
       <mesh position={[1.0, 1.7, 0]}>
-        <boxGeometry args={[0.05, 0.4, 2.6]} />
+        <boxGeometry args={[0.06, 0.4, 2.6]} />
         <meshStandardMaterial color="#0EA5E9" emissive="#0EA5E9" emissiveIntensity={0.5} />
       </mesh>
       {/* Funnel */}
-      <mesh position={[-0.8, 1.8, 0]}>
+      <mesh position={[-0.8, 1.8, 0]} castShadow>
         <boxGeometry args={[0.8, 1.8, 0.8]} />
-        <meshPhysicalMaterial color="#3a3a3a" roughness={0.5} metalness={0.3} />
+        <meshStandardMaterial color="#3a3a3a" roughness={0.5} metalness={0.3} />
       </mesh>
       {/* Funnel company stripe */}
       <mesh position={[-0.8, 2.2, 0]}>
-        <boxGeometry args={[0.85, 0.3, 0.85]} />
+        <boxGeometry args={[0.86, 0.3, 0.86]} />
         <meshStandardMaterial color="#0EA5E9" emissive="#0EA5E9" emissiveIntensity={0.3} />
       </mesh>
       {/* Radar mast */}
       <mesh position={[0.2, 2.8, 0]}>
-        <cylinderGeometry args={[0.02, 0.02, 1.2]} />
-        <meshStandardMaterial color="#aaaaaa" metalness={0.8} roughness={0.2} />
+        <cylinderGeometry args={[0.025, 0.025, 1.2]} />
+        <meshStandardMaterial color="#aaa" metalness={0.7} roughness={0.3} />
       </mesh>
       {/* Radar disc */}
       <mesh position={[0.2, 3.3, 0]}>
         <cylinderGeometry args={[0.3, 0.3, 0.05]} />
-        <meshStandardMaterial color="#cccccc" metalness={0.7} roughness={0.3} />
+        <meshStandardMaterial color="#ccc" metalness={0.6} roughness={0.3} />
       </mesh>
     </group>
   );
-}
+});
 
-// ── Cargo Tanks (colored by zone type) ──────────
+// ─── Cargo Tanks ────────────────────────────────────────
 
-function CargoTanks() {
-  const tankPositions = useMemo(() => [
+function CargoTanks({ textures }: { textures: ReturnType<typeof useVesselTextures> }) {
+  const tanks = useMemo(() => [
     { x: -1, label: "TQ 1" },
     { x: 1.5, label: "TQ 2" },
     { x: 4, label: "TQ 3" },
@@ -139,26 +171,18 @@ function CargoTanks() {
 
   return (
     <group position={[0, -1.8, 0]}>
-      {tankPositions.map((tank) => (
-        <group key={tank.label} position={[tank.x, 0, 0]}>
-          {/* Tank dome */}
-          <mesh>
+      {tanks.map((t) => (
+        <group key={t.label} position={[t.x, 0, 0]}>
+          <mesh castShadow>
             <boxGeometry args={[2, 1.2, 2.8]} />
-            <meshPhysicalMaterial
-              color="#C2942A"
-              roughness={0.35}
-              metalness={0.5}
-              clearcoat={0.2}
-            />
+            <meshStandardMaterial map={textures.deck} color="#C2942A" roughness={0.5} metalness={0.3} />
           </mesh>
-          {/* Tank cap */}
           <mesh position={[0, 0.7, 0]}>
             <cylinderGeometry args={[0.15, 0.15, 0.2, 8]} />
-            <meshStandardMaterial color="#888888" metalness={0.8} roughness={0.3} />
+            <meshStandardMaterial color="#888" metalness={0.7} roughness={0.3} />
           </mesh>
-          {/* Tank label */}
           <Text position={[0, 1.1, 0]} fontSize={0.15} color="#F59E0B" anchorX="center">
-            {tank.label}
+            {t.label}
           </Text>
         </group>
       ))}
@@ -166,67 +190,71 @@ function CargoTanks() {
   );
 }
 
-// ── Engine Room Visual Block ────────────────────
+// ─── Engine Room Block ──────────────────────────────────
 
-function EngineRoomBlock() {
+function EngineRoomBlock({ textures }: { textures: ReturnType<typeof useVesselTextures> }) {
   return (
     <group position={[-3, -2, 0]}>
-      <mesh>
+      <mesh castShadow>
         <boxGeometry args={[2.5, 2, 2.5]} />
-        <meshPhysicalMaterial color="#8B3030" roughness={0.4} metalness={0.4} clearcoat={0.15} />
+        <meshStandardMaterial map={textures.metal} color="#8B3030" roughness={0.5} metalness={0.4} />
       </mesh>
-      <Float speed={2} rotationIntensity={0} floatIntensity={0.3}>
-        <Text position={[0, 1.4, 0]} fontSize={0.15} color="#EF4444" anchorX="center">
-          SALA MÁQUINAS
-        </Text>
-      </Float>
+      <Text position={[0, 1.4, 0]} fontSize={0.14} color="#EF4444" anchorX="center">
+        SALA MÁQUINAS
+      </Text>
     </group>
   );
 }
 
-// ── Deck Equipment ──────────────────────────────
+// ─── Deck Piping ────────────────────────────────────────
 
-function DeckEquipment() {
+function DeckPiping() {
   return (
     <group>
-      {/* Deck pipes — manifold lines */}
       {[-0.8, 0, 0.8].map((z) => (
         <mesh key={z} position={[2, -1.1, z]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.04, 0.04, 14, 6]} />
           <meshStandardMaterial color="#6a7a8a" metalness={0.7} roughness={0.4} />
         </mesh>
       ))}
-      {/* Mooring bollards — bow */}
       {[-1.1, 1.1].map((z) => (
         <mesh key={z} position={[8.5, -1.0, z]}>
           <cylinderGeometry args={[0.1, 0.12, 0.3, 8]} />
-          <meshStandardMaterial color="#555555" metalness={0.6} roughness={0.4} />
+          <meshStandardMaterial color="#555" metalness={0.5} roughness={0.4} />
         </mesh>
       ))}
     </group>
   );
 }
 
-// ── Zone Labels with interactive highlights ─────
+// ─── Zone Labels with hover tooltips ────────────────────
 
 function ZoneLabels({ zones, selectedZone, onSelect }: {
   zones: VesselZone[];
   selectedZone: string | null;
   onSelect: (id: string) => void;
 }) {
+  const [hovered, setHovered] = useState<string | null>(null);
+
   return (
     <group>
       {zones.slice(0, 8).map((zone, i) => {
         const color = ZONE_TYPE_COLORS[zone.zone_type] ?? "#6B7280";
         const isActive = selectedZone === zone.id;
+        const isHovered = hovered === zone.id;
         const angle = (i / 8) * Math.PI * 0.6 - 0.3;
         const x = zone.pos_x ?? Math.cos(angle) * 5;
         const y = (zone.pos_y ?? 1) + 1.5;
         const z = zone.pos_z ?? Math.sin(angle) * 2;
 
         return (
-          <group key={zone.id} position={[x, y, z]} onClick={() => onSelect(zone.id)}>
-            {/* Status LED */}
+          <group
+            key={zone.id}
+            position={[x, y, z]}
+            onClick={(e) => { e.stopPropagation(); onSelect(zone.id); }}
+            onPointerOver={(e) => { e.stopPropagation(); setHovered(zone.id); document.body.style.cursor = "pointer"; }}
+            onPointerOut={() => { setHovered(null); document.body.style.cursor = "auto"; }}
+          >
             <mesh>
               <sphereGeometry args={[isActive ? 0.12 : 0.08, 8, 8]} />
               <meshStandardMaterial
@@ -235,16 +263,37 @@ function ZoneLabels({ zones, selectedZone, onSelect }: {
                 emissiveIntensity={isActive ? 1.2 : 0.4}
               />
             </mesh>
-            {/* Label */}
             <Text
-              position={[0, 0.25, 0]}
-              fontSize={isActive ? 0.14 : 0.1}
+              position={[0, 0.22, 0]}
+              fontSize={isActive ? 0.13 : 0.09}
               color={isActive ? "#ffffff" : color}
               anchorX="center"
-
             >
               {zone.name}
             </Text>
+
+            {/* Tooltip on hover — warehouse pattern */}
+            {isHovered && (
+              <Html position={[0, 0.5, 0]} center style={{ pointerEvents: "none" }}>
+                <div
+                  style={{
+                    background: "white",
+                    borderRadius: 10,
+                    padding: "8px 14px",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                    whiteSpace: "nowrap",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+                    {zone.name}
+                  </div>
+                  <div style={{ fontSize: 10, color: "#64748B", marginTop: 2 }}>
+                    {zone.description ?? zone.zone_type}
+                  </div>
+                </div>
+              </Html>
+            )}
           </group>
         );
       })}
@@ -252,7 +301,7 @@ function ZoneLabels({ zones, selectedZone, onSelect }: {
   );
 }
 
-// ── Equipment Status LEDs ───────────────────────
+// ─── Equipment Status LEDs ──────────────────────────────
 
 function EquipmentLEDs({ equipment }: { equipment: Equipment[] }) {
   const critical = equipment.filter((e) => e.status === "failed" || e.status === "maintenance");
@@ -262,7 +311,6 @@ function EquipmentLEDs({ equipment }: { equipment: Equipment[] }) {
       {critical.slice(0, 6).map((eq, i) => {
         const color = EQUIPMENT_STATUS_COLORS[eq.status] ?? "#6B7280";
         const x = -6 + i * 2.5;
-
         return (
           <group key={eq.id} position={[x, 0.5, 2.5]}>
             <mesh>
@@ -271,9 +319,13 @@ function EquipmentLEDs({ equipment }: { equipment: Equipment[] }) {
                 color={color}
                 emissive={color}
                 emissiveIntensity={eq.status === "failed" ? 2 : 0.8}
+                toneMapped={false}
               />
             </mesh>
-            <Text position={[0, 0.2, 0]} fontSize={0.08} color={color} anchorX="center">
+            {eq.status === "failed" && (
+              <pointLight position={[0, 0, 0]} intensity={0.3} distance={2} color={color} decay={2} />
+            )}
+            <Text position={[0, 0.18, 0]} fontSize={0.07} color={color} anchorX="center">
               {eq.code}
             </Text>
           </group>
@@ -283,7 +335,7 @@ function EquipmentLEDs({ equipment }: { equipment: Equipment[] }) {
   );
 }
 
-// ── Main 3D Scene ───────────────────────────────
+// ─── Scene (inside Suspense) ────────────────────────────
 
 function VesselScene({ zones, equipment, selectedZone, onSelectZone }: {
   zones: VesselZone[];
@@ -291,28 +343,34 @@ function VesselScene({ zones, equipment, selectedZone, onSelectZone }: {
   selectedZone: string | null;
   onSelectZone: (id: string) => void;
 }) {
+  const textures = useVesselTextures();
+
   return (
     <>
-      {/* Lighting — bright and warm */}
-      <ambientLight intensity={1.0} />
-      <directionalLight position={[10, 15, 10]} intensity={1.5} color="#ffffff" castShadow />
-      <directionalLight position={[-8, 8, -5]} intensity={0.6} color="#e8dcd0" />
-      <pointLight position={[0, 5, 0]} intensity={0.4} color="#ffffff" />
-      <hemisphereLight args={["#b1e1ff", "#1a2a3a", 0.6]} />
+      {/* Lighting — same pattern as warehouse-3d */}
+      <ambientLight intensity={0.5} color="#F0F4FF" />
+      <directionalLight
+        position={[12, 18, 10]}
+        intensity={1.2}
+        color="#ffffff"
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
+      <directionalLight position={[-8, 12, -5]} intensity={0.4} color="#e8dcd0" />
+      <hemisphereLight args={["#b1e1ff", "#0a1520", 0.5]} />
 
-      {/* Ocean */}
-      <OceanPlane />
+      <OceanSurface />
 
-      {/* Vessel */}
       <group position={[0, 0, 0]}>
-        <ShipHull isSelected={!selectedZone} onClick={() => onSelectZone("")} />
-        <Superstructure onClick={() => {
+        <ShipHull textures={textures} isSelected={!selectedZone} onClick={() => onSelectZone("")} />
+        <SuperstructureBlock textures={textures} onClick={() => {
           const bridge = zones.find((z) => z.zone_type === "bridge");
           if (bridge) onSelectZone(bridge.id);
         }} />
-        <CargoTanks />
-        <EngineRoomBlock />
-        <DeckEquipment />
+        <CargoTanks textures={textures} />
+        <EngineRoomBlock textures={textures} />
+        <DeckPiping />
         <ZoneLabels zones={zones} selectedZone={selectedZone} onSelect={onSelectZone} />
         <EquipmentLEDs equipment={equipment} />
       </group>
@@ -331,7 +389,7 @@ function VesselScene({ zones, equipment, selectedZone, onSelectZone }: {
   );
 }
 
-// ── Exported Component ──────────────────────────
+// ─── Exported Component ──────────────────────────────────
 
 export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFullscreen }: {
   zones: VesselZone[];
@@ -340,7 +398,6 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
   onToggleFullscreen?: () => void;
 }) {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
-
   const selectedZoneData = zones.find((z) => z.id === selectedZone);
   const zoneEquipment = equipment.filter((e) => e.zone_id === selectedZone);
 
@@ -349,24 +406,25 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
       ? "fixed inset-0 z-50 bg-[#0f1923]"
       : "relative h-[450px] md:h-[550px] rounded-xl border border-[var(--border)] bg-[#0f1923] overflow-hidden"
     }>
-      {/* Canvas */}
       <Canvas
         camera={{ position: [8, 6, 12], fov: 45 }}
-        gl={{ antialias: true, alpha: true }}
-        style={{ background: "transparent" }}
+        gl={{ antialias: true, alpha: false }}
+        shadows
       >
         <color attach="background" args={["#0f1923"]} />
         <fog attach="fog" args={["#0f1923", 30, 55]} />
-        <VesselScene
-          zones={zones}
-          equipment={equipment}
-          selectedZone={selectedZone}
-          onSelectZone={setSelectedZone}
-        />
+        <Suspense fallback={null}>
+          <VesselScene
+            zones={zones}
+            equipment={equipment}
+            selectedZone={selectedZone}
+            onSelectZone={setSelectedZone}
+          />
+        </Suspense>
       </Canvas>
 
       {/* Top HUD */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-[#0f1923]/90 to-transparent">
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 bg-linear-to-b from-[#0f1923]/90 to-transparent">
         <div className="flex items-center gap-2">
           <Compass size={14} className="text-[#0EA5E9]" />
           <span className="text-xs font-bold text-[#0EA5E9]">VISTA 3D</span>
@@ -390,24 +448,16 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
       </div>
 
       {/* Bottom Stats */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 py-2 bg-gradient-to-t from-[#0f1923]/90 to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 py-2 bg-linear-to-t from-[#0f1923]/90 to-transparent">
         <div className="flex items-center gap-4 text-[9px] text-white/40">
-          <span className="flex items-center gap-1">
-            <Layers size={10} />
-            {zones.length} zonas
-          </span>
-          <span className="flex items-center gap-1">
-            <Anchor size={10} />
-            {equipment.length} equipos
-          </span>
+          <span className="flex items-center gap-1"><Layers size={10} /> {zones.length} zonas</span>
+          <span className="flex items-center gap-1"><Anchor size={10} /> {equipment.length} equipos</span>
           <span className="flex items-center gap-1">
             <AlertTriangle size={10} />
             {equipment.filter((e) => e.status !== "operational").length} alertas
           </span>
         </div>
-        <div className="text-[8px] text-white/30">
-          Drag to rotate · Scroll to zoom · Click zones
-        </div>
+        <div className="text-[8px] text-white/30">Drag to rotate · Scroll to zoom · Click zones</div>
       </div>
 
       {/* Zone Detail Panel */}
@@ -421,18 +471,13 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: ZONE_TYPE_COLORS[selectedZoneData.zone_type] }}
-                />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ZONE_TYPE_COLORS[selectedZoneData.zone_type] }} />
                 <span className="text-xs font-bold text-white">{selectedZoneData.name}</span>
               </div>
               <button onClick={() => setSelectedZone(null)} className="text-white/40 hover:text-white text-xs">✕</button>
             </div>
             <p className="text-[10px] text-white/50 mb-2">{selectedZoneData.description}</p>
-            <p className="text-[9px] font-bold uppercase tracking-wider text-white/30 mb-1">
-              Equipos ({zoneEquipment.length})
-            </p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-white/30 mb-1">Equipos ({zoneEquipment.length})</p>
             <div className="space-y-1">
               {zoneEquipment.map((eq) => (
                 <div key={eq.id} className="flex items-center justify-between rounded-md bg-white/5 px-2 py-1.5">
@@ -440,10 +485,7 @@ export function Vessel3D({ zones, equipment, fullscreenMode = false, onToggleFul
                     <p className="text-[10px] font-medium text-white truncate">{eq.name}</p>
                     <p className="text-[8px] text-[#0EA5E9]">{eq.code}</p>
                   </div>
-                  <span
-                    className="shrink-0 h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: EQUIPMENT_STATUS_COLORS[eq.status] }}
-                  />
+                  <span className="shrink-0 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: EQUIPMENT_STATUS_COLORS[eq.status] }} />
                 </div>
               ))}
               {zoneEquipment.length === 0 && (
