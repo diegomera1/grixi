@@ -125,11 +125,46 @@ export function AITab({ equipment, workOrders, kpis }: {
 
       {/* Error State */}
       {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
-          <p className="text-xs text-red-500">
-            <AlertTriangle size={12} className="inline-block mr-1.5" />
-            {error}
-          </p>
+        <div className="rounded-xl border border-[#F59E0B]/20 bg-[#F59E0B]/5 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={16} className="text-[#F59E0B] mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-[#F59E0B]">
+                {error.includes("429") || error.includes("spending") || error.includes("RESOURCE_EXHAUSTED")
+                  ? "Límite de API Gemini alcanzado"
+                  : "Error al consultar AI"
+                }
+              </p>
+              <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                {error.includes("429") || error.includes("spending") || error.includes("RESOURCE_EXHAUSTED")
+                  ? "La cuota de la API de Gemini se ha agotado temporalmente. El análisis predictivo estará disponible cuando se renueve la cuota. Mientras tanto, se muestran datos de referencia."
+                  : error.length > 100 ? `${error.slice(0, 100)}...` : error
+                }
+              </p>
+            </div>
+          </div>
+          {/* Fallback static insights */}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {[
+              { title: "Motor Principal — Inspección Programada", risk: "medium", detail: "Próxima inspección de cilindros en 480h de operación. Se recomienda ordenar repuestos.", icon: "⚙️" },
+              { title: "Generador AUX #1 — Monitoreo Vibraciones", risk: "low", detail: "Vibración dentro de parámetros normales. Próximo análisis de aceite en 200h.", icon: "📊" },
+              { title: "Bomba HFO — Preventivo Pendiente", risk: "high", detail: "Mantenimiento preventivo retrasado 45h. Riesgo de falla incrementado si no se atiende.", icon: "🔧" },
+              { title: "Compresor de Aire — Tendencia Normal", risk: "low", detail: "Presión y temperatura estables. Siguiente cambio de filtros en 300h.", icon: "✅" },
+            ].map((insight) => (
+              <div key={insight.title} className="rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/30 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs">{insight.icon}</span>
+                  <span className={`rounded-full px-1.5 py-0.5 text-[7px] font-bold uppercase`}
+                    style={{ backgroundColor: `${RISK_COLORS[insight.risk]}15`, color: RISK_COLORS[insight.risk] }}>
+                    {RISK_LABELS[insight.risk]}
+                  </span>
+                </div>
+                <p className="text-[11px] font-medium text-[var(--text-primary)]">{insight.title}</p>
+                <p className="text-[9px] text-[var(--text-muted)] mt-1">{insight.detail}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[8px] text-[var(--text-muted)] text-center">⚠ Datos de referencia estáticos — El análisis AI se actualizará cuando la cuota se renueve</p>
         </div>
       )}
 
