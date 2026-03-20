@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
   Ship, Gauge, Wrench, ClipboardCheck, ClipboardList, Users, Package,
-  BarChart3, Waves, Activity, AlertTriangle, Cpu,
+  BarChart3, Activity, AlertTriangle, Cpu,
   DollarSign, Clock, TrendingUp, Anchor,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -20,42 +19,18 @@ import { AnalyticsTab } from "./analytics-tab";
 import { ChecklistTab } from "./checklist-tab";
 import { AITab } from "./ai-tab";
 import { OfflineIndicator } from "./offline-indicator";
+import { VesselProfile } from "./vessel-profile";
 import type {
   Vessel, VesselZone, Equipment, WorkOrder,
   Checklist, CrewMember, KPISnapshot, FlotaKPIs,
 } from "../types";
 import { VESSEL_STATUS_LABELS, VESSEL_STATUS_COLORS } from "../types";
 
-// Dynamic imports to avoid SSR issues with R3F
-const Vessel3D = dynamic(() => import("./vessel-3d").then((m) => m.Vessel3D), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-[450px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
-      <div className="flex flex-col items-center gap-2">
-        <div className="h-6 w-6 rounded-full border-2 border-[#0EA5E9] border-t-transparent animate-spin" />
-        <span className="text-xs text-[#0EA5E9]/60">Cargando visualización 3D...</span>
-      </div>
-    </div>
-  ),
-});
-
-const Vessel3DInterior = dynamic(() => import("./vessel-3d-interior").then((m) => m.Vessel3DInterior), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-[450px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
-      <div className="flex flex-col items-center gap-2">
-        <div className="h-6 w-6 rounded-full border-2 border-[#0EA5E9] border-t-transparent animate-spin" />
-        <span className="text-xs text-[#0EA5E9]/60">Cargando vista interior 3D...</span>
-      </div>
-    </div>
-  ),
-});
-
 // ── Tabs ────────────────────────────────────────
 
 const TABS = [
   { id: "dashboard", label: "Dashboard", icon: Gauge },
-  { id: "vessel-3d", label: "Buque 3D", icon: Waves },
+  { id: "vessel-3d", label: "Buque", icon: Ship },
   { id: "equipment", label: "Equipos", icon: Wrench },
   { id: "work-orders", label: "Órdenes", icon: ClipboardCheck },
   { id: "checklists", label: "Checklists", icon: ClipboardList },
@@ -82,20 +57,19 @@ type FlotaData = {
 
 export function FlotaContent({ data }: { data: FlotaData }) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
-  const [fullscreen3D, setFullscreen3D] = useState(false);
-  const [view3D, setView3D] = useState<"exterior" | "interior">("exterior");
+  const [fullscreenProfile, setFullscreenProfile] = useState(false);
   const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats } = data;
   const { events, readings } = useFlotaDemo();
   const { status: offlineStatus, syncNow } = useOfflineSync();
 
-  // Fullscreen 3D overlay
-  if (fullscreen3D) {
+  // Fullscreen vessel profile overlay
+  if (fullscreenProfile) {
     return (
-      <Vessel3D
+      <VesselProfile
         zones={zones}
         equipment={equipment}
         fullscreenMode
-        onToggleFullscreen={() => setFullscreen3D(false)}
+        onToggleFullscreen={() => setFullscreenProfile(false)}
       />
     );
   }
@@ -184,34 +158,11 @@ export function FlotaContent({ data }: { data: FlotaData }) {
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         {activeTab === "dashboard" && <DashboardTab kpis={kpis} workOrders={workOrders} equipment={equipment} zones={zones} events={events} readings={readings} />}
         {activeTab === "vessel-3d" && (
-          <div className="space-y-3">
-            {/* Exterior / Interior Toggle */}
-            <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-0.5 w-fit">
-              {(["exterior", "interior"] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView3D(v)}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all",
-                    view3D === v
-                      ? "bg-[#0EA5E9] text-white shadow-sm"
-                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                  )}
-                >
-                  {v === "exterior" ? "🚢 Exterior" : "⚙️ Sala de Máquinas"}
-                </button>
-              ))}
-            </div>
-            {view3D === "exterior" ? (
-              <Vessel3D
-                zones={zones}
-                equipment={equipment}
-                onToggleFullscreen={() => setFullscreen3D(true)}
-              />
-            ) : (
-              <Vessel3DInterior equipment={equipment} />
-            )}
-          </div>
+          <VesselProfile
+            zones={zones}
+            equipment={equipment}
+            onToggleFullscreen={() => setFullscreenProfile(true)}
+          />
         )}
         {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} workOrders={workOrders} />}
         {activeTab === "work-orders" && <WorkOrdersTab vesselId={vessel.id} workOrders={workOrders} equipment={equipment} crew={crew} />}

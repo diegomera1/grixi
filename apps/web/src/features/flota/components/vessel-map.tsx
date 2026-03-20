@@ -8,6 +8,8 @@ import {
   Navigation, Anchor, Clock, Compass,
   Ship, Waves, Locate, Wind,
   Thermometer, Ruler, Fuel, MoreHorizontal,
+  Cloud, Eye, Gauge, Droplets,
+  Sun, ArrowDown,
 } from "lucide-react";
 
 // ── Demo Navigation Data ─────────────────────────
@@ -47,6 +49,44 @@ const ROUTE_PROGRESS = {
   remaining: 2670,
   totalNm: 2850,
   eta: "2026-04-02",
+};
+
+// ── Marine Weather Data (simulated — replace with OpenWeatherMap API) ──
+
+const MARINE_WEATHER = {
+  airTemp: 28,
+  waterTemp: 24,
+  humidity: 82,
+  pressure: 1013.2,
+  visibility: 18, // km
+  uvIndex: 7,
+  cloudCover: 35,
+  precipitation: 0,
+  windSpeed: 15,
+  windDir: "NE",
+  windGust: 22,
+  waveHeight: 1.2,
+  wavePeriod: 8, // seconds
+  waveDir: "NW",
+  currentSpeed: 0.8, // knots
+  currentDir: "SE",
+  seaState: "Calma (Douglas 3)",
+  sunrise: "06:12",
+  sunset: "18:24",
+  // NOAA Tides (simulated — replace with NOAA API)
+  tides: [
+    { time: "02:15", height: 0.2, type: "low" as const },
+    { time: "08:42", height: 1.8, type: "high" as const },
+    { time: "14:30", height: 0.1, type: "low" as const },
+    { time: "20:55", height: 1.9, type: "high" as const },
+  ],
+  forecast: [
+    { hour: "Now", wind: 15, wave: 1.2, icon: "☀️" },
+    { hour: "+6h", wind: 18, wave: 1.5, icon: "⛅" },
+    { hour: "+12h", wind: 22, wave: 1.8, icon: "🌥️" },
+    { hour: "+18h", wind: 16, wave: 1.3, icon: "☀️" },
+    { hour: "+24h", wind: 12, wave: 0.9, icon: "☀️" },
+  ],
 };
 
 // GeoJSON for the full planned route
@@ -107,6 +147,8 @@ export function VesselMap({ compact = false }: VesselMapProps) {
   const mapRef = useRef(null);
   const [popupInfo, setPopupInfo] = useState<typeof ROUTE_WAYPOINTS[0] | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [showWindy, setShowWindy] = useState(false);
   const [pulseScale, setPulseScale] = useState(1);
 
   // Animated pulse for vessel marker
@@ -336,6 +378,135 @@ export function VesselMap({ compact = false }: VesselMapProps) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ── Layer Toggles (Top-Right below nav controls) ── */}
+      <div className="absolute top-24 right-3 z-20 flex flex-col gap-1">
+        {[
+          { id: "weather", label: "Clima", icon: Cloud, active: showWeather, onClick: () => setShowWeather(!showWeather) },
+          { id: "windy", label: "Windy", icon: Wind, active: showWindy, onClick: () => setShowWindy(!showWindy) },
+        ].map((btn) => (
+          <button
+            key={btn.id}
+            onClick={btn.onClick}
+            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[9px] font-bold backdrop-blur-md transition-all ${
+              btn.active
+                ? "border-[#0EA5E9]/50 bg-[#0EA5E9]/20 text-[#0EA5E9]"
+                : "border-white/10 bg-[#0c1e3a]/80 text-white/50 hover:text-white/70"
+            }`}
+          >
+            <btn.icon size={11} />
+            {btn.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Windy Weather Embed Overlay ── */}
+      <AnimatePresence>
+        {showWindy && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-10"
+          >
+            <iframe
+              title="Windy Weather"
+              width="100%"
+              height="100%"
+              src={`https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=kt&zoom=5&overlay=wind&product=ecmwf&level=surface&lat=${VESSEL.lat}&lon=${VESSEL.lon}&detailLat=${VESSEL.lat}&detailLon=${VESSEL.lon}&marker=true&message=true`}
+              frameBorder="0"
+              className="rounded-xl"
+            />
+            <button
+              onClick={() => setShowWindy(false)}
+              className="absolute top-3 left-3 z-30 rounded-lg border border-white/20 bg-[#0c1e3a]/90 backdrop-blur-xl px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[#0c1e3a] transition-colors"
+            >
+              ✕ Cerrar Windy
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Marine Weather Panel (Bottom-Left) ── */}
+      <AnimatePresence>
+        {showWeather && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-14 left-3 z-20 w-[320px] rounded-xl border border-white/10 bg-[#0c1e3a]/95 backdrop-blur-xl shadow-2xl"
+          >
+            <div className="px-3 pt-3 pb-2 border-b border-white/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Cloud size={12} className="text-[#0EA5E9]" />
+                  <span className="text-[10px] font-bold text-[#0EA5E9] uppercase tracking-wider">Condiciones Marítimas</span>
+                </div>
+                <span className="text-[8px] text-white/30">OpenWeatherMap · NOAA</span>
+              </div>
+            </div>
+
+            {/* Weather grid */}
+            <div className="grid grid-cols-3 gap-2 p-3">
+              {[
+                { icon: Wind, label: "Viento", value: `${MARINE_WEATHER.windSpeed}kt ${MARINE_WEATHER.windDir}`, color: "#0EA5E9" },
+                { icon: Waves, label: "Oleaje", value: `${MARINE_WEATHER.waveHeight}m / ${MARINE_WEATHER.wavePeriod}s`, color: "#06B6D4" },
+                { icon: Thermometer, label: "Aire", value: `${MARINE_WEATHER.airTemp}°C`, color: "#F59E0B" },
+                { icon: Droplets, label: "Agua", value: `${MARINE_WEATHER.waterTemp}°C`, color: "#3B82F6" },
+                { icon: Gauge, label: "Presión", value: `${MARINE_WEATHER.pressure} hPa`, color: "#8B5CF6" },
+                { icon: Eye, label: "Visibilidad", value: `${MARINE_WEATHER.visibility} km`, color: "#10B981" },
+                { icon: Droplets, label: "Humedad", value: `${MARINE_WEATHER.humidity}%`, color: "#06B6D4" },
+                { icon: Sun, label: "UV", value: `${MARINE_WEATHER.uvIndex} Alto`, color: "#EF4444" },
+                { icon: ArrowDown, label: "Corriente", value: `${MARINE_WEATHER.currentSpeed}kt ${MARINE_WEATHER.currentDir}`, color: "#F97316" },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg bg-white/5 p-2">
+                  <item.icon size={10} style={{ color: item.color }} className="mb-1" />
+                  <p className="text-[8px] text-white/40">{item.label}</p>
+                  <p className="text-[10px] font-bold text-white/90">{item.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Forecast row */}
+            <div className="px-3 pb-2">
+              <p className="text-[8px] font-bold text-white/30 uppercase tracking-wider mb-1">Pronóstico 24h</p>
+              <div className="flex gap-1">
+                {MARINE_WEATHER.forecast.map((f) => (
+                  <div key={f.hour} className="flex-1 rounded-md bg-white/5 p-1.5 text-center">
+                    <p className="text-[7px] text-white/40">{f.hour}</p>
+                    <p className="text-[11px] my-0.5">{f.icon}</p>
+                    <p className="text-[8px] text-[#0EA5E9]">{f.wind}kt</p>
+                    <p className="text-[7px] text-white/40">{f.wave}m</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tides */}
+            <div className="px-3 pb-3">
+              <p className="text-[8px] font-bold text-white/30 uppercase tracking-wider mb-1">Mareas — NOAA</p>
+              <div className="flex gap-2">
+                {MARINE_WEATHER.tides.map((t) => (
+                  <div key={t.time} className="flex items-center gap-1">
+                    <span className={`text-[8px] ${t.type === "high" ? "text-[#0EA5E9]" : "text-[#F59E0B]"}`}>
+                      {t.type === "high" ? "▲" : "▼"}
+                    </span>
+                    <div>
+                      <p className="text-[8px] text-white/70">{t.time}</p>
+                      <p className="text-[7px] text-white/40">{t.height}m</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-1.5 flex items-center justify-between text-[7px] text-white/30">
+                <span>☀️ {MARINE_WEATHER.sunrise}</span>
+                <span>{MARINE_WEATHER.seaState}</span>
+                <span>🌅 {MARINE_WEATHER.sunset}</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── HUD: Route Progress Bar (Bottom) ── */}
       <div className="absolute bottom-0 inset-x-0 z-20 bg-[#0c1e3a]/90 backdrop-blur-xl border-t border-white/10 px-4 py-2.5">
