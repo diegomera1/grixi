@@ -1,7 +1,7 @@
 "use server";
 
 import { GoogleGenAI } from "@google/genai";
-import type { Equipment, WorkOrder, KPISnapshot } from "../types";
+import type { Equipment, WorkOrder, KPISnapshot, FleetAlert, FleetCertificate, FuelLog } from "../types";
 
 // ── Response Types ──────────────────────────────
 
@@ -103,12 +103,56 @@ function buildKPIContext(kpis: KPISnapshot[]): string {
   })).map((k) => JSON.stringify(k)).join("\n");
 }
 
+function buildAlertsContext(alerts: FleetAlert[]): string {
+  return alerts
+    .filter((a) => !a.resolved_at)
+    .map((a) => ({
+      title: a.title,
+      severity: a.severity,
+      type: a.alert_type,
+      source: a.source,
+      message: a.message,
+      equipment_name: a.equipment_name,
+      created_at: a.created_at,
+    }))
+    .map((a) => JSON.stringify(a)).join("\n");
+}
+
+function buildCertsContext(certs: FleetCertificate[]): string {
+  return certs
+    .filter((c) => c.status === "expiring_soon" || c.status === "expired")
+    .map((c) => ({
+      type: c.cert_type,
+      number: c.cert_number,
+      status: c.status,
+      expiry: c.expiry_date,
+      issued_by: c.issued_by,
+      renewal_notes: c.renewal_notes,
+    }))
+    .map((c) => JSON.stringify(c)).join("\n");
+}
+
+function buildFuelContext(fuelLogs: FuelLog[]): string {
+  const recent = fuelLogs.slice(0, 14);
+  const avgConsumption = recent.filter((f) => f.consumption_rate_mt_day).reduce((s, f) => s + (f.consumption_rate_mt_day || 0), 0) / (recent.filter((f) => f.consumption_rate_mt_day).length || 1);
+  const latestROB = fuelLogs.find((f) => f.rob_after && f.rob_after > 0);
+  return JSON.stringify({
+    avg_consumption_mt_day: avgConsumption.toFixed(1),
+    rob_mt: latestROB?.rob_after || 0,
+    fuel_types: [...new Set(fuelLogs.map((f) => f.fuel_type))],
+    recent_14_days: recent.map((f) => ({ date: f.log_date, fuel: f.fuel_type, consumed: f.quantity_mt, rate: f.consumption_rate_mt_day, speed: f.avg_speed_kts })),
+  });
+}
+
 // ── Main Server Action ──────────────────────────
 
 export async function analyzeFleetPredictive(
   equipment: Equipment[],
   workOrders: WorkOrder[],
-  kpis: KPISnapshot[]
+  kpis: KPISnapshot[],
+  alerts?: FleetAlert[],
+  certificates?: FleetCertificate[],
+  fuelLogs?: FuelLog[],
 ): Promise<AIAnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -127,6 +171,9 @@ export async function analyzeFleetPredictive(
   const equipmentContext = buildEquipmentContext(equipment);
   const woContext = buildWOContext(workOrders);
   const kpiContext = buildKPIContext(kpis);
+  const alertsContext = alerts?.length ? buildAlertsContext(alerts) : "Sin alertas activas";
+  const certsContext = certificates?.length ? buildCertsContext(certificates) : "Sin certificados por vencer";
+  const fuelContext = fuelLogs?.length ? buildFuelContext(fuelLogs) : "Sin datos de combustible";
 
   const prompt = `Eres un ingeniero jefe de mantenimiento naval con 20 años de experiencia en buques tanqueros. 
 Analiza los datos de mantenimiento del buque y genera un análisis predictivo completo.
@@ -139,6 +186,15 @@ ${woContext}
 
 KPIs HISTÓRICOS (últimos meses):
 ${kpiContext}
+
+ALERTAS ACTIVAS:
+${alertsContext}
+
+CERTIFICADOS POR VENCER/VENCIDOS:
+${certsContext}
+
+COMBUSTIBLE Y EFICIENCIA (últimos 14 días):
+${fuelContext}
 
 Responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks) con esta estructura exacta:
 {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import Map, { Source, Layer, Marker, Popup, NavigationControl, ScaleControl } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 import {
   Navigation, Anchor, Clock, Compass,
   Ship, Waves, Locate, Wind,
@@ -115,28 +116,34 @@ const routeGeoJSON: GeoJSON.FeatureCollection = {
   ],
 };
 
-// CartoDB Dark Matter — free dark ocean tiles
-const MAP_STYLE = {
-  version: 8 as const,
-  name: "Maritime Dark",
-  sources: {
-    carto: {
-      type: "raster" as const,
-      tiles: ["https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"],
-      tileSize: 256,
-      attribution: "&copy; CARTO &copy; OpenStreetMap",
+// CartoDB tile styles
+function getMapStyle(isDark: boolean) {
+  return {
+    version: 8 as const,
+    name: isDark ? "Maritime Dark" : "Maritime Light",
+    sources: {
+      carto: {
+        type: "raster" as const,
+        tiles: [
+          isDark
+            ? "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
+            : "https://basemaps.cartocdn.com/voyager/{z}/{x}/{y}@2x.png",
+        ],
+        tileSize: 256,
+        attribution: "&copy; CARTO &copy; OpenStreetMap",
+      },
     },
-  },
-  layers: [
-    {
-      id: "carto-tiles",
-      type: "raster" as const,
-      source: "carto",
-      minzoom: 0,
-      maxzoom: 19,
-    },
-  ],
-};
+    layers: [
+      {
+        id: "carto-tiles",
+        type: "raster" as const,
+        source: "carto",
+        minzoom: 0,
+        maxzoom: 19,
+      },
+    ],
+  };
+}
 
 type VesselMapProps = {
   vesselName?: string;
@@ -145,11 +152,28 @@ type VesselMapProps = {
 
 export function VesselMap({ compact = false }: VesselMapProps) {
   const mapRef = useRef(null);
+  const { theme } = useTheme();
+  const isDark = theme !== "light";
+  const mapStyle = useMemo(() => getMapStyle(isDark), [isDark]);
   const [popupInfo, setPopupInfo] = useState<typeof ROUTE_WAYPOINTS[0] | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showWeather, setShowWeather] = useState(false);
   const [showWindy, setShowWindy] = useState(false);
   const [pulseScale, setPulseScale] = useState(1);
+
+  // Adaptive HUD colors
+  const hud = {
+    bg: isDark ? "bg-[#0c1e3a]/90" : "bg-white/90",
+    border: isDark ? "border-white/10" : "border-black/10",
+    text: isDark ? "text-white" : "text-gray-900",
+    textMuted: isDark ? "text-white/40" : "text-gray-500",
+    textSub: isDark ? "text-white/50" : "text-gray-600",
+    textValue: isDark ? "text-white/90" : "text-gray-800",
+    labelUpper: isDark ? "text-white/30" : "text-gray-400",
+    cardBg: isDark ? "bg-white/5" : "bg-gray-100/80",
+    divider: isDark ? "border-white/10" : "border-gray-200",
+    portLabel: isDark ? "text-white/50" : "text-gray-600",
+  };
 
   // Animated pulse for vessel marker
   useEffect(() => {
@@ -181,7 +205,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
           bearing: 0,
         }}
         style={{ width: "100%", height: "100%" }}
-        mapStyle={MAP_STYLE}
+        mapStyle={mapStyle}
         attributionControl={false}
       >
         {/* Navigation Controls */}
@@ -233,7 +257,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
                 }`}
               />
               <span className={`mt-1 text-[9px] font-medium whitespace-nowrap ${
-                wp.status === "next" ? "text-[#0EA5E9]" : "text-white/50"
+                wp.status === "next" ? "text-[#0EA5E9]" : hud.portLabel
               }`}>
                 {wp.name}
               </span>
@@ -309,12 +333,12 @@ export function VesselMap({ compact = false }: VesselMapProps) {
       </Map>
 
       {/* ── HUD: Vessel Info Card (Top-Left) ── */}
-      <div className="absolute top-3 left-3 z-20 rounded-xl border border-white/10 bg-[#0c1e3a]/90 backdrop-blur-xl p-3 shadow-2xl max-w-[220px]">
-        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
+      <div className={`absolute top-3 left-3 z-20 rounded-xl border ${hud.border} ${hud.bg} backdrop-blur-xl p-3 shadow-2xl max-w-[220px]`}>
+        <div className={`flex items-center gap-2 mb-2 pb-2 border-b ${hud.divider}`}>
           <Ship size={14} className="text-[#0EA5E9]" />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-white truncate">{VESSEL.name}</p>
-            <p className="text-[8px] text-white/40">{VESSEL.flag} {VESSEL.type} · IMO {VESSEL.imo}</p>
+            <p className={`text-[11px] font-bold ${hud.text} truncate`}>{VESSEL.name}</p>
+            <p className={`text-[8px] ${hud.textMuted}`}>{VESSEL.flag} {VESSEL.type} · IMO {VESSEL.imo}</p>
           </div>
           <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse shrink-0" />
         </div>
@@ -332,8 +356,8 @@ export function VesselMap({ compact = false }: VesselMapProps) {
             <div key={info.label} className="flex items-center gap-1.5">
               <info.icon size={9} style={{ color: info.color, opacity: 0.7 }} className="shrink-0" />
               <div>
-                <p className="text-[6px] font-bold text-white/30 uppercase tracking-wider">{info.label}</p>
-                <p className="text-[10px] font-bold text-white/90">{info.value}</p>
+                <p className={`text-[6px] font-bold ${hud.labelUpper} uppercase tracking-wider`}>{info.label}</p>
+                <p className={`text-[10px] font-bold ${hud.textValue}`}>{info.value}</p>
               </div>
             </div>
           ))}
@@ -342,7 +366,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
         {/* Expandable details */}
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="mt-2 w-full flex items-center justify-center gap-1 rounded-md bg-white/5 hover:bg-white/10 py-1 text-[8px] text-white/40 transition-colors"
+          className={`mt-2 w-full flex items-center justify-center gap-1 rounded-md ${hud.cardBg} hover:bg-white/10 dark:hover:bg-white/10 py-1 text-[8px] ${hud.textMuted} transition-colors`}
         >
           <MoreHorizontal size={10} />
           {showDetails ? "Ocultar" : "Más datos"}
@@ -356,7 +380,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2 pt-2 border-t border-white/10">
+              <div className={`grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2 pt-2 border-t ${hud.divider}`}>
                 {[
                   { icon: Ruler, label: "Profundidad", value: `${VESSEL.depth}m` },
                   { icon: Ruler, label: "Calado", value: `${VESSEL.draft}m` },
@@ -368,8 +392,8 @@ export function VesselMap({ compact = false }: VesselMapProps) {
                   <div key={info.label} className="flex items-center gap-1.5">
                     <info.icon size={9} className="text-white/30 shrink-0" />
                     <div>
-                      <p className="text-[6px] font-bold text-white/30 uppercase tracking-wider">{info.label}</p>
-                      <p className="text-[10px] font-bold text-white/90">{info.value}</p>
+                      <p className={`text-[6px] font-bold ${hud.labelUpper} uppercase tracking-wider`}>{info.label}</p>
+                      <p className={`text-[10px] font-bold ${hud.textValue}`}>{info.value}</p>
                     </div>
                   </div>
                 ))}
@@ -509,7 +533,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
       </AnimatePresence>
 
       {/* ── HUD: Route Progress Bar (Bottom) ── */}
-      <div className="absolute bottom-0 inset-x-0 z-20 bg-[#0c1e3a]/90 backdrop-blur-xl border-t border-white/10 px-4 py-2.5">
+      <div className={`absolute bottom-0 inset-x-0 z-20 ${hud.bg} backdrop-blur-xl border-t ${hud.border} px-4 py-2.5`}>
         <div className="flex items-center gap-4">
           {/* Progress */}
           <div className="shrink-0 min-w-[130px]">

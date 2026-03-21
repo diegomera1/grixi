@@ -7,7 +7,7 @@ import {
   ChevronRight, Activity, RefreshCw, Sparkles, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import type { Equipment, WorkOrder, KPISnapshot } from "../types";
+import type { Equipment, WorkOrder, KPISnapshot, FleetAlert, FleetCertificate, FuelLog } from "../types";
 import { analyzeFleetPredictive } from "../actions/ai-fleet-action";
 import type { AIAnalysisResult, PredictiveInsight, TrendAnomaly, MaintenanceOptimization } from "../actions/ai-fleet-action";
 
@@ -29,10 +29,13 @@ const RISK_LABELS: Record<string, string> = {
 
 // ── AI Tab Component ────────────────────────────
 
-export function AITab({ equipment, workOrders, kpis }: {
+export function AITab({ equipment, workOrders, kpis, alerts, certificates, fuelLogs }: {
   equipment: Equipment[];
   workOrders: WorkOrder[];
   kpis: KPISnapshot[];
+  alerts?: FleetAlert[];
+  certificates?: FleetCertificate[];
+  fuelLogs?: FuelLog[];
 }) {
   const [result, setResult] = useState<AIAnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,7 +46,7 @@ export function AITab({ equipment, workOrders, kpis }: {
     setLoading(true);
     setError(null);
     try {
-      const data = await analyzeFleetPredictive(equipment, workOrders, kpis);
+      const data = await analyzeFleetPredictive(equipment, workOrders, kpis, alerts, certificates, fuelLogs);
       setResult(data);
       if (!data.predictions.length && !data.anomalies.length) {
         setError(data.summary);
@@ -53,7 +56,7 @@ export function AITab({ equipment, workOrders, kpis }: {
     } finally {
       setLoading(false);
     }
-  }, [equipment, workOrders, kpis]);
+  }, [equipment, workOrders, kpis, alerts, certificates, fuelLogs]);
 
   // Auto-analyze on mount
   useEffect(() => {

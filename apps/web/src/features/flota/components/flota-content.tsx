@@ -191,7 +191,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
         {activeTab === "crew" && <CrewTab crew={crew} />}
         {activeTab === "logistics" && <LogisticsTab equipment={equipment} />}
         {activeTab === "analytics" && <AnalyticsTab kpis={kpis} equipment={equipment} workOrders={workOrders} />}
-        {activeTab === "ai" && <AITab equipment={equipment} workOrders={workOrders} kpis={kpis} />}
+        {activeTab === "ai" && <AITab equipment={equipment} workOrders={workOrders} kpis={kpis} alerts={alerts} certificates={certificates} fuelLogs={fuelLogs} />}
       </motion.div>
     </div>
   );
