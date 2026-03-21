@@ -55,25 +55,18 @@ type NavModule = {
   aiModule: AiModule;
 };
 
-const MODULES_BASE: NavModule[] = [
+const MODULES: NavModule[] = [
   { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "#06B6D4", glowColor: "rgba(6,182,212,0.3)", category: "PRINCIPAL", aiModule: "dashboard" },
   { id: "command-center", label: "Centro de Comando", href: "/command-center", icon: Crosshair, color: "#EC4899", glowColor: "rgba(236,72,153,0.3)", category: "PRINCIPAL", aiModule: "general" },
   { id: "finanzas", label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.3)", category: "OPERACIONES", aiModule: "finanzas" },
   { id: "compras", label: "Compras", href: "/compras", icon: ShoppingCart, color: "#F97316", glowColor: "rgba(249,115,22,0.3)", category: "OPERACIONES", aiModule: "compras" },
   { id: "almacenes", label: "Almacenes", href: "/almacenes", icon: Warehouse, color: "#10B981", glowColor: "rgba(16,185,129,0.3)", category: "OPERACIONES", aiModule: "almacenes" },
+  { id: "flota", label: "Flota", href: "/flota", icon: Ship, color: "#0EA5E9", glowColor: "rgba(14,165,233,0.3)", category: "OPERACIONES", aiModule: "general" },
   { id: "rrhh", label: "Recursos Humanos", href: "/rrhh", icon: Users2, color: "#06B6D4", glowColor: "rgba(6,182,212,0.3)", category: "EQUIPO", aiModule: "general" },
   { id: "usuarios", label: "Usuarios", href: "/usuarios", icon: Users, color: "#F59E0B", glowColor: "rgba(245,158,11,0.3)", category: "EQUIPO", aiModule: "usuarios" },
   { id: "admin", label: "Admin", href: "/administracion", icon: Shield, color: "#F43F5E", glowColor: "rgba(244,63,94,0.3)", category: "EQUIPO", aiModule: "administracion" },
   { id: "ai", label: "GRIXI AI", href: "/ai", icon: Sparkles, color: "#A855F7", glowColor: "rgba(168,85,247,0.3)", category: "INTELIGENCIA", aiModule: "general" },
 ];
-
-// Feature-flagged modules (hidden in production by default)
-const FLOTA_MODULE: NavModule = { id: "flota", label: "Flota", href: "/flota", icon: Ship, color: "#0EA5E9", glowColor: "rgba(14,165,233,0.3)", category: "OPERACIONES", aiModule: "general" };
-const ENABLE_FLOTA = process.env.NEXT_PUBLIC_ENABLE_FLOTA === "true";
-
-const MODULES: NavModule[] = ENABLE_FLOTA
-  ? [...MODULES_BASE.slice(0, 5), FLOTA_MODULE, ...MODULES_BASE.slice(5)]
-  : MODULES_BASE;
 
 const CATEGORIES = [...new Set(MODULES.map((m) => m.category))];
 
