@@ -19,11 +19,16 @@ import { LogisticsTab } from "./logistics-tab";
 import { AnalyticsTab } from "./analytics-tab";
 import { ChecklistTab } from "./checklist-tab";
 import { AITab } from "./ai-tab";
+import { LogbookTab } from "./logbook-tab";
+import { AlertsTab } from "./alerts-tab";
+import { CertificatesTab } from "./certificates-tab";
+import { FuelTab } from "./fuel-tab";
 import { OfflineIndicator } from "./offline-indicator";
 import { VesselProfile } from "./vessel-profile";
 import type {
   Vessel, VesselZone, Equipment, WorkOrder,
   Checklist, CrewMember, KPISnapshot, FlotaKPIs,
+  LogbookEntry, FleetAlert, FleetCertificate, FuelLog,
 } from "../types";
 import { VESSEL_STATUS_LABELS, VESSEL_STATUS_COLORS } from "../types";
 
@@ -35,6 +40,10 @@ const TABS = [
   { id: "equipment", label: "Equipos", icon: Wrench },
   { id: "work-orders", label: "Órdenes", icon: ClipboardCheck },
   { id: "checklists", label: "Checklists", icon: ClipboardList },
+  { id: "logbook", label: "Bitácora", icon: ClipboardList },
+  { id: "alerts", label: "Alertas", icon: AlertTriangle },
+  { id: "certificates", label: "Certificados", icon: ClipboardCheck },
+  { id: "fuel", label: "Combustible", icon: Activity },
   { id: "crew", label: "Tripulación", icon: Users },
   { id: "logistics", label: "Logística", icon: Package },
   { id: "analytics", label: "Analítica", icon: BarChart3 },
@@ -52,6 +61,10 @@ type FlotaData = {
   crew: CrewMember[];
   kpis: KPISnapshot[];
   stats: FlotaKPIs;
+  logbook: LogbookEntry[];
+  alerts: FleetAlert[];
+  certificates: FleetCertificate[];
+  fuelLogs: FuelLog[];
 };
 
 // ── Main Content ────────────────────────────────
@@ -59,7 +72,7 @@ type FlotaData = {
 export function FlotaContent({ data }: { data: FlotaData }) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [fullscreenProfile, setFullscreenProfile] = useState(false);
-  const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats } = data;
+  const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats, logbook, alerts, certificates, fuelLogs } = data;
   const { events, readings } = useFlotaDemo();
   const { status: offlineStatus, syncNow } = useOfflineSync();
   const maritime = useMaritimeData();
@@ -159,7 +172,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
 
       {/* Tab Content */}
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        {activeTab === "dashboard" && <DashboardTab kpis={kpis} workOrders={workOrders} equipment={equipment} zones={zones} events={events} readings={readings} />}
+        {activeTab === "dashboard" && <DashboardTab kpis={kpis} workOrders={workOrders} equipment={equipment} zones={zones} events={events} readings={readings} logbook={logbook} alerts={alerts} certificates={certificates} fuelLogs={fuelLogs} stats={stats} />}
         {activeTab === "vessel-3d" && (
           <VesselProfile
             zones={zones}
@@ -171,6 +184,10 @@ export function FlotaContent({ data }: { data: FlotaData }) {
         {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} workOrders={workOrders} />}
         {activeTab === "work-orders" && <WorkOrdersTab vesselId={vessel.id} workOrders={workOrders} equipment={equipment} crew={crew} />}
         {activeTab === "checklists" && <ChecklistTab checklists={checklists} />}
+        {activeTab === "logbook" && <LogbookTab logbook={logbook} />}
+        {activeTab === "alerts" && <AlertsTab alerts={alerts} />}
+        {activeTab === "certificates" && <CertificatesTab certificates={certificates} />}
+        {activeTab === "fuel" && <FuelTab fuelLogs={fuelLogs} />}
         {activeTab === "crew" && <CrewTab crew={crew} />}
         {activeTab === "logistics" && <LogisticsTab equipment={equipment} />}
         {activeTab === "analytics" && <AnalyticsTab kpis={kpis} equipment={equipment} workOrders={workOrders} />}

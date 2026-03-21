@@ -1,6 +1,7 @@
 # GRIXI — Arquitecturas Alternativas: Comparativa General
 
 > Este directorio contiene 3 arquitecturas alternativas completas para la plataforma GRIXI, cada una con su propio set de documentación detallada.
+> **Actualizado:** 20 de marzo, 2026. Alineado con Vite 8.0 (released 12 Marzo 2026), Hyperdrive, y React Router v7.13.
 
 ---
 
@@ -84,16 +85,17 @@
 
 | Capa | Actual | Alt. 1 | Alt. 2 | Alt. 3 |
 |---|---|---|---|---|
-| **Framework** | Next.js 16 | **React Router v7** | Next.js 16 | Next.js 16 |
-| **Build Tool** | Turbopack | **Vite 8 + Rolldown** | Turbopack | Turbopack |
-| **Runtime** | Vercel Serverless | **CF Workers** | Node.js Docker | Node.js Docker |
+| **Framework** | Next.js 16 | **React Router v7.13** | Next.js 16 | Next.js 16 |
+| **Build Tool** | Turbopack | **Vite 8 + Rolldown** (Rust) | Turbopack | Turbopack |
+| **Runtime** | Vercel Serverless | **CF Workers** (0ms cold starts) | Node.js Docker | Node.js Docker |
 | **DB** | Supabase PG | Supabase PG | **PG self-hosted** | **PG self-hosted** |
+| **DB Connection** | supabase-js | **Hyperdrive** (pool global) | Direct | Direct |
 | **Auth** | Supabase Auth | Supabase Auth | **Better Auth** | **Better Auth** |
 | **Realtime** | Supabase Realtime | Supabase Realtime | **Socket.io** | **Socket.io** |
-| **Storage** | Supabase Storage | SB Storage + R2 | **MinIO** | **MinIO** |
-| **Cache** | — | **Workers KV** | **Redis** | **Redis** |
+| **Storage** | Supabase Storage | SB Storage + **R2** ($0 egress) | **MinIO** | **MinIO** |
+| **Cache** | — | **Workers KV** (310+ PoPs) | **Redis** | **Redis** |
 | **Jobs** | pg_cron | pg_cron | **BullMQ** | **BullMQ** |
-| **ORM** | supabase-js | **Drizzle** | **Drizzle** | **Drizzle** |
+| **ORM** | supabase-js | **Drizzle** (type-safe) | **Drizzle** | **Drizzle** |
 | **PaaS/Deploy** | Vercel | **Wrangler CLI** | **Coolify** | **Coolify** |
 | **Monitoreo** | Vercel Dashboard | CF Analytics | **Grafana+Prometheus** | **Grafana+Prometheus** |
 
@@ -134,13 +136,13 @@
 
 | Escenario | Mejor Opción |
 |---|---|
-| **Producción rápida** — equipo pequeño, cero riesgo | **Actual** (Vercel + Supabase) |
-| **Optimizar latencia + eliminar Vercel** — mínimo cambio | **Alt. 1** (Supabase + Cloudflare) |
+| **Producción SaaS optimizada** — mejor DX, 0ms cold starts, Vite 8 | **Alt. 1** (Supabase + Cloudflare) ⭐ |
+| **Producción rápida** — equipo pequeño, cero riesgo, sin migración | **Actual** (Vercel + Supabase) |
 | **Desarrollo + staging local potente** | **Alt. 2** (Mac Studio on-premise) |
-| **Producción con control total + mejor costo/rendimiento** | **Alt. 3** (Hetzner bare metal) ⭐ |
+| **Producción con control total + mejor costo/rendimiento** | **Alt. 3** (Hetzner bare metal) |
 | **Menor costo a largo plazo (> 16 meses)** | **Alt. 2** (On-Premise) |
 | **Menor costo sin inversión inicial** | **Alt. 3** (break-even en 3 meses) |
 | **Cumplimiento regulatorio / soberanía datos** | **Alt. 2** o **Alt. 3** |
 
 > [!TIP]
-> **Combinación recomendada:** **Alt. 1 para producción** + **Alt. 2 como entorno dev/staging**. O bien, **Alt. 3 para todo** si se busca el mejor balance costo/confiabilidad.
+> **Recomendación principal (Marzo 2026):** **Alt. 1 para producción** — Vite 8 + Rolldown (released 12 Marzo 2026) hace que el build sea 10-30x más rápido, Hyperdrive elimina latencia de DB, y Workers ofrece 0ms cold starts con PoPs en Ecuador. Combinar con **Alt. 2 como entorno dev/staging** para lo mejor de ambos mundos.

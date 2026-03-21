@@ -2,9 +2,10 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type {
-  Vessel, VesselZone, Equipment, MeasurementPoint,
+  Vessel, VesselZone, Equipment,
   WorkOrder, Checklist, CrewMember, KPISnapshot,
-  BOMItem, MaintenancePlan, FlotaKPIs,
+  FlotaKPIs,
+  LogbookEntry, FleetAlert, FleetCertificate, FuelLog,
 } from "../types";
 
 // ── Fetch full vessel data ──────────────────────
@@ -18,6 +19,10 @@ export async function fetchVessel(): Promise<{
   crew: CrewMember[];
   kpis: KPISnapshot[];
   stats: FlotaKPIs;
+  logbook: LogbookEntry[];
+  alerts: FleetAlert[];
+  certificates: FleetCertificate[];
+  fuelLogs: FuelLog[];
 } | null> {
   const supabase = await createClient();
 
@@ -32,7 +37,7 @@ export async function fetchVessel(): Promise<{
 
   if (!vessel) return null;
 
-  // Parallel queries
+  // Parallel queries — original + 4 new tables
   const [
     { data: zones },
     { data: equipment },
@@ -43,6 +48,10 @@ export async function fetchVessel(): Promise<{
     { data: measurementPoints },
     { data: bomItems },
     { data: maintenancePlans },
+    { data: logbook },
+    { data: alerts },
+    { data: certificates },
+    { data: fuelLogs },
   ] = await Promise.all([
     supabase.from("fleet_vessel_zones").select("*").eq("vessel_id", vessel.id).order("deck_level", { ascending: false }),
     supabase.from("fleet_equipment").select("*").eq("vessel_id", vessel.id).order("code"),
@@ -53,6 +62,11 @@ export async function fetchVessel(): Promise<{
     supabase.from("fleet_measurement_points").select("*"),
     supabase.from("fleet_bom_items").select("*"),
     supabase.from("fleet_maintenance_plans").select("*"),
+    // New tables
+    supabase.from("fleet_logbook").select("*").eq("vessel_id", vessel.id).order("created_at", { ascending: false }).limit(30),
+    supabase.from("fleet_alerts").select("*").eq("vessel_id", vessel.id).order("created_at", { ascending: false }).limit(50),
+    supabase.from("fleet_certificates").select("*").eq("vessel_id", vessel.id).order("expiry_date", { ascending: true }),
+    supabase.from("fleet_fuel_logs").select("*").eq("vessel_id", vessel.id).order("log_date", { ascending: false }).limit(60),
   ]);
 
   // Attach measurement points and BOM to equipment
@@ -64,19 +78,38 @@ export async function fetchVessel(): Promise<{
     zone: (zones || []).find((z) => z.id === eq.zone_id) || null,
   })) as Equipment[];
 
+  // Enrich alerts with equipment name
+  const enrichedAlerts = (alerts || []).map((a) => ({
+    ...a,
+    equipment_name: a.equipment_id ? (equipment || []).find((e) => e.id === a.equipment_id)?.name ?? null : null,
+  })) as FleetAlert[];
+
   // Calculate stats
   const openWOs = (workOrders || []).filter((wo) => !["completed", "closed", "cancelled"].includes(wo.status)).length;
   const latestKPI = kpis?.[kpis.length - 1];
+  const activeAlertsList = enrichedAlerts.filter((a) => !a.resolved_at);
+  const certExpiring = (certificates || []).filter((c) => c.status === "expiring_soon" || c.status === "expired");
+
+  // Fuel ROB = latest LSFO rob_after (most recent non-negative entry for navigation)
+  const latestFuelNav = (fuelLogs || []).find((f) => f.quantity_mt > 0 && f.consumption_rate_mt_day && f.consumption_rate_mt_day > 0);
+  const navLogs = (fuelLogs || []).filter((f) => f.consumption_rate_mt_day && f.consumption_rate_mt_day > 0);
+  const avgConsumption = navLogs.length > 0
+    ? navLogs.reduce((sum, f) => sum + (f.consumption_rate_mt_day || 0), 0) / navLogs.length
+    : 0;
 
   const stats: FlotaKPIs = {
     availability: latestKPI?.availability_pct || 0,
     mtbf: latestKPI?.mtbf_hours || 0,
     mttr: latestKPI?.mttr_hours || 0,
     openWOs,
-    criticalAlerts: (workOrders || []).filter((wo) => wo.priority === "critical" && wo.status !== "completed" && wo.status !== "closed").length,
+    criticalAlerts: activeAlertsList.filter((a) => a.severity === "critical" || a.severity === "emergency").length,
     maintenanceCostMonth: latestKPI?.maintenance_cost || 0,
-    hoursOperated: vessel.hours_operated ?? 0,
+    hoursOperated: 0,
     crewOnboard: (crew || []).filter((c) => c.status === "onboard").length,
+    certExpiringSoon: certExpiring.length,
+    activeAlerts: activeAlertsList.length,
+    fuelROB: latestFuelNav?.rob_after || 0,
+    avgFuelConsumption: Math.round(avgConsumption * 10) / 10,
   };
 
   return {
@@ -88,5 +121,9 @@ export async function fetchVessel(): Promise<{
     crew: (crew || []) as CrewMember[],
     kpis: (kpis || []) as KPISnapshot[],
     stats,
+    logbook: (logbook || []) as LogbookEntry[],
+    alerts: enrichedAlerts,
+    certificates: (certificates || []) as FleetCertificate[],
+    fuelLogs: (fuelLogs || []) as FuelLog[],
   };
 }

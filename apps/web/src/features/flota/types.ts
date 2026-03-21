@@ -229,6 +229,96 @@ export type FlotaKPIs = {
   maintenanceCostMonth: number;
   hoursOperated: number;
   crewOnboard: number;
+  certExpiringSoon: number;
+  activeAlerts: number;
+  fuelROB: number;
+  avgFuelConsumption: number;
+};
+
+// ── New Module Types ────────────────────────────
+
+export type LogbookEntryType = "navegacion" | "incidente" | "inspeccion" | "cambio_guardia" | "maniobra" | "avistamiento" | "comunicacion";
+
+export type LogbookEntry = {
+  id: string;
+  vessel_id: string;
+  entry_type: LogbookEntryType;
+  title: string;
+  content: string | null;
+  position_lat: number | null;
+  position_lon: number | null;
+  weather_conditions: Record<string, unknown>;
+  sea_state: string | null;
+  wind_speed: number | null;
+  wave_height: number | null;
+  recorded_by: string | null;
+  shift: "dia" | "noche";
+  created_offline: boolean;
+  synced_at: string | null;
+  created_at: string;
+  // Joined
+  crew_member?: { id: string; role: string; rank: string } | null;
+};
+
+export type AlertSeverity = "info" | "warning" | "critical" | "emergency";
+export type AlertType = "equipment" | "weather" | "maintenance" | "safety" | "regulatory";
+
+export type FleetAlert = {
+  id: string;
+  vessel_id: string;
+  equipment_id: string | null;
+  alert_type: AlertType;
+  severity: AlertSeverity;
+  title: string;
+  message: string | null;
+  source: "system" | "manual" | "sensor";
+  is_read: boolean;
+  acknowledged_by: string | null;
+  acknowledged_at: string | null;
+  auto_resolved: boolean;
+  resolved_at: string | null;
+  resolution_notes: string | null;
+  created_at: string;
+  // Joined
+  equipment_name?: string | null;
+};
+
+export type CertType = "class" | "flag" | "ISPS" | "STCW" | "ISM" | "MARPOL" | "SOPEP" | "IOPP" | "DOC" | "SMC" | "IAPP" | "CLC" | "loadline" | "tonnage" | "safety_radio" | "safety_equip" | "safety_construction";
+export type CertStatus = "active" | "expiring_soon" | "expired" | "suspended";
+
+export type FleetCertificate = {
+  id: string;
+  vessel_id: string;
+  cert_type: CertType;
+  cert_number: string;
+  issued_by: string;
+  issue_date: string;
+  expiry_date: string | null;
+  document_url: string | null;
+  status: CertStatus;
+  renewal_notes: string | null;
+  surveyor: string | null;
+  created_at: string;
+};
+
+export type FuelType = "HFO" | "MGO" | "LSFO" | "LNG" | "VLSFO";
+
+export type FuelLog = {
+  id: string;
+  vessel_id: string;
+  log_date: string;
+  fuel_type: FuelType;
+  quantity_mt: number;
+  price_per_mt: number | null;
+  rob_before: number | null;
+  rob_after: number | null;
+  consumption_rate_mt_day: number | null;
+  distance_nm: number | null;
+  avg_speed_kts: number | null;
+  port: string | null;
+  logged_by: string | null;
+  notes: string | null;
+  created_at: string;
 };
 
 // ── Label & Color Maps ──────────────────────────
