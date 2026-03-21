@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   Vessel, VesselZone, Equipment,
   WorkOrder, Checklist, CrewMember, KPISnapshot,
-  FlotaKPIs,
+  FlotaKPIs, MaintenancePlan,
   LogbookEntry, FleetAlert, FleetCertificate, FuelLog,
 } from "../types";
 
@@ -19,6 +19,7 @@ export async function fetchVessel(): Promise<{
   crew: CrewMember[];
   kpis: KPISnapshot[];
   stats: FlotaKPIs;
+  maintenancePlans: MaintenancePlan[];
   logbook: LogbookEntry[];
   alerts: FleetAlert[];
   certificates: FleetCertificate[];
@@ -61,7 +62,7 @@ export async function fetchVessel(): Promise<{
     supabase.from("fleet_kpi_snapshots").select("*").eq("vessel_id", vessel.id).order("snapshot_date"),
     supabase.from("fleet_measurement_points").select("*"),
     supabase.from("fleet_bom_items").select("*"),
-    supabase.from("fleet_maintenance_plans").select("*"),
+    supabase.from("fleet_maintenance_plans").select("*, equipment:fleet_equipment(id, code, name)"),
     // New tables
     supabase.from("fleet_logbook").select("*").eq("vessel_id", vessel.id).order("created_at", { ascending: false }).limit(30),
     supabase.from("fleet_alerts").select("*").eq("vessel_id", vessel.id).order("created_at", { ascending: false }).limit(50),
@@ -121,6 +122,7 @@ export async function fetchVessel(): Promise<{
     crew: (crew || []) as CrewMember[],
     kpis: (kpis || []) as KPISnapshot[],
     stats,
+    maintenancePlans: (maintenancePlans || []) as MaintenancePlan[],
     logbook: (logbook || []) as LogbookEntry[],
     alerts: enrichedAlerts,
     certificates: (certificates || []) as FleetCertificate[],

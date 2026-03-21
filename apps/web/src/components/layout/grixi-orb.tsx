@@ -37,7 +37,7 @@ import { createClient } from "@/lib/supabase/client";
 import { logLogoutEvent } from "@/lib/actions/audit";
 import { useThemeTransition } from "@/lib/hooks/use-theme-transition";
 import { GrixiAiLogo } from "@/features/ai/components/grixi-ai-logo";
-import { VoicePanel } from "@/features/ai/components/voice-panel";
+import { VoiceOverlay } from "@/features/ai/components/voice-overlay";
 import { createConversation, listConversations, getConversationMessages } from "@/features/ai/actions/conversations";
 import type { AiModule, ChatMessage as ChatMessageType, Conversation } from "@/features/ai/types";
 import type { User } from "@supabase/supabase-js";
@@ -371,8 +371,8 @@ export function GrixiOrb() {
 
   return (
     <>
-      {/* ── GRIXI Voice Panel (floating, bottom-left above orb area) ── */}
-      <VoicePanel isOpen={voiceOpen && !isAiPage} onClose={() => setVoiceOpen(false)} />
+      {/* ── GRIXI Voice Overlay (full-screen, Gemini Live API) ── */}
+      <VoiceOverlay isOpen={voiceOpen && !isAiPage} onClose={() => setVoiceOpen(false)} />
 
       {/* ── AI Chat Panel (floating, bottom-left above orb area) ── */}
       <AnimatePresence>

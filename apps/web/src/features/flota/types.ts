@@ -119,14 +119,22 @@ export type BOMItem = {
 export type MaintenancePlan = {
   id: string;
   equipment_id: string;
+  vessel_id: string | null;
   name: string;
   strategy_type: StrategyType;
   interval_hours: number | null;
   interval_days: number | null;
   regulation_code: string | null;
+  condition_measurement_point_id: string | null;
+  condition_threshold: number | null;
+  auto_generate_wo: boolean;
+  wo_priority: string;
+  wo_title_template: string | null;
   last_executed: string | null;
   next_due: string | null;
   created_at: string;
+  // Joined
+  equipment?: { id: string; code: string; name: string } | null;
 };
 
 export type WorkOrder = {

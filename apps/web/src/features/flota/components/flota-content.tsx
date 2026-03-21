@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   Ship, Gauge, Wrench, ClipboardCheck, ClipboardList, Users, Package,
   BarChart3, Activity, AlertTriangle, Cpu, Link2,
-  DollarSign, Clock, TrendingUp, Anchor,
+  DollarSign, Clock, TrendingUp, Anchor, CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useFlotaDemo } from "../hooks/use-flota-demo";
@@ -18,6 +18,7 @@ import { CrewTab } from "./crew-tab";
 import { LogisticsTab } from "./logistics-tab";
 import { AnalyticsTab } from "./analytics-tab";
 import { ChecklistTab } from "./checklist-tab";
+import { MaintenancePlansTab } from "./maintenance-plans-tab";
 import { AITab } from "./ai-tab";
 import { LogbookTab } from "./logbook-tab";
 import { AlertsTab } from "./alerts-tab";
@@ -30,6 +31,7 @@ import type {
   Vessel, VesselZone, Equipment, WorkOrder,
   Checklist, CrewMember, KPISnapshot, FlotaKPIs,
   LogbookEntry, FleetAlert, FleetCertificate, FuelLog,
+  MaintenancePlan,
 } from "../types";
 import { VESSEL_STATUS_LABELS } from "../types";
 
@@ -40,6 +42,7 @@ const TABS = [
   { id: "vessel-3d", label: "Buque", icon: Ship },
   { id: "equipment", label: "Equipos", icon: Wrench },
   { id: "work-orders", label: "Órdenes", icon: ClipboardCheck },
+  { id: "plans", label: "Planes Mtto", icon: CalendarClock },
   { id: "checklists", label: "Checklists", icon: ClipboardList },
   { id: "logbook", label: "Bitácora", icon: ClipboardList },
   { id: "alerts", label: "Alertas", icon: AlertTriangle },
@@ -63,6 +66,7 @@ type FlotaData = {
   crew: CrewMember[];
   kpis: KPISnapshot[];
   stats: FlotaKPIs;
+  maintenancePlans: MaintenancePlan[];
   logbook: LogbookEntry[];
   alerts: FleetAlert[];
   certificates: FleetCertificate[];
@@ -74,7 +78,7 @@ type FlotaData = {
 export function FlotaContent({ data }: { data: FlotaData }) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [fullscreenProfile, setFullscreenProfile] = useState(false);
-  const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats, logbook, alerts, certificates, fuelLogs } = data;
+  const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats, maintenancePlans, logbook, alerts, certificates, fuelLogs } = data;
   const { events, readings } = useFlotaDemo();
   const { status: offlineStatus, syncNow, cacheModuleData } = useOfflineSync();
   const maritime = useMaritimeData();
@@ -215,6 +219,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
         )}
         {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} workOrders={workOrders} />}
         {activeTab === "work-orders" && <WorkOrdersTab vesselId={vessel.id} workOrders={workOrders} equipment={equipment} crew={crew} />}
+        {activeTab === "plans" && <MaintenancePlansTab plans={maintenancePlans} vesselId={vessel.id} />}
         {activeTab === "checklists" && <ChecklistTab checklists={checklists} />}
         {activeTab === "logbook" && <LogbookTab logbook={logbook} />}
         {activeTab === "alerts" && <AlertsTab alerts={alerts} />}
