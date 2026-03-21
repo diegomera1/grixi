@@ -31,7 +31,7 @@ import type {
   Checklist, CrewMember, KPISnapshot, FlotaKPIs,
   LogbookEntry, FleetAlert, FleetCertificate, FuelLog,
 } from "../types";
-import { VESSEL_STATUS_LABELS, VESSEL_STATUS_COLORS } from "../types";
+import { VESSEL_STATUS_LABELS } from "../types";
 
 // ── Tabs ────────────────────────────────────────
 
@@ -109,36 +109,69 @@ export function FlotaContent({ data }: { data: FlotaData }) {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto max-w-[1400px] space-y-6">
+      {/* Header + Tabs — matching Finanzas/Compras pattern */}
+      <div className="mb-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0EA5E9] shadow-lg shadow-[#0EA5E9]/20">
-              <Ship size={18} className="text-white" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0EA5E9]/10">
+              <Ship size={20} className="text-[#0EA5E9]" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-[var(--text-primary)]">{vessel.name}</h1>
-              <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
-                <span>{vessel.imo_number}</span>
-                <span>·</span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: VESSEL_STATUS_COLORS[vessel.status] }} />
-                  {VESSEL_STATUS_LABELS[vessel.status]}
-                </span>
-                <span>·</span>
-                <span>{vessel.class_society}</span>
-              </div>
+              <h2 className="text-sm font-bold text-[var(--text-primary)]">{vessel.name}</h2>
+              <p className="text-[11px] text-[var(--text-secondary)] hidden sm:block">
+                {vessel.imo_number} · {VESSEL_STATUS_LABELS[vessel.status]} · {vessel.class_society}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
-            <Anchor size={12} />
-            <span>{vessel.port_of_registry} · {vessel.flag}</span>
-            <span className="mx-1">|</span>
-            <span>{vessel.loa}m × {vessel.beam}m · {vessel.dwt?.toLocaleString()} DWT</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Status indicator */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#0EA5E9]/30 bg-[#0EA5E9]/5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0EA5E9] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0EA5E9]" />
+              </span>
+              <span className="text-xs font-medium text-[#0EA5E9]">
+                {VESSEL_STATUS_LABELS[vessel.status]}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+              <Anchor size={11} />
+              <span>{vessel.port_of_registry} · {vessel.flag}</span>
+            </div>
           </div>
         </div>
-      </motion.div>
+        {/* Tab Navigation — same underline pattern as Finanzas/Compras */}
+        <div className="flex items-center overflow-x-auto border-b border-[var(--border)] scrollbar-hide -mx-2 px-2 sm:mx-0 sm:px-0 sm:gap-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center justify-center gap-2 py-2.5 text-xs font-medium transition-all relative shrink-0",
+                "sm:justify-start sm:px-3",
+                "px-2",
+                activeTab === tab.id
+                  ? "text-[#0EA5E9]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              )}
+            >
+              <tab.icon size={14} />
+              <span className="hidden sm:inline">{tab.label}</span>
+              {activeTab === tab.id && (
+                <motion.div
+                  layoutId="flota-tab-indicator"
+                  className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#0EA5E9] rounded-full"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Offline Indicator */}
+      <OfflineIndicator status={offlineStatus} onSync={syncNow} />
 
       {/* KPI Hero Bar */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
@@ -163,28 +196,6 @@ export function FlotaContent({ data }: { data: FlotaData }) {
             <p className="mt-1 text-sm font-bold tabular-nums text-[var(--text-primary)]">{kpi.value}</p>
             <p className="text-[9px] text-[var(--text-muted)]">{kpi.label}</p>
           </motion.div>
-        ))}
-      </div>
-
-      {/* Offline Indicator */}
-      <OfflineIndicator status={offlineStatus} onSync={syncNow} />
-
-      {/* Tab Bar */}
-      <div className="flex gap-0.5 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-0.5 scrollbar-hide">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium transition-all",
-              activeTab === tab.id
-                ? "bg-[#0EA5E9] text-white shadow-sm"
-                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-            )}
-          >
-            <tab.icon size={13} />
-            {tab.label}
-          </button>
         ))}
       </div>
 
