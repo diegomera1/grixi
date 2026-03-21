@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Ship, Gauge, Wrench, ClipboardCheck, ClipboardList, Users, Package,
-  BarChart3, Activity, AlertTriangle, Cpu,
+  BarChart3, Activity, AlertTriangle, Cpu, Link2,
   DollarSign, Clock, TrendingUp, Anchor,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -23,6 +23,7 @@ import { LogbookTab } from "./logbook-tab";
 import { AlertsTab } from "./alerts-tab";
 import { CertificatesTab } from "./certificates-tab";
 import { FuelTab } from "./fuel-tab";
+import { CrossModuleTab } from "./cross-module-tab";
 import { OfflineIndicator } from "./offline-indicator";
 import { VesselProfile } from "./vessel-profile";
 import type {
@@ -47,6 +48,7 @@ const TABS = [
   { id: "crew", label: "Tripulación", icon: Users },
   { id: "logistics", label: "Logística", icon: Package },
   { id: "analytics", label: "Analítica", icon: BarChart3 },
+  { id: "cross-module", label: "Cross-Módulo", icon: Link2 },
   { id: "ai", label: "AI Predictivo", icon: Cpu },
 ] as const;
 
@@ -74,8 +76,24 @@ export function FlotaContent({ data }: { data: FlotaData }) {
   const [fullscreenProfile, setFullscreenProfile] = useState(false);
   const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats, logbook, alerts, certificates, fuelLogs } = data;
   const { events, readings } = useFlotaDemo();
-  const { status: offlineStatus, syncNow } = useOfflineSync();
+  const { status: offlineStatus, syncNow, cacheModuleData } = useOfflineSync();
   const maritime = useMaritimeData();
+
+  // Auto-cache fleet data to IndexedDB for offline access
+  useEffect(() => {
+    if (vessel?.id) {
+      cacheModuleData("fleet_vessel", vessel);
+      cacheModuleData("fleet_equipment", equipment);
+      cacheModuleData("fleet_work_orders", workOrders);
+      cacheModuleData("fleet_kpis", kpis);
+      cacheModuleData("fleet_logbook", logbook);
+      cacheModuleData("fleet_alerts", alerts);
+      cacheModuleData("fleet_certificates", certificates);
+      cacheModuleData("fleet_fuel_logs", fuelLogs);
+      cacheModuleData("fleet_crew", crew);
+      cacheModuleData("fleet_zones", zones);
+    }
+  }, [vessel, cacheModuleData, equipment, workOrders, kpis, logbook, alerts, certificates, fuelLogs, crew, zones]);
 
   // Fullscreen vessel profile overlay
   if (fullscreenProfile) {
@@ -191,6 +209,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
         {activeTab === "crew" && <CrewTab crew={crew} />}
         {activeTab === "logistics" && <LogisticsTab equipment={equipment} />}
         {activeTab === "analytics" && <AnalyticsTab kpis={kpis} equipment={equipment} workOrders={workOrders} />}
+        {activeTab === "cross-module" && <CrossModuleTab equipment={equipment} workOrders={workOrders} alerts={alerts} certificates={certificates} fuelLogs={fuelLogs} crew={crew} />}
         {activeTab === "ai" && <AITab equipment={equipment} workOrders={workOrders} kpis={kpis} alerts={alerts} certificates={certificates} fuelLogs={fuelLogs} />}
       </motion.div>
     </div>
