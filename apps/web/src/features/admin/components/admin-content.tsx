@@ -248,7 +248,7 @@ export function AdminContent({
   }, [activityByHour]);
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
+    <div className="w-full space-y-4">
       {/* ── Hero Header ─────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}

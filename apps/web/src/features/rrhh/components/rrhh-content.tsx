@@ -82,7 +82,7 @@ export function RRHHContent({
   });
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
+    <div className="w-full space-y-4">
       {/* Header + Tabs */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>

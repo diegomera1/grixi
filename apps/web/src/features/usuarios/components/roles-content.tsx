@@ -66,7 +66,7 @@ export function RolesContent({ roles, permissions }: RolesContentProps) {
   );
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6">
+    <div className="w-full space-y-6">
       {/* Back */}
       <Link
         href="/usuarios"

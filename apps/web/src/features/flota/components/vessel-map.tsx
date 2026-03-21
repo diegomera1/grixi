@@ -308,7 +308,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
             anchor="bottom"
             closeOnClick={false}
             onClose={() => setPopupInfo(null)}
-            className="[&_.maplibregl-popup-content]:bg-[#0c1e3a]/95 [&_.maplibregl-popup-content]:backdrop-blur-xl [&_.maplibregl-popup-content]:border [&_.maplibregl-popup-content]:border-white/10 [&_.maplibregl-popup-content]:rounded-xl [&_.maplibregl-popup-content]:p-3 [&_.maplibregl-popup-content]:text-white [&_.maplibregl-popup-close-button]:text-white/50 [&_.maplibregl-popup-close-button]:hover:text-white [&_.maplibregl-popup-tip]:border-t-[#0c1e3a]/95"
+            className={`[&_.maplibregl-popup-content]:${isDark ? 'bg-[#0c1e3a]/95' : 'bg-white/95'} [&_.maplibregl-popup-content]:backdrop-blur-xl [&_.maplibregl-popup-content]:border [&_.maplibregl-popup-content]:${isDark ? 'border-white/10' : 'border-black/10'} [&_.maplibregl-popup-content]:rounded-xl [&_.maplibregl-popup-content]:p-3 [&_.maplibregl-popup-content]:${isDark ? 'text-white' : 'text-gray-900'} [&_.maplibregl-popup-close-button]:${isDark ? 'text-white/50' : 'text-gray-400'} [&_.maplibregl-popup-close-button]:hover:${isDark ? 'text-white' : 'text-gray-900'} [&_.maplibregl-popup-tip]:${isDark ? 'border-t-[#0c1e3a]/95' : 'border-t-white/95'}`}
           >
             <div className="min-w-[150px]">
               <div className="flex items-center gap-2 mb-2">
@@ -317,12 +317,12 @@ export function VesselMap({ compact = false }: VesselMapProps) {
                 <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[7px] font-bold uppercase ${
                   popupInfo.status === "departed" ? "bg-[#10B981]/20 text-[#10B981]" :
                   popupInfo.status === "next" ? "bg-[#0EA5E9]/20 text-[#0EA5E9]" :
-                  "bg-white/10 text-white/50"
+                  isDark ? "bg-white/10 text-white/50" : "bg-gray-200 text-gray-500"
                 }`}>
                   {popupInfo.status === "departed" ? "Zarpó" : popupInfo.status === "next" ? "Siguiente" : "Pendiente"}
                 </span>
               </div>
-              <div className="space-y-1 text-[9px] text-white/60">
+              <div className={`space-y-1 text-[9px] ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
                 <p>📍 {popupInfo.lat.toFixed(4)}°, {popupInfo.lon.toFixed(4)}°</p>
                 {"eta" in popupInfo && popupInfo.eta && <p>🕐 ETA: {popupInfo.eta}</p>}
                 {"arrived" in popupInfo && popupInfo.arrived && <p>✅ Llegada: {popupInfo.arrived}</p>}
@@ -390,7 +390,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
                   { icon: Fuel, label: "Consumo", value: `${VESSEL.fuelRate} t/d` },
                 ].map((info) => (
                   <div key={info.label} className="flex items-center gap-1.5">
-                    <info.icon size={9} className="text-white/30 shrink-0" />
+                    <info.icon size={9} className={`${hud.labelUpper} shrink-0`} />
                     <div>
                       <p className={`text-[6px] font-bold ${hud.labelUpper} uppercase tracking-wider`}>{info.label}</p>
                       <p className={`text-[10px] font-bold ${hud.textValue}`}>{info.value}</p>
@@ -415,7 +415,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
             className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[9px] font-bold backdrop-blur-md transition-all ${
               btn.active
                 ? "border-[#0EA5E9]/50 bg-[#0EA5E9]/20 text-[#0EA5E9]"
-                : "border-white/10 bg-[#0c1e3a]/80 text-white/50 hover:text-white/70"
+                : `${hud.border} ${hud.bg} ${hud.textMuted} hover:${isDark ? 'text-white/70' : 'text-gray-700'}`
             }`}
           >
             <btn.icon size={11} />
@@ -443,7 +443,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
             />
             <button
               onClick={() => setShowWindy(false)}
-              className="absolute top-3 left-3 z-30 rounded-lg border border-white/20 bg-[#0c1e3a]/90 backdrop-blur-xl px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[#0c1e3a] transition-colors"
+              className={`absolute top-3 left-3 z-30 rounded-lg border ${hud.border} ${hud.bg} backdrop-blur-xl px-3 py-1.5 text-[10px] font-bold ${hud.text} transition-colors`}
             >
               ✕ Cerrar Windy
             </button>
@@ -458,15 +458,15 @@ export function VesselMap({ compact = false }: VesselMapProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-14 left-3 z-20 w-[320px] rounded-xl border border-white/10 bg-[#0c1e3a]/95 backdrop-blur-xl shadow-2xl"
+            className={`absolute bottom-14 left-3 z-20 w-[320px] rounded-xl border ${hud.border} ${hud.bg} backdrop-blur-xl shadow-2xl`}
           >
-            <div className="px-3 pt-3 pb-2 border-b border-white/5">
+            <div className={`px-3 pt-3 pb-2 border-b ${hud.divider}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Cloud size={12} className="text-[#0EA5E9]" />
                   <span className="text-[10px] font-bold text-[#0EA5E9] uppercase tracking-wider">Condiciones Marítimas</span>
                 </div>
-                <span className="text-[8px] text-white/30">OpenWeatherMap · NOAA</span>
+                <span className={`text-[8px] ${hud.labelUpper}`}>OpenWeatherMap · NOAA</span>
               </div>
             </div>
 
@@ -483,24 +483,24 @@ export function VesselMap({ compact = false }: VesselMapProps) {
                 { icon: Sun, label: "UV", value: `${MARINE_WEATHER.uvIndex} Alto`, color: "#EF4444" },
                 { icon: ArrowDown, label: "Corriente", value: `${MARINE_WEATHER.currentSpeed}kt ${MARINE_WEATHER.currentDir}`, color: "#F97316" },
               ].map((item) => (
-                <div key={item.label} className="rounded-lg bg-white/5 p-2">
+                <div key={item.label} className={`rounded-lg ${hud.cardBg} p-2`}>
                   <item.icon size={10} style={{ color: item.color }} className="mb-1" />
-                  <p className="text-[8px] text-white/40">{item.label}</p>
-                  <p className="text-[10px] font-bold text-white/90">{item.value}</p>
+                  <p className={`text-[8px] ${hud.textMuted}`}>{item.label}</p>
+                  <p className={`text-[10px] font-bold ${hud.textValue}`}>{item.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Forecast row */}
             <div className="px-3 pb-2">
-              <p className="text-[8px] font-bold text-white/30 uppercase tracking-wider mb-1">Pronóstico 24h</p>
+              <p className={`text-[8px] font-bold ${hud.labelUpper} uppercase tracking-wider mb-1`}>Pronóstico 24h</p>
               <div className="flex gap-1">
                 {MARINE_WEATHER.forecast.map((f) => (
-                  <div key={f.hour} className="flex-1 rounded-md bg-white/5 p-1.5 text-center">
-                    <p className="text-[7px] text-white/40">{f.hour}</p>
+                  <div key={f.hour} className={`flex-1 rounded-md ${hud.cardBg} p-1.5 text-center`}>
+                    <p className={`text-[7px] ${hud.textMuted}`}>{f.hour}</p>
                     <p className="text-[11px] my-0.5">{f.icon}</p>
                     <p className="text-[8px] text-[#0EA5E9]">{f.wind}kt</p>
-                    <p className="text-[7px] text-white/40">{f.wave}m</p>
+                    <p className={`text-[7px] ${hud.textMuted}`}>{f.wave}m</p>
                   </div>
                 ))}
               </div>
@@ -508,7 +508,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
 
             {/* Tides */}
             <div className="px-3 pb-3">
-              <p className="text-[8px] font-bold text-white/30 uppercase tracking-wider mb-1">Mareas — NOAA</p>
+              <p className={`text-[8px] font-bold ${hud.labelUpper} uppercase tracking-wider mb-1`}>Mareas — NOAA</p>
               <div className="flex gap-2">
                 {MARINE_WEATHER.tides.map((t) => (
                   <div key={t.time} className="flex items-center gap-1">
@@ -516,13 +516,13 @@ export function VesselMap({ compact = false }: VesselMapProps) {
                       {t.type === "high" ? "▲" : "▼"}
                     </span>
                     <div>
-                      <p className="text-[8px] text-white/70">{t.time}</p>
-                      <p className="text-[7px] text-white/40">{t.height}m</p>
+                      <p className={`text-[8px] ${hud.textSub}`}>{t.time}</p>
+                      <p className={`text-[7px] ${hud.textMuted}`}>{t.height}m</p>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-1.5 flex items-center justify-between text-[7px] text-white/30">
+              <div className={`mt-1.5 flex items-center justify-between text-[7px] ${hud.labelUpper}`}>
                 <span>☀️ {MARINE_WEATHER.sunrise}</span>
                 <span>{MARINE_WEATHER.seaState}</span>
                 <span>🌅 {MARINE_WEATHER.sunset}</span>
@@ -538,10 +538,10 @@ export function VesselMap({ compact = false }: VesselMapProps) {
           {/* Progress */}
           <div className="shrink-0 min-w-[130px]">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[8px] font-bold uppercase tracking-wider text-white/40">Ruta — {ROUTE_PROGRESS.totalNm} nm</span>
+              <span className={`text-[8px] font-bold uppercase tracking-wider ${hud.textMuted}`}>Ruta — {ROUTE_PROGRESS.totalNm} nm</span>
               <span className="text-[9px] font-bold text-[#0EA5E9]">{ROUTE_PROGRESS.pct}%</span>
             </div>
-            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className={`w-full h-1.5 ${isDark ? 'bg-white/10' : 'bg-black/10'} rounded-full overflow-hidden`}>
               <motion.div
                 className="h-full bg-gradient-to-r from-[#10B981] to-[#0EA5E9] rounded-full"
                 initial={{ width: 0 }}
@@ -550,13 +550,13 @@ export function VesselMap({ compact = false }: VesselMapProps) {
               />
             </div>
             <div className="flex justify-between mt-0.5">
-              <span className="text-[7px] text-white/30">{ROUTE_PROGRESS.traveled} nm</span>
-              <span className="text-[7px] text-white/30">{ROUTE_PROGRESS.remaining} nm</span>
+              <span className={`text-[7px] ${hud.labelUpper}`}>{ROUTE_PROGRESS.traveled} nm</span>
+              <span className={`text-[7px] ${hud.labelUpper}`}>{ROUTE_PROGRESS.remaining} nm</span>
             </div>
           </div>
 
           {/* Separator */}
-          <div className="h-8 w-px bg-white/10 shrink-0" />
+          <div className={`h-8 w-px ${isDark ? 'bg-white/10' : 'bg-black/10'} shrink-0`} />
 
           {/* Waypoints horizontal */}
           <div className="flex items-center gap-0.5 flex-1 overflow-x-auto">
@@ -567,17 +567,17 @@ export function VesselMap({ compact = false }: VesselMapProps) {
                 className={`flex items-center gap-1 shrink-0 rounded-lg px-2 py-1 transition-colors text-[9px] font-medium ${
                   popupInfo?.name === wp.name
                     ? "bg-[#0EA5E9]/20 text-[#0EA5E9]"
-                    : "hover:bg-white/5 text-white/50"
+                    : `${isDark ? 'hover:bg-white/5 text-white/50' : 'hover:bg-gray-100 text-gray-500'}`
                 }`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${
                   wp.status === "departed" ? "bg-[#10B981]" :
                   wp.status === "next" ? "bg-[#0EA5E9] animate-pulse" :
-                  "bg-white/20"
+                  isDark ? "bg-white/20" : "bg-gray-300"
                 }`} />
                 {wp.name}
                 {i < ROUTE_WAYPOINTS.length - 1 && (
-                  <span className="text-white/15 ml-0.5">→</span>
+                  <span className={`${isDark ? 'text-white/15' : 'text-gray-300'} ml-0.5`}>→</span>
                 )}
               </button>
             ))}
@@ -586,7 +586,7 @@ export function VesselMap({ compact = false }: VesselMapProps) {
           {/* Sea state badge */}
           <div className="shrink-0 flex items-center gap-2">
             <div className="text-right">
-              <p className="text-[7px] text-white/30 uppercase font-bold">Estado del Mar</p>
+              <p className={`text-[7px] ${hud.labelUpper} uppercase font-bold`}>Estado del Mar</p>
               <p className="text-[10px] font-bold text-[#10B981]">{VESSEL.seaState}</p>
             </div>
           </div>
