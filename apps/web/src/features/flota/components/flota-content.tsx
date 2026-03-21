@@ -109,7 +109,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4">
+    <div className="mx-auto max-w-[1400px] space-y-4">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

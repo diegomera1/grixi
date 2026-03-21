@@ -118,7 +118,7 @@ export function UsersContent({ users, departments, roles }: UsersContentProps) {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-[1400px] space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

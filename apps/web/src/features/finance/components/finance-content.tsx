@@ -229,7 +229,7 @@ export function FinanceContent({ initialTransactions, costCenters }: Props) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1400px] space-y-6">
       {/* ── Header + Tabs (same row, matching Compras) ───── */}
       <div className="mb-2">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">

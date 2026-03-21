@@ -161,7 +161,7 @@ export function WarehousesContent({ warehouses }: WarehousesContentProps) {
   }, [warehouses, searchQuery]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-0">
+    <div className="mx-auto max-w-[1400px] space-y-0">
       {/* ── Header + Tabs ────────────────────────── */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
