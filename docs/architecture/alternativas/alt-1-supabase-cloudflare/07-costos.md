@@ -1,9 +1,16 @@
 # Alternativa 1 — Costos Detallados
 
-> Desglose completo para **5 desarrolladores**, **~100 usuarios por tenant**, estimados **holgados**.
+> Desglose completo para un equipo de **5 personas (2 developers + 3 equipo)**, **~100 usuarios por tenant**, estimados **holgados**.
 > Dominio único: `grixi.com` (wildcard `*.grixi.com` para tenants).
 > AI: **Gemini 3.1 Flash-Lite** ($0.25 input / $1.50 output por M tokens).
 > **Actualizado:** 21 de marzo, 2026.
+
+### Composición del Equipo
+
+| Rol | Cantidad | Qué necesita |
+|---|---|---|
+| **Developers** | 2 | Antigravity Ultra, GitHub Team, Google Workspace, acceso a Supabase Branching |
+| **Equipo** (comercial, diseño, gestión) | 3 | Google Workspace, Jira, Discord |
 
 ---
 
@@ -61,7 +68,7 @@
 
 ---
 
-## 3. Tabla de Costos Completa (5 Devs, 5 Tenants, 500 Usuarios)
+## 3. Tabla de Costos Completa (2 Devs + 3 Equipo, 5 Tenants, 500 Usuarios)
 
 | # | Servicio | Tipo | Incluido | Precio/mes |
 |---|---|---|---|---:|
@@ -70,7 +77,7 @@
 | 2 | Compute Medium | 🔒 Fijo | 2 vCPU ARM, 4 GB RAM dedicado, I/O optimizado | $60.00 |
 | 3 | Crédito compute | 🔒 Fijo | Descuento incluido en Pro | -$10.00 |
 | 4 | PITR 7 días | 🔒 Fijo | Restauración a cualquier segundo, últimos 7 días | $100.00 |
-| 5 | Branching | 📈 Variable | ~6 branches × 8h × 22 días × $0.01344/hr | ~$15.00 |
+| 5 | Branching | 📈 Variable | ~3 branches (2 devs) × 8h × 22 días × $0.01344/hr | ~$8.00 |
 | 6 | DB extra | 📈 Variable | ~5 GB con 5 tenants (dentro de 8 GB) | ~$0.00 |
 | 7 | Storage extra (Supabase) | 📈 Variable | ~50 GB docs con RLS (dentro de 100 GB) | ~$0.00 |
 | 8 | Egress extra | 📈 Variable | ~150 GB API + descargas (dentro de 250 GB) | ~$0.00 |
@@ -88,7 +95,7 @@
 | | **Subtotal Cloudflare** | | | **$28.60** |
 | | | | | |
 | | **AI** | | | |
-| 17 | Antigravity Ultra | 🔒 Fijo | Hasta 5 devs. Gemini 3.1 Pro, Claude, GPT. Sin límite semanal | $249.99 |
+| 17 | Antigravity Ultra | 🔒 Fijo | Hasta 5 devs (usada por 2). Gemini 3.1 Pro, Claude, GPT. Sin límite semanal | $249.99 |
 | 18 | Gemini 3.1 Flash-Lite | 📈 Variable | 5 tenants × 100 users × 70% activos × 8 queries/día (ver cálculo §4) | ~$125.00 |
 | 19 | Gemini margen +30% | 📈 Variable | Buffer: picos de uso, prompts largos, re-intentos, imágenes | ~$40.00 |
 | | **Subtotal AI** | | | **$414.99** |
@@ -104,18 +111,18 @@
 | 24 | Jira | 🔒 Fijo | Free: hasta 10 usuarios. Sprints, backlog, tracking | $0.00 |
 | | **Subtotal Monitoreo** | | | **$0.00** |
 | | | | | |
-| | **POR DEVELOPER (×5)** | | | |
-| 25 | GitHub Team | 🔒 Fijo | $4/dev × 5. Repos privados, CI/CD, code review | $20.00 |
-| 26 | Google Workspace | 🔒 Fijo | $14/dev × 5. Gmail, Drive, Meet con @grixi.com | $70.00 |
-| | **Subtotal Devs** | | | **$90.00** |
+| | **POR PERSONA** | | | |
+| 25 | GitHub Team (solo devs) | 🔒 Fijo | $4/dev × 2 developers. Repos privados, CI/CD, code review | $8.00 |
+| 26 | Google Workspace (todo el equipo) | 🔒 Fijo | $14/persona × 5. Gmail, Drive, Meet con @grixi.com | $70.00 |
+| | **Subtotal Equipo** | | | **$78.00** |
 
 ### Totales
 
 | Categoría | Monto/mes |
 |---|---:|
-| 🔒 **Costos fijos** | **$599.99** |
-| 📈 **Costos variables** (holgados, 5 tenants, 500 usuarios) | **~$183.60** |
-| **TOTAL MENSUAL** | **~$784/mes** |
+| 🔒 **Costos fijos** | **$587.99** |
+| 📈 **Costos variables** (holgados, 5 tenants, 500 usuarios) | **~$176.60** |
+| **TOTAL MENSUAL** | **~$765/mes** |
 
 ---
 
@@ -155,54 +162,88 @@
 
 ---
 
-## 5. Costos Variables: Qué Sube y Cuándo
+## 5. Cálculo Detallado: Resend (Emails Transaccionales)
 
-| # | Servicio | Incluido | Cuándo sube | Costo extra | Trigger |
-|---|---|---|---|---|---|
-| 1 | **Gemini API** | ~$165 (5 tenants + margen) | Cada tenant nuevo | +$25-35/tenant | Cada tenant |
-| 2 | **Supabase Branching** | ~$15 (6 branches) | Más devs o branches persistentes | +$10/branch | +6 devs |
-| 3 | **R2 Storage** | ~$3.60 (250 GB) | Más tenants, más archivos | +$0.75/tenant (~50 GB) | Cada tenant |
-| 4 | **Supabase DB** | 8 GB | DB > 8 GB | +$0.125/GB | ~10 tenants |
-| 5 | **Supabase Compute** | Medium 4 GB | Queries lentas, carga alta | +$100 → Large | ~30 tenants |
-| 6 | **Supabase Egress** | 250 GB | Muchas descargas directas de Supabase | +$0.09/GB | ~10 tenants |
-| 7 | **Supabase Storage** | 100 GB | Más de 100 GB de docs con RLS | +$0.021/GB | ~15 tenants |
-| 8 | **CF Workers req** | 10M | Alto tráfico concurrente | +$0.30/millón | ~20 tenants |
-| 9 | **CF KV** | 10M reads | Cache de muchas orgs | +$0.50/M reads | ~50 tenants |
-| 10 | **Resend** | 50K emails | Muchas notificaciones/alertas | +$20 → 100K | ~30 tenants |
-| 11 | **Sentry** | 5K errors | Más tráfico = más errores | +$26 → Team | ~20 tenants |
-| 12 | **Supabase MAUs** | 100K | Más de 100K usuarios únicos | +$0.00325/MAU | ~100 tenants |
+### Emails por tenant/mes (~100 usuarios, uso intensivo)
+
+| Tipo de email | Cantidad/mes | Notas |
+|---|---|---|
+| Alertas (stock bajo, OC aprobada, medidas fuera de rango) | ~500 | ~5/usuario activo |
+| Notificaciones (asignaciones, cambios, nuevos docs) | ~300 | ~3/usuario |
+| Reportes programados (semanales/mensuales a gerentes) | ~80 | ~20 gerentes × 4 reportes |
+| Invitaciones y onboarding | ~50 | Nuevos usuarios + re-envíos |
+| Magic links, password resets, verificaciones | ~100 | Estimado |
+| Auditoría y alertas admin | ~50 | Solo admins |
+| **Total por tenant/mes** | **~1,100** | Uso normal |
+| **Total holgado (+50%)** | **~1,650** | **Para presupuesto** |
+| **Total máximo** | **~3,000** | Pico alto con alertas masivas |
+
+### Resend: planes y escalado
+
+| Plan | Emails incluidos | Precio | Overage | Cuántos tenants cubre (a 3K/tenant) |
+|---|---|---|---|---|
+| **Pro** | 50,000/mes | $20/mes | $0.90/1K extra | ~16 tenants |
+| **Scale** | 100,000/mes | $90/mes | $0.90/1K extra | ~33 tenants |
+| Enterprise | Custom | Custom | Negociable | 34+ tenants |
 
 ---
 
-## 6. Escalado por Tenant (~100 Usuarios por Tenant, 50 GB Storage por Tenant)
+## 6. Todos los Costos Variables: Qué Sube y Cuándo
 
-### Costo marginal por tenant adicional
+| # | Servicio | Incluido en plan fijo | Cuándo se excede | Costo extra | Trigger |
+|---|---|---|---|---|---|
+| 1 | **Gemini 3.1 Flash-Lite** | Pay per use | Cada tenant nuevo | ~$33/tenant (con margen) | Cada tenant |
+| 2 | **R2 Storage** | 10 GB free | Cada tenant nuevo (~50 GB c/u) | $0.015/GB ($0 egress) | Cada tenant |
+| 3 | **Resend emails** | 50K emails (Pro) | ~17 tenants (a 3K emails/tenant) | $0.90/1K extra o upgrade a Scale $90 | ~17 tenants |
+| 4 | **Supabase Branching** | Pay per use | Siempre variable | $0.01344/hr por branch | Cada branch |
+| 5 | **Supabase DB size** | 8 GB | ~8 tenants (1 GB/tenant) | $0.125/GB extra | ~8 tenants |
+| 6 | **Supabase Egress** | 250 GB/mes | ~8 tenants (30 GB/tenant) | $0.09/GB extra | ~8 tenants |
+| 7 | **Supabase Storage** | 100 GB | ~10 tenants (10 GB docs/tenant) | $0.021/GB extra | ~10 tenants |
+| 8 | **Supabase Compute** | Medium (4 GB RAM) | Queries lentas bajo carga | +$100 → Large (8 GB) | ~30 tenants |
+| 9 | **Supabase MAUs** | 100K | >100K usuarios únicos/mes | $0.00325/MAU extra | ~100 tenants |
+| 10 | **CF Workers req** | 10M/mes | Alto tráfico (200K req/tenant) | $0.30/millón extra | ~50 tenants |
+| 11 | **CF KV reads** | 10M/mes | Cache de muchas orgs | $0.50/M reads extra | ~50 tenants |
+| 12 | **Sentry** | 5K errors/mes | Más tráfico, más errores | +$26 → Team plan | ~20 tenants |
 
-| Recurso | Costo/tenant/mes | Notas |
+---
+
+## 7. Escalado por Tenant (~100 Usuarios, 50 GB Storage, 3K Emails)
+
+### Costo marginal por tenant adicional (todos los recursos)
+
+| Recurso | Costo/tenant/mes | Cálculo |
 |---|---|---|
-| **Gemini 3.1 Flash-Lite** | ~$33 | 70 users activos × 8 queries/día + 30% margen |
-| **R2 Storage** (50 GB/tenant) | ~$0.75 | $0.015/GB × 50 GB. Egress $0 |
-| **Supabase DB** | ~$0.13 | ~1 GB data/tenant × $0.125/GB |
-| **Supabase Egress** | ~$2.70 | ~30 GB/tenant × $0.09/GB (cuando excede 250 GB) |
+| **Gemini 3.1 Flash-Lite** | **~$33.00** | 70 users × 8 queries × 22 días × (1K in + 1.2K out) + 30% margen |
+| **Resend emails** | **~$2.70** | ~3K emails/tenant × $0.90/1K (overage cuando excede 50K) |
+| **Supabase Egress** | ~$2.70 | ~30 GB/tenant × $0.09/GB (cuando excede 250 GB incluidos) |
+| **R2 Storage** | ~$0.75 | 50 GB/tenant × $0.015/GB. Egress siempre $0 |
 | **Supabase Storage** | ~$0.21 | ~10 GB docs/tenant × $0.021/GB (cuando excede 100 GB) |
-| **Workers requests** | ~$0.06 | ~200K req/tenant |
-| **Resend emails** | ~$0.00 | ~2K emails/tenant (dentro del plan hasta ~25 tenants) |
-| **Total por tenant extra** | **~$37/tenant** | Con margen holgado |
+| **Supabase DB** | ~$0.13 | ~1 GB data/tenant × $0.125/GB (cuando excede 8 GB) |
+| **Workers requests** | ~$0.06 | ~200K req/tenant × $0.30/M (cuando excede 10M) |
+| **KV reads** | ~$0.05 | ~100K reads/tenant × $0.50/M (cuando excede 10M) |
+| **Total por tenant extra** | **~$40/tenant** | Redondeado con margen |
 
-### Tabla de escalado completo
+> [!NOTE]
+> **Gemini API = 83% del costo variable por tenant.** Las optimizaciones de AI (caching, modelo híbrido, rate limiting) pueden bajar el costo marginal a ~$20-25/tenant.
 
-| Tenants | Usuarios | Gemini (con margen) | R2 Storage | Supabase extras | CF extras | Otros | Fijos | **Total/mes** |
-|---|---|---|---|---|---|---|---|---|
-| **1-5** | 500 | ~$165 | ~$4 | ~$0* | ~$0* | ~$15 | $600 | **~$784** |
-| **6-10** | 1,000 | ~$330 | ~$8 | ~$15 | ~$0* | ~$15 | $600 | **~$968** |
-| **11-20** | 2,000 | ~$660 | ~$15 | ~$50 | ~$3 | ~$15 | $600 | **~$1,343** |
-| **21-30** | 3,000 | ~$990 | ~$23 | ~$90 | ~$6 | ~$35** | $600 | **~$1,744** |
-| **31-50** | 5,000 | ~$1,650 | ~$38 | ~$140 | ~$12 | ~$35** | $600 | **~$2,475** |
-| **51-100** | 10,000 | ~$3,300 | ~$75 | ~$240 | ~$25 | ~$61*** | $600 | **~$4,301** |
+### Tabla de escalado completo (todos los costos desglosados)
 
-> \* Dentro de los límites incluidos del plan Pro
-> \** Incluye upgrade Supabase → Large (+$100/mes) y Resend 100K (+$20)
-> \*** Incluye upgrade Supabase → XL (+$150), Resend 100K (+$20), Sentry Team (+$26)
+| Tenants | Usuarios | Gemini | R2 | Resend | SB Egress | SB DB | SB Storage | SB Compute | CF Workers | Branching | Sentry | **Total variable** | Fijos | **TOTAL** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **5** | 500 | $165 | $4 | $0* | $0* | $0* | $0* | $0* | $0* | $8 | $0* | **$177** | $588 | **~$765** |
+| **10** | 1K | $330 | $8 | $0* | $20 | $1 | $0* | $0* | $0* | $8 | $0* | **$367** | $588 | **~$955** |
+| **17** | 1.7K | $561 | $13 | $0* | $46 | $2 | $7 | $0* | $0* | $8 | $0* | **$637** | $588 | **~$1,225** |
+| **20** | 2K | $660 | $15 | $9† | $59 | $3 | $10 | $0* | $0* | $8 | $26‡ | **$790** | $588 | **~$1,378** |
+| **30** | 3K | $990 | $23 | $27† | $92 | $5 | $16 | $100§ | $0* | $8 | $26 | **$1,287** | $588 | **~$1,875** |
+| **50** | 5K | $1,650 | $38 | $70¶ | $155 | $8 | $26 | $100 | $3 | $8 | $26 | **$2,084** | $588 | **~$2,672** |
+| **100** | 10K | $3,300 | $75 | $180¶ | $310 | $17 | $53 | $150§§ | $8 | $8 | $26 | **$4,127** | $588 | **~$4,715** |
+
+> \* Dentro de los límites incluidos del plan fijo
+> † Overage: (emails - 50K) × $0.90/1K
+> ‡ Sentry upgrade a Team ($26/mes) a partir de ~20 tenants
+> § Upgrade Supabase Compute → Large ($100/mes extra) a partir de ~30 tenants
+> §§ Upgrade Supabase Compute → XL ($150/mes extra) a partir de ~50 tenants
+> ¶ Upgrade Resend Scale ($90/mes) + overage a partir de ~34 tenants
 
 ---
 
@@ -219,15 +260,15 @@
 
 ---
 
-## 8. Proyección a 3 Años (5 devs, crecimiento orgánico)
+## 9. Proyección a 3 Años (2 devs + 3 equipo, crecimiento orgánico)
 
 | Periodo | Tenants | Usuarios | Total/mes | Total periodo |
 |---|---|---|---|---|
-| **Mes 1-6** | 1-5 | 500 | ~$784 | $4,704 |
-| **Mes 7-12** | 6-10 | 1,000 | ~$968 | $5,808 |
-| **Año 2** | 11-25 | 2,500 | ~$1,500 | $18,000 |
+| **Mes 1-6** | 1-5 | 500 | ~$765 | $4,590 |
+| **Mes 7-12** | 6-10 | 1,000 | ~$955 | $5,730 |
+| **Año 2** | 11-25 | 2,500 | ~$1,300 | $15,600 |
 | **Año 3** | 26-50 | 5,000 | ~$2,300 | $27,600 |
-| **Total 3 años** | | | | **$56,112** |
+| **Total 3 años** | | | | **$53,520** |
 
 ### Break-even
 
@@ -240,48 +281,59 @@
 
 ---
 
-## 9. Resumen Ejecutivo
+## 10. Resumen Ejecutivo
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│    GRIXI — COSTOS MENSUALES (5 DEVS, 5 TENANTS, ~500 USUARIOS)        │
-│    100 usuarios/tenant · 50 GB storage/tenant · Gemini 3.1 Flash-Lite │
-│    Estimados HOLGADOS con margen +30% en AI                            │
-│                                                                        │
-│  🔒 COSTOS FIJOS                                    $599.99/mes       │
-│  ├── Antigravity Ultra (5 devs)                     $249.99           │
-│  ├── Supabase Pro                                   $25.00            │
-│  ├── Supabase Compute Medium (2 vCPU, 4 GB)         $60.00            │
-│  ├── Supabase crédito                               -$10.00           │
-│  ├── Supabase PITR 7 días                           $100.00           │
-│  ├── Google Workspace (5 × $14)                     $70.00            │
-│  ├── Discord Level 2                                $40.00            │
-│  ├── Cloudflare Pro (CDN + WAF + DDoS)              $20.00            │
-│  ├── Cloudflare Workers Paid (+ KV + Hyperdrive)    $5.00             │
-│  ├── Resend Pro (50K emails)                        $20.00            │
-│  ├── GitHub Team (5 × $4)                           $20.00            │
-│  └── Sentry + Jira                                  $0.00             │
-│                                                                        │
-│  📈 COSTOS VARIABLES (holgados, 5 tenants)          ~$184/mes         │
-│  ├── Gemini 3.1 Flash-Lite (5 × ~$25/tenant)       ~$125.00          │
-│  ├── Gemini margen seguridad (+30%)                 ~$40.00           │
-│  ├── Supabase Branching (~6 branches)               ~$15.00           │
-│  └── R2 Storage (5 × 50 GB = 250 GB)               ~$3.60            │
-│                                                                        │
-│  ═══════════════════════════════════════════════════════               │
-│  TOTAL                                              ~$784/mes         │
-│  ═══════════════════════════════════════════════════════               │
-│                                                                        │
-│  📊 ESCALADO                                                          │
-│  ├── Costo variable dominante: Gemini (~$33/tenant con margen)        │
-│  ├── Costo marginal total por tenant: ~$37/mes                        │
-│  ├── 10 tenants (1K users):            ~$968/mes                      │
-│  ├── 20 tenants (2K users):            ~$1,343/mes                    │
-│  ├── 50 tenants (5K users):            ~$2,475/mes                    │
-│  └── Break-even: 2 clientes × $500/mes                                │
-│                                                                        │
-│  ⚠️  Gemini 2.0 Flash Lite shutdown: 1 junio 2026                    │
-│      Presupuestado con 3.1 Flash-Lite ($0.25/$1.50 por M tokens)      │
-│      Con optimizaciones (cache + modelo híbrido) → -50-70% en AI      │
-└────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│  GRIXI — COSTOS MENSUALES (2 DEVS + 3 EQUIPO, 5 TENANTS, ~500 USERS)   │
+│  100 users/tenant · 50 GB storage/tenant · 3K emails/tenant             │
+│  Gemini 3.1 Flash-Lite · Estimados HOLGADOS (+30% margen AI)            │
+│                                                                          │
+│  🛠️  EQUIPO                                                             │
+│  ├── 2 Developers (Antigravity, GitHub, Workspace)                      │
+│  └── 3 Equipo (Workspace, Jira, Discord)                                │
+│                                                                          │
+│  🔒 COSTOS FIJOS                                      $587.99/mes       │
+│  ├── Antigravity Ultra (hasta 5 devs, usada por 2)    $249.99           │
+│  ├── Supabase Pro                                     $25.00            │
+│  ├── Supabase Compute Medium (2 vCPU, 4 GB)           $60.00            │
+│  ├── Supabase crédito                                 -$10.00           │
+│  ├── Supabase PITR 7 días                             $100.00           │
+│  ├── Google Workspace (5 personas × $14)              $70.00            │
+│  ├── Discord Level 2                                  $40.00            │
+│  ├── Cloudflare Pro (CDN + WAF + DDoS)                $20.00            │
+│  ├── Resend Pro (50K emails base)                     $20.00            │
+│  ├── GitHub Team (2 devs × $4)                        $8.00             │
+│  ├── Cloudflare Workers Paid (+ KV + Hyperdrive)      $5.00             │
+│  └── Sentry + Jira                                    $0.00             │
+│                                                                          │
+│  📈 COSTOS VARIABLES (holgados, ~5 tenants)           ~$177/mes         │
+│  ├── Gemini 3.1 Flash-Lite (5 × ~$25/tenant)         ~$125.00          │
+│  ├── Gemini margen seguridad (+30%)                   ~$40.00           │
+│  ├── Supabase Branching (~3 branches, 2 devs)         ~$8.00            │
+│  ├── R2 Storage (5 × 50 GB = 250 GB)                 ~$3.60            │
+│  └── Resend, Egress, DB, KV (dentro de incluidos)     ~$0.00            │
+│                                                                          │
+│  ═══════════════════════════════════════════════════════                 │
+│  TOTAL                                                ~$765/mes         │
+│  ═══════════════════════════════════════════════════════                 │
+│                                                                          │
+│  📊 ESCALADO (por tenant: ~100 users, 50 GB, 3K emails)                 │
+│  ├── Costo marginal por tenant: ~$40/mes                                │
+│  │   ├── Gemini (~$33) + Resend ($2.70) + Egress ($2.70)               │
+│  │   └── R2 ($0.75) + Storage ($0.21) + DB ($0.13)                     │
+│  ├── 10 tenants (1K users):        ~$955/mes                            │
+│  ├── 20 tenants (2K users):        ~$1,378/mes                          │
+│  ├── 50 tenants (5K users):        ~$2,672/mes                          │
+│  ├── 100 tenants (10K users):      ~$4,715/mes                          │
+│  └── Break-even: 2 clientes × $500/mes                                  │
+│                                                                          │
+│  ⚠️  Gemini 2.0 Flash Lite shutdown: 1 junio 2026                      │
+│  📧 Resend: 50K emails incluidos → upgrade Scale ($90) a ~17 tenants   │
+│  💾 Supabase: upgrade Large ($100 extra) a ~30 tenants                  │
+│  🤖 Con optimizaciones AI (cache + híbrido): -50-70% en Gemini         │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
+
+
+

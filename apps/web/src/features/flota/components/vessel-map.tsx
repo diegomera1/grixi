@@ -116,18 +116,16 @@ const routeGeoJSON: GeoJSON.FeatureCollection = {
   ],
 };
 
-// CartoDB tile styles
-function getMapStyle(isDark: boolean) {
+// CartoDB tile styles — always dark for nautical map (ocean is invisible on light tiles)
+function getMapStyle(_isDark: boolean) {
   return {
     version: 8 as const,
-    name: isDark ? "Maritime Dark" : "Maritime Light",
+    name: "Maritime Dark",
     sources: {
       carto: {
         type: "raster" as const,
         tiles: [
-          isDark
-            ? "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
-            : "https://basemaps.cartocdn.com/voyager/{z}/{x}/{y}@2x.png",
+          "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
         ],
         tileSize: 256,
         attribution: "&copy; CARTO &copy; OpenStreetMap",
