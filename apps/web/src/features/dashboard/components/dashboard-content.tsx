@@ -185,7 +185,7 @@ export function DashboardContent({
   const router = useRouter();
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4 pb-8">
+    <div className="mx-auto max-w-[1400px] space-y-4">
       {/* ═══ 1. HERO BANNER ═══ */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

@@ -404,7 +404,7 @@ export function CommandCenterContent({
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
+    <div className="mx-auto max-w-[1400px] flex flex-col gap-4 pb-4">
       {/* ── Header ─────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

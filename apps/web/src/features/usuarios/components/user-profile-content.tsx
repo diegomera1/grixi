@@ -117,7 +117,7 @@ export function UserProfileContent({
   }, []);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-[1400px] space-y-6">
       {/* Back button */}
       <Link
         href="/usuarios"
