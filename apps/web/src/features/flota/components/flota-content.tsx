@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { useFlotaDemo } from "../hooks/use-flota-demo";
 import { useOfflineSync } from "../hooks/use-offline-sync";
+import { useMaritimeData } from "../hooks/use-maritime-data";
 import { DashboardTab } from "./dashboard-tab";
 import { EquipmentTab } from "./equipment-tab";
 import { WorkOrdersTab } from "./work-orders-tab";
@@ -61,6 +62,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
   const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats } = data;
   const { events, readings } = useFlotaDemo();
   const { status: offlineStatus, syncNow } = useOfflineSync();
+  const maritime = useMaritimeData();
 
   // Fullscreen vessel profile overlay
   if (fullscreenProfile) {
@@ -68,6 +70,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
       <VesselProfile
         zones={zones}
         equipment={equipment}
+        weather={maritime.weather}
         fullscreenMode
         onToggleFullscreen={() => setFullscreenProfile(false)}
       />
@@ -161,6 +164,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
           <VesselProfile
             zones={zones}
             equipment={equipment}
+            weather={maritime.weather}
             onToggleFullscreen={() => setFullscreenProfile(true)}
           />
         )}
