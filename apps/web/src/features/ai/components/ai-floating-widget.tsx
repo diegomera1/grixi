@@ -65,9 +65,17 @@ export function AiFloatingWidget() {
   const module = detectModule(pathname);
   const isAiPage = pathname.startsWith("/ai");
 
-  // Auto-scroll on new messages
+  // Auto-scroll on new messages — use parent container scroll to avoid page jump in fullscreen
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesEndRef.current;
+    if (el) {
+      const container = el.closest("[data-chat-scroll]");
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      } else {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   }, [messages, isStreaming]);
 
   // Auto-resize textarea

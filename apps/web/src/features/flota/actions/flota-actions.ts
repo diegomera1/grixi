@@ -20,6 +20,7 @@ export async function fetchVessel(): Promise<{
   kpis: KPISnapshot[];
   stats: FlotaKPIs;
   maintenancePlans: MaintenancePlan[];
+  manifest: any[];
   logbook: LogbookEntry[];
   alerts: FleetAlert[];
   certificates: FleetCertificate[];
@@ -53,6 +54,7 @@ export async function fetchVessel(): Promise<{
     { data: alerts },
     { data: certificates },
     { data: fuelLogs },
+    { data: manifest },
   ] = await Promise.all([
     supabase.from("fleet_vessel_zones").select("*").eq("vessel_id", vessel.id).order("deck_level", { ascending: false }),
     supabase.from("fleet_equipment").select("*").eq("vessel_id", vessel.id).order("code"),
@@ -68,6 +70,7 @@ export async function fetchVessel(): Promise<{
     supabase.from("fleet_alerts").select("*").eq("vessel_id", vessel.id).order("created_at", { ascending: false }).limit(50),
     supabase.from("fleet_certificates").select("*").eq("vessel_id", vessel.id).order("expiry_date", { ascending: true }),
     supabase.from("fleet_fuel_logs").select("*").eq("vessel_id", vessel.id).order("log_date", { ascending: false }).limit(60),
+    supabase.from("fleet_vessel_manifest").select("*").eq("vessel_id", vessel.id).order("boarding_time", { ascending: false }).limit(100),
   ]);
 
   // Attach measurement points and BOM to equipment
@@ -123,6 +126,7 @@ export async function fetchVessel(): Promise<{
     kpis: (kpis || []) as KPISnapshot[],
     stats,
     maintenancePlans: (maintenancePlans || []) as MaintenancePlan[],
+    manifest: (manifest || []) as any[],
     logbook: (logbook || []) as LogbookEntry[],
     alerts: enrichedAlerts,
     certificates: (certificates || []) as FleetCertificate[],

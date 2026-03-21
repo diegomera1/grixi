@@ -19,6 +19,7 @@ import { LogisticsTab } from "./logistics-tab";
 import { AnalyticsTab } from "./analytics-tab";
 import { ChecklistTab } from "./checklist-tab";
 import { MaintenancePlansTab } from "./maintenance-plans-tab";
+import { ManifestTab } from "./manifest-tab";
 import { AITab } from "./ai-tab";
 import { LogbookTab } from "./logbook-tab";
 import { AlertsTab } from "./alerts-tab";
@@ -39,6 +40,7 @@ import { VESSEL_STATUS_LABELS } from "../types";
 
 const TABS = [
   { id: "dashboard", label: "Dashboard", icon: Gauge },
+  { id: "manifest", label: "Manifiesto", icon: ClipboardCheck },
   { id: "vessel-3d", label: "Buque", icon: Ship },
   { id: "equipment", label: "Equipos", icon: Wrench },
   { id: "work-orders", label: "Órdenes", icon: ClipboardCheck },
@@ -67,6 +69,7 @@ type FlotaData = {
   kpis: KPISnapshot[];
   stats: FlotaKPIs;
   maintenancePlans: MaintenancePlan[];
+  manifest: any[];
   logbook: LogbookEntry[];
   alerts: FleetAlert[];
   certificates: FleetCertificate[];
@@ -78,7 +81,7 @@ type FlotaData = {
 export function FlotaContent({ data }: { data: FlotaData }) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [fullscreenProfile, setFullscreenProfile] = useState(false);
-  const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats, maintenancePlans, logbook, alerts, certificates, fuelLogs } = data;
+  const { vessel, zones, equipment, workOrders, checklists, crew, kpis, stats, maintenancePlans, manifest, logbook, alerts, certificates, fuelLogs } = data;
   const { events, readings } = useFlotaDemo();
   const { status: offlineStatus, syncNow, cacheModuleData } = useOfflineSync();
   const maritime = useMaritimeData();
@@ -113,7 +116,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6">
+    <div className="w-full space-y-6">
       {/* Header + Tabs — matching Finanzas/Compras pattern */}
       <div className="mb-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
@@ -219,9 +222,10 @@ export function FlotaContent({ data }: { data: FlotaData }) {
         )}
         {activeTab === "equipment" && <EquipmentTab equipment={equipment} zones={zones} workOrders={workOrders} />}
         {activeTab === "work-orders" && <WorkOrdersTab vesselId={vessel.id} workOrders={workOrders} equipment={equipment} crew={crew} />}
+        {activeTab === "manifest" && <ManifestTab vesselId={vessel.id} manifest={manifest} crew={crew} />}
         {activeTab === "plans" && <MaintenancePlansTab plans={maintenancePlans} vesselId={vessel.id} />}
         {activeTab === "checklists" && <ChecklistTab checklists={checklists} />}
-        {activeTab === "logbook" && <LogbookTab logbook={logbook} />}
+        {activeTab === "logbook" && <LogbookTab vesselId={vessel.id} logbook={logbook} />}
         {activeTab === "alerts" && <AlertsTab alerts={alerts} />}
         {activeTab === "certificates" && <CertificatesTab certificates={certificates} />}
         {activeTab === "fuel" && <FuelTab fuelLogs={fuelLogs} />}

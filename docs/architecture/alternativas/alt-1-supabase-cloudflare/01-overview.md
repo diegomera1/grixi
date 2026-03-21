@@ -62,3 +62,4 @@ Usuario → Cloudflare Edge (310+ PoPs globales)
 | [06-seguridad.md](./06-seguridad.md) | Capas de seguridad |
 | [07-costos.md](./07-costos.md) | Desglose de costos |
 | [08-avanzado.md](./08-avanzado.md) | Workers KV cache, R2, environments, rollback, limitaciones |
+| [09-workflows.md](./09-workflows.md) | Workflows: Desarrollo, Demo comercial, y Usuario final |
