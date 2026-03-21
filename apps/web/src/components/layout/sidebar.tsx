@@ -20,6 +20,8 @@ import {
   Bell,
   Moon,
   Sun,
+  Ship,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { createClient } from "@/lib/supabase/client";
@@ -79,6 +81,20 @@ const NAV_GROUPS: NavGroup[] = [
         icon: Warehouse,
         color: "#10B981",
         glowColor: "rgba(16,185,129,0.25)",
+      },
+      {
+        label: "Flota",
+        href: "/flota",
+        icon: Ship,
+        color: "#0EA5E9",
+        glowColor: "rgba(14,165,233,0.25)",
+      },
+      {
+        label: "Compras",
+        href: "/compras",
+        icon: ShoppingCart,
+        color: "#F59E0B",
+        glowColor: "rgba(245,158,11,0.25)",
       },
     ],
   },
