@@ -19,6 +19,11 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
     { count: productCount },
     { data: warehouses },
     { count: transactionCount },
+    { count: vendorCount },
+    { count: poCount },
+    { count: prCount },
+    { count: fleetEquipmentCount },
+    { count: fleetWOCount },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("warehouses").select("*", { count: "exact", head: true }),
@@ -27,6 +32,11 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
     supabase
       .from("finance_transactions")
       .select("*", { count: "exact", head: true }),
+    supabase.from("vendors").select("*", { count: "exact", head: true }),
+    supabase.from("purchase_orders").select("*", { count: "exact", head: true }),
+    supabase.from("purchase_requisitions").select("*", { count: "exact", head: true }),
+    supabase.from("fleet_equipment").select("*", { count: "exact", head: true }),
+    supabase.from("fleet_work_orders").select("*", { count: "exact", head: true }),
   ]);
 
   let moduleContext = "";
@@ -85,23 +95,134 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
 `;
   }
 
+  if (modules.includes("compras") || isGeneral) {
+    const { data: topVendors } = await supabase
+      .from("vendors")
+      .select("name, code, category, compliance_score, quality_score")
+      .eq("is_active", true)
+      .order("compliance_score", { ascending: false })
+      .limit(5);
+
+    const { data: recentPOs } = await supabase
+      .from("purchase_orders")
+      .select("po_number, status, total")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    const { count: openPOCount } = await supabase
+      .from("purchase_orders")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["draft", "pending_approval", "approved", "sent"]);
+
+    moduleContext += `
+## Datos de Compras & Aprovisionamiento
+- Total proveedores activos: ${vendorCount || 0}
+- Total órdenes de compra: ${poCount || 0}
+- OC abiertas: ${openPOCount || 0}
+- Solicitudes de pedido: ${prCount || 0}
+- Top proveedores: ${topVendors?.map((v) => `${v.name} (${v.category}, cumplimiento: ${v.compliance_score}%)`).join("; ") || "N/A"}
+- Últimas OC: ${recentPOs?.map((p) => `${p.po_number} [${p.status}] $${p.total}`).join("; ") || "N/A"}
+`;
+  }
+
+  if (modules.includes("flota") || isGeneral) {
+    const { data: vessels } = await supabase
+      .from("fleet_vessels")
+      .select("name, imo_number, vessel_type, status, flag, port_of_registry, class_society")
+      .limit(5);
+
+    const { data: equipmentByStatus } = await supabase
+      .from("fleet_equipment")
+      .select("name, code, equipment_type, criticality, status")
+      .order("criticality", { ascending: true })
+      .limit(15);
+
+    const criticalEquip = equipmentByStatus?.filter((e) => e.criticality === "critical" || e.criticality === "high") || [];
+
+    const { data: recentWOs } = await supabase
+      .from("fleet_work_orders")
+      .select("wo_number, title, priority, status")
+      .order("created_at", { ascending: false })
+      .limit(8);
+
+    const { count: openWOCount } = await supabase
+      .from("fleet_work_orders")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["open", "in_progress", "on_hold"]);
+
+    const { data: activeAlerts } = await supabase
+      .from("fleet_alerts")
+      .select("title, severity, alert_type, equipment_name, message")
+      .is("resolved_at", null)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const { data: recentFuel } = await supabase
+      .from("fleet_fuel_logs")
+      .select("log_date, fuel_type, quantity_mt, consumption_rate_mt_day, rob_after")
+      .order("log_date", { ascending: false })
+      .limit(7);
+
+    const { data: expiringCerts } = await supabase
+      .from("fleet_certificates")
+      .select("cert_type, cert_number, status, expiry_date, issued_by")
+      .in("status", ["expiring_soon", "expired"])
+      .limit(10);
+
+    const { data: latestKPIs } = await supabase
+      .from("fleet_kpi_snapshots")
+      .select("snapshot_date, mtbf_hours, mttr_hours, availability_pct, reliability_pct, maintenance_cost, fuel_consumption")
+      .order("snapshot_date", { ascending: false })
+      .limit(3);
+
+    const { data: crewMembers } = await supabase
+      .from("fleet_crew")
+      .select("name, rank, department, status")
+      .eq("status", "onboard");
+
+    const fuelWithRate = recentFuel?.filter((f) => f.consumption_rate_mt_day) || [];
+    const avgConsumption = fuelWithRate.length > 0
+      ? fuelWithRate.reduce((sum, f) => sum + (f.consumption_rate_mt_day || 0), 0) / fuelWithRate.length
+      : 0;
+
+    moduleContext += `
+## Datos de Flota & Mantenimiento Naval
+- Buques: ${vessels?.map((v) => `${v.name} (IMO: ${v.imo_number}, ${v.vessel_type}, estado: ${v.status}, bandera: ${v.flag})`).join("; ") || "N/A"}
+- Total equipos registrados: ${fleetEquipmentCount || 0}
+- Equipos criticos/altos: ${criticalEquip.map((e) => `${e.name} [${e.code}] (${e.criticality}, ${e.status})`).join("; ") || "N/A"}
+- Total ordenes de trabajo: ${fleetWOCount || 0}
+- OT abiertas: ${openWOCount || 0}
+- OT recientes: ${recentWOs?.map((w) => `${w.wo_number} - ${w.title} [${w.priority}, ${w.status}]`).join("; ") || "N/A"}
+- Alertas activas: ${activeAlerts?.length || 0} - ${activeAlerts?.map((a) => `${a.severity}: ${a.title} (${a.equipment_name || a.alert_type})`).join("; ") || "Sin alertas"}
+- Combustible (ultimos 7 dias): consumo promedio ${avgConsumption.toFixed(1)} MT/dia, ROB: ${recentFuel?.[0]?.rob_after?.toFixed(1) || "N/A"} MT
+- Certificados por vencer/vencidos: ${expiringCerts?.map((c) => `${c.cert_type} [${c.status}] vence ${c.expiry_date}`).join("; ") || "Todos vigentes"}
+- Tripulacion a bordo: ${crewMembers?.length || 0} - ${crewMembers?.map((c) => `${c.name} (${c.rank}, ${c.department})`).join("; ") || "N/A"}
+- KPIs recientes: ${latestKPIs?.map((k) => `${k.snapshot_date}: Disp.${k.availability_pct}%, MTBF ${k.mtbf_hours}h, MTTR ${k.mttr_hours}h, Costo $${k.maintenance_cost}`).join("; ") || "N/A"}
+`;
+  }
+
   return `Eres GRIXI AI, el asistente inteligente de la plataforma GRIXI — una plataforma enterprise SaaS multi-tenant.
 
 Tu rol:
-- Ayudar a los usuarios con TODOS los módulos de la empresa: almacenes, finanzas, compras, usuarios, administración, dashboard
-- Responder en español de manera profesional pero amigable
-- Proporcionar insights sobre datos del sistema con la información real proporcionada
+- Ayudar a los usuarios con TODOS los modulos de la empresa: almacenes, finanzas, compras, flota (mantenimiento naval), usuarios, administracion, dashboard
+- Responder en espanol de manera profesional pero amigable
+- Proporcionar insights sobre datos del sistema con la informacion real proporcionada
 - Sugerir optimizaciones y mejoras basadas en los datos
 - Asistir con consultas sobre cualquier aspecto de la empresa
+- Cuando el modulo activo es Flota, usar terminologia maritima profesional (buque, OT, MTBF, MTTR, certificados de clase, etc.)
 
 Datos del sistema en tiempo real:
 - ${userCount || 0} usuarios en el sistema
 - ${warehouseCount || 0} almacenes activos
 - ${productCount || 0} productos catalogados
 - ${transactionCount || 0} transacciones financieras registradas
+- ${vendorCount || 0} proveedores
+- ${poCount || 0} ordenes de compra
+- ${fleetEquipmentCount || 0} equipos de flota registrados
+- ${fleetWOCount || 0} ordenes de trabajo de flota
 ${moduleContext}
 
-Módulo(s) activo(s): ${isGeneral ? "Vista general (todos los módulos)" : modules.join(", ")}
+Modulo(s) activo(s): ${isGeneral ? "Vista general (todos los modulos)" : modules.join(", ")}
 
 ## Capacidades Especiales de Visualización
 

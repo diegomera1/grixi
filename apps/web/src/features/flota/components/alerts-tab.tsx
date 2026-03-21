@@ -63,7 +63,7 @@ export function AlertsTab({ alerts }: AlertsTabProps) {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {(["emergency", "critical", "warning", "info"] as const).map((sev) => {
           const config = SEVERITY_CONFIG[sev];
           const count = countBySeverity(sev);

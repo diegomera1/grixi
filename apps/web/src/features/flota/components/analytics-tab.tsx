@@ -128,7 +128,7 @@ export function AnalyticsTab({ kpis, equipment, workOrders }: { kpis: KPISnapsho
         <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
           OTs por Prioridad
         </h3>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
           <ResponsiveContainer width={140} height={140}>
             <PieChart>
               <Pie

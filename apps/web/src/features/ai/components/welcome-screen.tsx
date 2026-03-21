@@ -16,6 +16,10 @@ import {
   FileText,
   ShoppingCart,
   Truck,
+  Ship,
+  Anchor,
+  Wrench,
+  Fuel,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GrixiAiLogo } from "./grixi-ai-logo";
@@ -189,6 +193,28 @@ const MODULE_PROMPTS: Record<AiModule, QuickPrompt[]> = {
       icon: AlertTriangle,
     },
   ],
+  flota: [
+    {
+      label: "Estado de equipos",
+      prompt: "Dame un resumen del estado de todos los equipos del buque: cuántos están operativos, en mantenimiento, o fuera de servicio.",
+      icon: Ship,
+    },
+    {
+      label: "Órdenes de trabajo",
+      prompt: "¿Cuántas órdenes de trabajo están abiertas? ¿Cuáles son las más urgentes y su estado actual?",
+      icon: Wrench,
+    },
+    {
+      label: "Consumo de combustible",
+      prompt: "¿Cuál es el consumo promedio de combustible? ¿Cuál es el ROB actual y las tendencias recientes?",
+      icon: Fuel,
+    },
+    {
+      label: "Certificados y KPIs",
+      prompt: "¿Hay certificados por vencer? ¿Cuáles son los KPIs actuales de disponibilidad, MTBF y MTTR?",
+      icon: Anchor,
+    },
+  ],
 };
 
 const MODULE_DESCRIPTIONS: Record<AiModule, string> = {
@@ -199,6 +225,7 @@ const MODULE_DESCRIPTIONS: Record<AiModule, string> = {
   usuarios: "Asistente especializado en gestión de usuarios, roles, permisos y actividad del equipo.",
   dashboard: "Asistente especializado en métricas clave, KPIs, resúmenes ejecutivos y análisis de tendencias.",
   administracion: "Asistente especializado en auditoría, configuración del sistema, permisos y seguridad.",
+  flota: "Asistente especializado en mantenimiento naval, equipos del buque, órdenes de trabajo, combustible, certificados, tripulación y KPIs operativos.",
 };
 
 export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeScreenProps) {

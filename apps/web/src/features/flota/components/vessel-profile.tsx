@@ -357,7 +357,7 @@ function ZoneDetailPanel({ zoneType, zones, equipment, onClose }: {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute top-3 right-3 w-72 max-h-[85%] overflow-y-auto rounded-xl border border-white/10 bg-[#0c1e3a]/95 backdrop-blur-xl shadow-2xl"
+      className="absolute top-3 right-2 sm:right-3 w-[calc(100%-1rem)] sm:w-72 max-h-[85%] overflow-y-auto rounded-xl border border-white/10 bg-[#0c1e3a]/95 backdrop-blur-xl shadow-2xl z-10"
     >
       <div className="sticky top-0 bg-[#0c1e3a]/95 backdrop-blur-xl px-4 pt-4 pb-3 border-b border-white/5">
         <div className="flex items-center justify-between">
@@ -418,7 +418,7 @@ export function VesselProfile({ zones, equipment, weather, fullscreenMode = fals
   return (
     <div className={fullscreenMode
       ? "fixed inset-0 z-50 bg-[#0a1520]"
-      : "relative h-[480px] md:h-[520px] rounded-xl border border-white/10 bg-[#0a1520] overflow-hidden"
+      : "relative h-[360px] sm:h-[420px] md:h-[480px] lg:h-[520px] rounded-xl border border-white/10 bg-[#0a1520] overflow-hidden"
     }>
       <div className="absolute inset-0 flex items-center justify-center px-2">
         <VesselSVG zones={zones} equipment={equipment} selectedZone={selectedZone} onSelectZone={setSelectedZone} weather={weather} />
@@ -445,22 +445,22 @@ export function VesselProfile({ zones, equipment, weather, fullscreenMode = fals
       </div>
 
       {/* Bottom Stats */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 py-2.5 bg-linear-to-t from-[#0a1520]/95 to-transparent">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-[9px]">
+      <div className="absolute bottom-0 left-0 right-0 px-3 sm:px-4 py-2 sm:py-2.5 bg-linear-to-t from-[#0a1520]/95 to-transparent">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 text-[8px] sm:text-[9px] flex-wrap">
             <span className="flex items-center gap-1 text-white/40"><Compass size={10} /> {zones.length} zonas</span>
             <span className="flex items-center gap-1 text-[#10B981]"><Anchor size={10} /> {operational}/{totalEquip}</span>
             {failed > 0 && <span className="flex items-center gap-1 text-[#EF4444]"><AlertTriangle size={10} /> {failed} fallas</span>}
           </div>
           {w && (
-            <div className="flex items-center gap-3 text-[9px]">
+            <div className="flex items-center gap-2 sm:gap-3 text-[8px] sm:text-[9px] flex-wrap">
               <span className="flex items-center gap-1 text-white/40"><Wind size={10} /> {w.windSpeed}kt {w.windDir}</span>
               <span className="flex items-center gap-1 text-white/40"><Waves size={10} /> {w.waveHeight}m</span>
               <span className="flex items-center gap-1 text-white/40"><ThermometerSun size={10} /> {w.airTemp}°C</span>
-              <span className="flex items-center gap-1 text-white/40"><Navigation size={10} /> Bf {w.beaufortScale}</span>
+              <span className="hidden sm:flex items-center gap-1 text-white/40"><Navigation size={10} /> Bf {w.beaufortScale}</span>
             </div>
           )}
-          <div className="text-[8px] text-white/25">Click en zona para ver equipos</div>
+          <div className="text-[7px] sm:text-[8px] text-white/25 hidden sm:block">Click en zona para ver equipos</div>
         </div>
       </div>
 

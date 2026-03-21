@@ -33,7 +33,10 @@ export default function PlatformLayout({
           className="flex flex-col bg-[var(--bg-primary)] overflow-hidden"
           style={{ height: "var(--app-height, 100vh)" }}
         >
-          <main className="platform-dot-grid relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden safe-area-all px-4 pt-8 pb-6 md:px-6 md:pt-8 md:pb-6 lg:px-8 lg:pt-10 lg:pb-8">
+          <main
+            className="platform-dot-grid relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden safe-area-all px-4 pb-6 md:px-6 md:pb-6 lg:px-8 lg:pb-8"
+            style={{ paddingTop: "max(env(safe-area-inset-top, 0px) + 2rem, 2rem)" }}
+          >
             <div className="relative z-10">
               <PasskeyPromptBanner />
               <ActivityTrackerProvider>{children}</ActivityTrackerProvider>

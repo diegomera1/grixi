@@ -15,6 +15,7 @@ import {
   Users,
   LayoutDashboard,
   Shield,
+  Ship,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { AiModule, Attachment } from "../types";
@@ -33,6 +34,7 @@ const MODULES: { value: AiModule; label: string; icon: LucideIcon; color: string
   { value: "almacenes", label: "Almacenes", icon: Warehouse, color: "#10B981" },
   { value: "compras", label: "Compras", icon: ShoppingCart, color: "#F97316" },
   { value: "finanzas", label: "Finanzas", icon: DollarSign, color: "#8B5CF6" },
+  { value: "flota", label: "Flota", icon: Ship, color: "#0EA5E9" },
   { value: "usuarios", label: "Usuarios", icon: Users, color: "#F59E0B" },
   { value: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "#06B6D4" },
   { value: "administracion", label: "Admin", icon: Shield, color: "#F43F5E" },

@@ -90,7 +90,7 @@ export function CrossModuleTab({ equipment, workOrders, alerts, certificates, fu
           </div>
           <div>
             <h3 className="text-sm font-bold text-[var(--text-primary)]">Conexiones Cross-Módulo</h3>
-            <p className="text-[10px] text-[var(--text-muted)]">
+            <p className="text-[10px] text-[var(--text-muted)] line-clamp-2 sm:line-clamp-none">
               Impacto del buque en Compras ({pendingWOs.length} OTs) · Finanzas (${(totalFuelCost + totalWOCost).toLocaleString()}) · RRHH ({crewCount} personas)
             </p>
           </div>
@@ -98,7 +98,7 @@ export function CrossModuleTab({ equipment, workOrders, alerts, certificates, fu
       </div>
 
       {/* Module Connections Grid */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
         {connections.map((conn, idx) => (
           <motion.div
             key={conn.module}

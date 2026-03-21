@@ -23,6 +23,7 @@ function detectModule(pathname: string): AiModule {
     pathname.includes("/configuracion")
   )
     return "administracion";
+  if (pathname.includes("/flota")) return "flota";
   if (pathname.includes("/dashboard")) return "dashboard";
   return "general";
 }
@@ -35,6 +36,7 @@ const MODULE_LABELS: Record<AiModule, string> = {
   usuarios: "Usuarios",
   dashboard: "Dashboard",
   administracion: "Admin",
+  flota: "Flota",
 };
 
 const MODULE_COLORS: Record<AiModule, string> = {
@@ -45,6 +47,7 @@ const MODULE_COLORS: Record<AiModule, string> = {
   usuarios: "#F59E0B",
   dashboard: "#06B6D4",
   administracion: "#F43F5E",
+  flota: "#0EA5E9",
 };
 
 export function AiFloatingWidget() {
@@ -129,7 +132,7 @@ export function AiFloatingWidget() {
         body: JSON.stringify({
           conversationId: currentConvId,
           message: text,
-          module,
+          modules: [module],
           attachments: [],
         }),
         signal: controller.signal,

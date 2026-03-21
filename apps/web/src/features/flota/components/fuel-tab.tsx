@@ -50,7 +50,7 @@ export function FuelTab({ fuelLogs }: FuelTabProps) {
       </div>
 
       {/* Summary KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         {[
           { label: "ROB Total", value: `${(latestROB?.rob_after || 0).toFixed(0)} MT`, color: "#F97316", icon: Fuel },
           { label: "Consumo Prom.", value: `${avgConsumption.toFixed(1)} MT/d`, color: "#0EA5E9", icon: TrendingDown },
@@ -113,7 +113,7 @@ export function FuelTab({ fuelLogs }: FuelTabProps) {
           <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
             Registro de Combustible
           </h3>
-          <div className="flex gap-1">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
             <button
               onClick={() => setFuelFilter("all")}
               className={`rounded-md px-3 py-1 text-[10px] font-medium transition-all ${fuelFilter === "all" ? "bg-[#0EA5E9] text-white" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
@@ -134,7 +134,7 @@ export function FuelTab({ fuelLogs }: FuelTabProps) {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
           <table className="w-full text-[10px]">
             <thead>
               <tr className="border-b border-[var(--border)]">

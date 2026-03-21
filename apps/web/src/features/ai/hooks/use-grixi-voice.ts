@@ -160,9 +160,10 @@ export function useGrixiVoice() {
         if (data.error) throw new Error(data.error);
 
         // Add transcripts
+        const userText = data.userTranscript || "🎤 [Audio]";
         setTranscripts((prev) => [
           ...prev,
-          { id: crypto.randomUUID(), text: "🎤 [Audio]", role: "user", timestamp: Date.now() },
+          { id: crypto.randomUUID(), text: userText, role: "user", timestamp: Date.now() },
           { id: crypto.randomUUID(), text: data.text, role: "assistant", timestamp: Date.now() },
         ]);
 

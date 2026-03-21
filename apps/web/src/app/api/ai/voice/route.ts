@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
       { data: warehouses },
       { data: incomeData },
       { data: expenseData },
+      { count: fleetEquipmentCount },
+      { count: fleetWOCount },
+      { data: activeAlerts },
+      { data: recentFuel },
     ] = await Promise.all([
       supabase.from("products").select("*", { count: "exact", head: true }),
       supabase.from("purchase_orders").select("*", { count: "exact", head: true }).not("status", "in", '("closed","cancelled")'),
@@ -65,10 +69,19 @@ export async function POST(request: NextRequest) {
       supabase.from("warehouses").select("id, name"),
       supabase.from("finance_transactions").select("amount_usd").eq("transaction_type", "income").gte("posting_date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
       supabase.from("finance_transactions").select("amount_usd").eq("transaction_type", "expense").gte("posting_date", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+      supabase.from("fleet_equipment").select("*", { count: "exact", head: true }),
+      supabase.from("fleet_work_orders").select("*", { count: "exact", head: true }).in("status", ["open", "in_progress", "on_hold"]),
+      supabase.from("fleet_alerts").select("title, severity").is("resolved_at", null).limit(5),
+      supabase.from("fleet_fuel_logs").select("consumption_rate_mt_day, rob_after").order("log_date", { ascending: false }).limit(3),
     ]);
 
     const revenue = (incomeData || []).reduce((s, t) => s + Number(t.amount_usd || 0), 0);
     const expenses = (expenseData || []).reduce((s, t) => s + Math.abs(Number(t.amount_usd || 0)), 0);
+
+    const fuelRates = (recentFuel || []).filter((f) => f.consumption_rate_mt_day);
+    const avgFuelConsumption = fuelRates.length > 0
+      ? fuelRates.reduce((s, f) => s + (f.consumption_rate_mt_day || 0), 0) / fuelRates.length
+      : 0;
 
     const dataContext = `
 DATOS ACTUALES DEL SISTEMA:
@@ -78,9 +91,13 @@ DATOS ACTUALES DEL SISTEMA:
 - Almacenes: ${(warehouses || []).map(w => w.name).join(", ") || "ninguno"}
 - Revenue mensual: $${revenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
 - Gastos mensuales: $${expenses.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+- Equipos de flota: ${fleetEquipmentCount || 0}
+- OT de flota abiertas: ${fleetWOCount || 0}
+- Alertas flota activas: ${activeAlerts?.length || 0}${activeAlerts?.length ? " - " + activeAlerts.map((a) => `${a.severity}: ${a.title}`).join("; ") : ""}
+- Consumo combustible promedio: ${avgFuelConsumption.toFixed(1)} MT/dia, ROB: ${recentFuel?.[0]?.rob_after?.toFixed(1) || "N/A"} MT
 
-RUTAS DE NAVEGACIÓN:
-/dashboard, /command-center, /almacenes, /compras, /finanzas, /usuarios, /ai
+RUTAS DE NAVEGACION:
+/dashboard, /command-center, /almacenes, /compras, /finanzas, /flota, /usuarios, /rrhh, /administracion, /ai
 
 Si el usuario pide navegar, agrega al final: [NAVEGAR:/ruta]
 `;
@@ -101,7 +118,7 @@ Si el usuario pide navegar, agrega al final: [NAVEGAR:/ruta]
               },
             },
             {
-              text: "Escucha este audio del usuario y responde en español como GRIXI, el asistente inteligente de la empresa. Responde de forma breve y natural, como si estuvieras hablando. Si el usuario pidió datos, usa los datos del sistema. Si no se entiende el audio, di 'No pude escucharte bien, ¿podrías repetir?'",
+              text: "Escucha este audio del usuario y responde en espanol como GRIXI, el asistente inteligente de la empresa. Responde de forma breve y natural, como si estuvieras hablando. Si el usuario pidio datos, usa los datos del sistema. Si no se entiende el audio, di 'No pude escucharte bien, podrias repetir?' IMPORTANTE: En tu respuesta, empieza con una linea que diga TRANSCRIPT: seguido de lo que el usuario dijo en el audio, luego en la siguiente linea tu respuesta normal.",
             },
           ],
         },
@@ -113,7 +130,17 @@ Si el usuario pide navegar, agrega al final: [NAVEGAR:/ruta]
       },
     });
 
-    const responseText = sttResponse.text || "No pude procesar tu solicitud.";
+    const rawText = sttResponse.text || "No pude procesar tu solicitud.";
+
+    // Extract user transcript if present
+    let userTranscript: string | null = null;
+    let responseText = rawText;
+
+    const transcriptMatch = rawText.match(/^TRANSCRIPT:\s*(.+?)\n/i);
+    if (transcriptMatch) {
+      userTranscript = transcriptMatch[1].trim();
+      responseText = rawText.replace(/^TRANSCRIPT:\s*.+?\n/i, "").trim();
+    }
 
     // Extract navigation
     const navMatch = responseText.match(/\[NAVEGAR:(\/[^\]]+)\]/);
@@ -135,7 +162,7 @@ Si el usuario pide navegar, agrega al final: [NAVEGAR:/ruta]
           responseModalities: [Modality.AUDIO],
           speechConfig: {
             voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: "Kore" },
+              prebuiltVoiceConfig: { voiceName: "Aoede" },
             },
           },
         },
@@ -153,6 +180,7 @@ Si el usuario pide navegar, agrega al final: [NAVEGAR:/ruta]
 
     return NextResponse.json({
       text: cleanText,
+      userTranscript,
       navigationRoute: navMatch?.[1] || null,
       audioBase64: ttsAudioBase64,
       audioMimeType: "audio/wav",

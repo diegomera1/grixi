@@ -112,56 +112,58 @@ export function FlotaContent({ data }: { data: FlotaData }) {
     <div className="mx-auto max-w-[1400px] space-y-6">
       {/* Header + Tabs — matching Finanzas/Compras pattern */}
       <div className="mb-2">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0EA5E9]/10">
-              <Ship size={20} className="text-[#0EA5E9]" />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-[#0EA5E9]/10">
+              <Ship size={18} className="text-[#0EA5E9] sm:hidden" />
+              <Ship size={20} className="text-[#0EA5E9] hidden sm:block" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-[var(--text-primary)]">{vessel.name}</h2>
-              <p className="text-[11px] text-[var(--text-secondary)] hidden sm:block">
-                {vessel.imo_number} · {VESSEL_STATUS_LABELS[vessel.status]} · {vessel.class_society}
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] truncate">{vessel.name}</h2>
+              <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] truncate">
+                {vessel.imo_number} · {VESSEL_STATUS_LABELS[vessel.status]}
+                <span className="hidden sm:inline"> · {vessel.class_society}</span>
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {/* Status indicator */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#0EA5E9]/30 bg-[#0EA5E9]/5">
-              <span className="relative flex h-2.5 w-2.5">
+            <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#0EA5E9]/30 bg-[#0EA5E9]/5">
+              <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0EA5E9] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0EA5E9]" />
+                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-[#0EA5E9]" />
               </span>
-              <span className="text-xs font-medium text-[#0EA5E9]">
+              <span className="text-[10px] sm:text-xs font-medium text-[#0EA5E9]">
                 {VESSEL_STATUS_LABELS[vessel.status]}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-              <Anchor size={11} />
-              <span>{vessel.port_of_registry} · {vessel.flag}</span>
+            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-[var(--text-muted)]">
+              <Anchor size={10} />
+              <span className="truncate">{vessel.port_of_registry} · {vessel.flag}</span>
             </div>
           </div>
         </div>
         {/* Tab Navigation — same underline pattern as Finanzas/Compras */}
-        <div className="flex items-center overflow-x-auto border-b border-[var(--border)] scrollbar-hide -mx-2 px-2 sm:mx-0 sm:px-0 sm:gap-1">
+        <div className="flex items-center overflow-x-auto border-b border-[var(--border)] scrollbar-hide -mx-4 px-4 sm:-mx-2 sm:px-2 md:mx-0 md:px-0 sm:gap-0.5" style={{ WebkitOverflowScrolling: 'touch' }}>
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center justify-center gap-2 py-2.5 text-xs font-medium transition-all relative shrink-0",
+                "flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 text-xs font-medium transition-all relative shrink-0",
                 "sm:justify-start sm:px-3",
-                "px-2",
+                "px-2.5 min-w-[40px]",
                 activeTab === tab.id
                   ? "text-[#0EA5E9]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               )}
             >
-              <tab.icon size={14} />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <tab.icon size={14} className="shrink-0" />
+              <span className="hidden sm:inline whitespace-nowrap">{tab.label}</span>
               {activeTab === tab.id && (
                 <motion.div
                   layoutId="flota-tab-indicator"
-                  className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#0EA5E9] rounded-full"
+                  className="absolute bottom-0 left-1.5 right-1.5 sm:left-2 sm:right-2 h-0.5 bg-[#0EA5E9] rounded-full"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -174,7 +176,7 @@ export function FlotaContent({ data }: { data: FlotaData }) {
       <OfflineIndicator status={offlineStatus} onSync={syncNow} />
 
       {/* KPI Hero Bar */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2 lg:grid-cols-8">
         {[
           { label: "Disponibilidad", value: `${stats.availability}%`, icon: Activity, color: "#10B981" },
           { label: "MTBF", value: `${stats.mtbf}h`, icon: TrendingUp, color: "#0EA5E9" },
@@ -190,11 +192,12 @@ export function FlotaContent({ data }: { data: FlotaData }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.04 }}
-            className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-2.5"
+            className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-2 sm:p-2.5"
           >
-            <kpi.icon size={12} style={{ color: kpi.color }} />
-            <p className="mt-1 text-sm font-bold tabular-nums text-[var(--text-primary)]">{kpi.value}</p>
-            <p className="text-[9px] text-[var(--text-muted)]">{kpi.label}</p>
+            <kpi.icon size={11} className="sm:hidden" style={{ color: kpi.color }} />
+            <kpi.icon size={12} className="hidden sm:block" style={{ color: kpi.color }} />
+            <p className="mt-0.5 sm:mt-1 text-[13px] sm:text-sm font-bold tabular-nums text-[var(--text-primary)]">{kpi.value}</p>
+            <p className="text-[8px] sm:text-[9px] text-[var(--text-muted)] truncate">{kpi.label}</p>
           </motion.div>
         ))}
       </div>

@@ -166,24 +166,24 @@ export function DashboardTab({
   return (
     <div className="space-y-4">
       {/* ── Row 1: KPI Gauges ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0 }}
-          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 flex flex-col items-center"
+          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 sm:p-4 flex flex-col items-center"
         >
           <KPIGauge value={stats.availability} label="Disponibilidad" color="#10B981" />
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }}
-          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 flex flex-col items-center"
+          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 sm:p-4 flex flex-col items-center"
         >
           <KPIGauge value={stats.mtbf} max={1500} label="MTBF" color="#0EA5E9" unit="h" />
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 flex flex-col items-center"
+          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 sm:p-4 flex flex-col items-center"
         >
           <KPIGauge value={stats.mttr} max={24} label="MTTR" color="#F59E0B" unit="h" />
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
-          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4"
+          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 sm:p-4"
         >
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-lg bg-blue-500/10 p-1.5"><Wrench size={14} className="text-blue-500" /></div>
@@ -193,7 +193,7 @@ export function DashboardTab({
           <p className="text-[9px] text-[var(--text-muted)]">{workOrders.filter((w) => w.status === "completed").length} completadas</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
-          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4"
+          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 sm:p-4"
         >
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-lg bg-amber-500/10 p-1.5"><DollarSign size={14} className="text-amber-500" /></div>
@@ -203,7 +203,7 @@ export function DashboardTab({
           <p className="text-[9px] text-[var(--text-muted)]">Mensual</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }}
-          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4"
+          className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-3 sm:p-4"
         >
           <div className="flex items-center gap-2 mb-2">
             <div className="rounded-lg bg-emerald-500/10 p-1.5"><Shield size={14} className="text-emerald-500" /></div>
@@ -217,7 +217,7 @@ export function DashboardTab({
       </div>
 
       {/* ── Row 2: Alerts + Fuel + Readings ── */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
         {/* Active Alerts */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
           <div className="flex items-center justify-between mb-3">
@@ -351,7 +351,7 @@ export function DashboardTab({
       </div>
 
       {/* ── Row 3: Map + Logbook + Certificates ── */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
         {/* Map */}
         <div className="lg:col-span-2">
           <VesselMap compact />
@@ -399,7 +399,7 @@ export function DashboardTab({
       </div>
 
       {/* ── Row 4: Certificates + Active Work Orders + Zones ── */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
         {/* Certificates */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
           <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3">
@@ -509,7 +509,7 @@ export function DashboardTab({
         <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
           Tendencia KPIs — Últimos 6 Meses
         </h3>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-7">
           {kpis.map((kpi, i) => (
             <motion.div
               key={kpi.id}

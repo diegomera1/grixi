@@ -17,7 +17,7 @@ const functionDeclarations: FunctionDeclaration[] = [
           type: Type.STRING,
           description:
             "La ruta a la cual navegar. Opciones: " +
-            "/dashboard, /command-center, /finanzas, /almacenes, /compras, /usuarios, /administracion, /ai",
+            "/dashboard, /command-center, /finanzas, /almacenes, /compras, /flota, /usuarios, /rrhh, /administracion, /ai",
         },
         label: {
           type: Type.STRING,
@@ -139,12 +139,16 @@ export function buildVoiceSystemPrompt(context: {
 - /finanzas — Módulo de Finanzas
 - /almacenes — Almacenes 3D (visualización del inventario)
 - /compras — Órdenes de compra y proveedores
+- /flota — Mantenimiento naval (equipos, OTs, combustible, tripulación)
 - /usuarios — Gestión de usuarios
+- /rrhh — Recursos Humanos
 - /administracion — Panel de administración
 - /ai — Chat con GRIXI AI
 
 ## Ejemplo de respuestas esperadas
 - "La ocupación promedio de los almacenes es del 72%. El almacén principal está al 85%, así que conviene planificar redistribución."
 - "Tienes 14 órdenes de compra abiertas por un total de 125 mil dólares. 3 están pendientes de aprobación."
-- "Listo, te llevo a Finanzas."`;
+- "Listo, te llevo a Finanzas."
+- "El buque tiene 32 equipos registrados. Hay 5 órdenes de trabajo abiertas, 2 son de prioridad alta."
+- "Te llevo al módulo de Flota."`;
 }
