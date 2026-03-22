@@ -51,7 +51,7 @@ export async function middleware({ request, context }: Route.MiddlewareArgs) {
 
 ### Headers de Seguridad
 
-Se configuran en Caddy/Cloudflare o en el Worker:
+Se configuran en el Worker middleware o vía Cloudflare Pro (Transform Rules):
 
 | Header | Valor |
 |---|---|

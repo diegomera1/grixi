@@ -22,8 +22,10 @@
 
 | Servicio | Rol | Costo adicional |
 |---|---|---|
-| Cloudflare Workers Paid | Ejecutar React Router v7 SSR | ~$5-10/mes |
-| Cloudflare Workers KV | Cache ISR/datos en el edge | ~$0-5/mes |
+| Cloudflare Workers Paid | Ejecutar React Router v7 SSR | ~$5/mes |
+| Cloudflare Workers KV | Cache ISR/datos en el edge | Incluido en Workers Paid |
+| Cloudflare R2 | Object storage ($0 egress). Assets, imágenes, exports | ~$4/mes (250 GB) |
+| Cloudflare Hyperdrive | Connection pooling global para PostgreSQL | Incluido en Workers Paid |
 | Drizzle ORM | Reemplaza queries complejas de supabase-js | $0 (open-source) |
 | Vite 8 + Rolldown | Build toolchain unificado (10-30x más rápido) | $0 (open-source) |
 
@@ -41,14 +43,18 @@ Usuario → Cloudflare Edge (310+ PoPs globales)
   │
   ├── WAF + DDoS (protección — igual que ahora)
   │
-  └── Workers KV (cache de datos/ISR)
-        │
-        └──→ Supabase (us-east-1)
-              ├── PostgreSQL 17 (DB + RLS multi-tenant)
-              ├── Auth (JWT, OAuth, MFA)
-              ├── Realtime (WebSockets, CDC)
-              ├── Storage (CDN integrado)
-              └── Edge Functions (Deno — webhooks, SAP, email)
+  ├── Workers KV (cache de datos/ISR)
+  │
+  ├── R2 (object storage — imágenes, PDFs, exports. $0 egress)
+  │
+  ├── Hyperdrive (connection pooling → PostgreSQL)
+  │
+  └──→ Supabase (us-east-1)
+        ├── PostgreSQL 17 (DB + RLS multi-tenant)
+        ├── Auth (JWT, OAuth, MFA)
+        ├── Realtime (WebSockets, CDC)
+        ├── Storage (CDN integrado)
+        └── Edge Functions (Deno — webhooks, SAP, email)
 ```
 
 ## Documentos de Esta Alternativa

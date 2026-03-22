@@ -134,3 +134,6 @@ export function createDrizzleClient(env: Env) {
 
 > [!NOTE]
 > Drizzle ORM es **opcional**. `supabase-js` se puede seguir usando para el 90% de las queries. Drizzle es recomendado para queries complejas con subqueries y CTEs que son difíciles de expresar con `supabase-js`.
+
+> [!TIP]
+> **Auth en Workers:** Para producción, se recomienda usar `@supabase/ssr` que maneja cookies automáticamente (set/get/remove) en lugar del parsing manual de cookies mostrado arriba. El paquete es compatible con cualquier framework que exponga Request/Response.

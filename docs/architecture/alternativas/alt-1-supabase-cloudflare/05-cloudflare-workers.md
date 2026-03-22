@@ -25,7 +25,7 @@ id = "abc123..."
 
 # Variables de entorno (no sensibles)
 [vars]
-SUPABASE_URL = "https://api.grixi.app"
+SUPABASE_URL = "https://api.grixi.com"
 APP_ENV = "production"
 
 # Secrets (sensibles — se configuran con wrangler secret put)
@@ -163,11 +163,13 @@ jobs:
 
 ## 4. Dominios
 
+> Un solo dominio: `grixi.com` con wildcard `*.grixi.com`.
+
 | Dominio | Configuración |
 |---|---|
-| `app.grixi.com` | Custom domain en Workers → `wrangler.toml` routes |
-| `*.grixi.app` | Wildcard domain en Workers para tenants |
-| `api.grixi.app` | CNAME → Supabase custom domain (sin cambios) |
+| `app.grixi.com` | Dashboard SuperAdmin |
+| `*.grixi.com` | Wildcard para tenants (empresa-x.grixi.com, demo.grixi.com) |
+| `api.grixi.com` | CNAME → Supabase custom domain (sin cambios) |
 
 ```toml
 # wrangler.toml — rutas
@@ -176,9 +178,12 @@ pattern = "app.grixi.com/*"
 custom_domain = true
 
 [[routes]]
-pattern = "*.grixi.app/*"
+pattern = "*.grixi.com/*"
 custom_domain = true
 ```
+
+> [!NOTE]
+> Los subdominios `www`, `api`, y `app` se excluyen del wildcard mediante el middleware de React Router (tenant resolution).
 
 ---
 

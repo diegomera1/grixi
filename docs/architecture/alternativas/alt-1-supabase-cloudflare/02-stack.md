@@ -1,7 +1,7 @@
 # Alternativa 1 — Stack Tecnológico Completo
 
 > Comparación detallada de cada capa tecnológica: qué cambia, qué se mantiene, y por qué.
-> **Actualizado:** 20 de marzo, 2026. Alineado con Vite 8 + Rolldown, Hyperdrive, y React Router v7.13.
+> **Actualizado:** 21 de marzo, 2026. Alineado con Vite 8 + Rolldown, Hyperdrive, React Router v7.13, y Gemini 3.1 Flash-Lite.
 
 ---
 
@@ -32,13 +32,13 @@
 | **Storage** | Supabase Storage + **Cloudflare R2** (cache) | ⚠️ Mejora | R2 como CDN acelerado, $0 egress |
 | **Edge Functions** | Supabase Edge Functions (Deno) | ❌ Igual | Webhooks, email, SAP |
 | **Cache** | **Cloudflare Workers KV** | ✅ Nuevo | ISR / cache de datos en 310+ PoPs |
-| **AI** | Gemini 2.0 Flash Lite | ❌ Igual | Llamada vía loader/action server-side |
+| **AI** | **Gemini 3.1 Flash-Lite** | ✅ Cambia | Reemplaza 2.0 Flash Lite (shutdown jun 2026). $0.25/$1.50 por M tokens |
 | **CDN + WAF** | Cloudflare Pro | ❌ Igual | Ya pagamos CF, ahora también es host |
 | **CI/CD** | GitHub Actions → Vite 8 build → `wrangler deploy` | ✅ Cambia | Build ~5-10s (Rolldown). Wrangler deploy al edge |
 | **Repo** | GitHub Teams | ❌ Igual | — |
 | **Fuentes** | `@fontsource/*` packages | ✅ Cambia | Reemplaza `next/font` |
 | **Validación** | Zod | ❌ Igual | Client + Server |
-| **Forms** | `<Form>` nativo de React Router + Zod | ✅ Cambia | Progressive enhancement. Reemplaza react-hook-form |
+| **Forms** | `<Form>` nativo de React Router + Zod | ✅ Cambia | Progressive enhancement. Reemplaza `react-hook-form` — validación con Zod en client y server. Mejor DX en React Router |
 | **Monitoreo** | CF Analytics + Sentry + Supabase Dashboard | ⚠️ Cambia | CF Analytics reemplaza Vercel Dashboard |
 
 ---

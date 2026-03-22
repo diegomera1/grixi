@@ -247,7 +247,7 @@
 
 ---
 
-## 7. Estrategias para Reducir Gemini (el costo dominante)
+## 8. Estrategias para Reducir Gemini (el costo dominante)
 
 | Estrategia | Ahorro | Detalle |
 |---|---|---|

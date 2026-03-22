@@ -13,7 +13,7 @@
 | **Request size** | 100 MB | Suficiente para uploads normales |
 | **Subrequest** | 1000 por request | Suficiente para SSR con múltiples fetches |
 | **Duration** | 30s (standard) / 15min (Unbound) | Usar Unbound para SSR pesado |
-| **KV reads** | 100,000/día (paid) | Cache ISR funciona holgadamente |
+| **KV reads** | 10M reads/mes (paid) | Cache ISR funciona holgadamente |
 | **WebSocket** | ❌ No puede iniciar conexiones WS | Supabase Realtime funciona vía browser |
 | **Node.js compat** | ⚠️ Parcial (`nodejs_compat` flag) | Algunas libs pueden no funcionar |
 
@@ -155,14 +155,19 @@ export async function getAsset(env: Env, key: string): Promise<Response> {
 name = "grixi"
 [vars]
 APP_ENV = "production"
-SUPABASE_URL = "https://api.grixi.app"
+SUPABASE_URL = "https://api.grixi.com"
+
+# Hyperdrive (connection pooling → Supabase PostgreSQL)
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "<hyperdrive-config-id>"
 
 # Staging
 [env.staging]
 name = "grixi-staging"
 [env.staging.vars]
 APP_ENV = "staging"
-SUPABASE_URL = "https://staging.grixi.app"
+SUPABASE_URL = "https://staging.grixi.com"
 
 # Preview (PRs)
 [env.preview]
