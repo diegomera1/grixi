@@ -24,7 +24,9 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Agents/AI (local config)
-.agents/
+# Agents/AI (local config only)
 .gemini/
-skills-lock.json
+.claude/
+.kiro/
+.pi/
+.trae/
