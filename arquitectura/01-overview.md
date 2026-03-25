@@ -1,0 +1,86 @@
+# Alternativa 1 — Supabase + Cloudflare: Overview
+
+> **Filosofía:** Supabase como backend completo (DB, Auth, Realtime, Storage) + Cloudflare Workers como plataforma de ejecución del frontend. Se cambia Next.js por **React Router v7** (powered by **Vite 8 + Rolldown**) que tiene soporte **oficial GA** en Cloudflare.
+
+---
+
+## ¿Por Qué Esta Combinación?
+
+| Servicio | Rol | Razón |
+|---|---|---|
+| **Supabase** | Backend completo | PostgreSQL + RLS + Auth + PostgREST + Realtime + Storage — todo probado en producción |
+| **Cloudflare Workers** | Frontend SSR + Edge | React Router v7 con adapter oficial GA. 310+ PoPs, 0ms cold starts |
+| **Cloudflare Pro** | CDN + WAF + DNS | Ya lo pagamos — ahora también es nuestro host de frontend |
+
+## ¿Qué Se Elimina?
+
+| Servicio | Motivo de eliminación |
+|---|---|
+| **Vercel** | Cloudflare Workers ejecuta el frontend directamente en el edge con adapter oficial |
+
+## ¿Qué Se Agrega?
+
+| Servicio | Rol | Costo adicional |
+|---|---|---|
+| Cloudflare Workers Paid | Ejecutar React Router v7 SSR | ~$5/mes |
+| Cloudflare Workers KV | Cache ISR/datos en el edge | Incluido en Workers Paid |
+| Cloudflare R2 | Object storage ($0 egress). Assets, imágenes, exports | ~$4/mes (250 GB) |
+| Cloudflare Hyperdrive | Connection pooling global para PostgreSQL | Incluido en Workers Paid |
+| Drizzle ORM | Reemplaza queries complejas de supabase-js | $0 (open-source) |
+| Vite 8 + Rolldown | Build toolchain unificado (10-30x más rápido) | $0 (open-source) |
+
+## Diagrama de Arquitectura
+
+```
+Usuario → Cloudflare Edge (310+ PoPs globales)
+  │
+  ├── Worker (React Router v7 SSR — Vite 8 + Rolldown build)
+  │     ├── Loaders → fetch a Supabase (PostgREST + Drizzle)
+  │     ├── Actions → mutations en Supabase
+  │     └── Middleware → auth check + tenant resolution
+  │
+  ├── CDN (assets estáticos: JS, CSS, fonts, images)
+  │
+  ├── WAF + DDoS (protección — igual que ahora)
+  │
+  ├── Workers KV (cache de datos/ISR)
+  │
+  ├── R2 (object storage — imágenes, PDFs, exports. $0 egress)
+  │
+  ├── Hyperdrive (connection pooling → PostgreSQL)
+  │
+  └──→ Supabase (us-east-1)
+        ├── PostgreSQL 17 (DB + RLS multi-tenant)
+        ├── Auth (JWT, OAuth, MFA)
+        ├── Realtime (WebSockets, CDC)
+        ├── Storage (CDN integrado)
+        └── Edge Functions (Deno — webhooks, SAP, email)
+```
+
+## Documentos de Esta Alternativa
+
+> ✅ **Esta es la arquitectura elegida para GRIXI.** Los documentos 10-15 cubren la implementación desde cero.
+
+### Arquitectura y Stack
+
+| Documento | Contenido |
+|---|---|
+| [02-stack.md](./02-stack.md) | Stack tecnológico completo |
+| [03-react-router.md](./03-react-router.md) | React Router v7: migración desde Next.js |
+| [04-supabase.md](./04-supabase.md) | Supabase: qué se mantiene y qué cambia |
+| [05-cloudflare-workers.md](./05-cloudflare-workers.md) | Cloudflare Workers: config, deploy, CI/CD |
+| [06-seguridad.md](./06-seguridad.md) | Capas de seguridad |
+| [07-costos.md](./07-costos.md) | Desglose de costos |
+| [08-avanzado.md](./08-avanzado.md) | Workers KV cache, R2, environments, rollback, limitaciones |
+| [09-workflows.md](./09-workflows.md) | Workflows: Desarrollo, Demo comercial, y Usuario final |
+
+### Implementación (From Scratch)
+
+| Documento | Contenido |
+|---|---|
+| [10-setup-guide.md](./10-setup-guide.md) | **Día 0:** Compra y config de todas las herramientas (12 pasos) |
+| [11-database-schema.md](./11-database-schema.md) | Schema PostgreSQL multi-tenant completo (~30 tablas + RLS) |
+| [12-modules.md](./12-modules.md) | Spec de los 11 módulos con features, rutas, y componentes |
+| [13-ui-design-system.md](./13-ui-design-system.md) | Design system: colores, tipografía, animations, 3D, layout |
+| [14-ai-integration.md](./14-ai-integration.md) | Gemini 3.1: arquitectura, prompts, rich output, caching |
+| [15-roadmap.md](./15-roadmap.md) | Roadmap: 6 fases, 12 semanas, task breakdown por dev |

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build
+.react-router/
+dist/
+
+# Environment
+.dev.vars
+.env
+.env.local
+.env.*.local
+
+# Cloudflare
+.wrangler/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agents/AI (local config)
+.agents/
+.gemini/
+skills-lock.json
