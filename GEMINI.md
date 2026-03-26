@@ -36,6 +36,13 @@ GRIXI-APP/
 │   ├── 13-ui-design-system.md  # Design system
 │   ├── 14-ai-integration.md    # Integración con Gemini
 │   └── 15-roadmap.md      # Roadmap de 12 semanas
+├── registro/              # Auditoría de desarrollo
+│   ├── README.md          # Guía del sistema de registro
+│   ├── estado-actual.md   # Snapshot del progreso del proyecto
+│   └── bitacora/          # Log diario de toda actividad
+│       └── YYYY-MM-DD.md  # Un archivo por día (auto-generado)
+├── docs/                  # Documentación técnica
+│   └── modulos/           # Un MD por módulo implementado
 ├── instrucciones/         # Guías operativas
 │   └── google-workspace-cli.md  # Configuración y uso del GWS CLI
 └── .agents/               # Skills y configuración de agentes
@@ -75,3 +82,35 @@ gws gmail users messages list --params '{"userId": "me", "maxResults": 5}' --for
 2. **Naming:** GRIXI siempre en mayúsculas
 3. **Supabase:** Usar RLS y políticas de seguridad en todas las tablas
 4. **Cloud:** Todo bajo la organización `grixi.ai` — no usar cuentas personales
+
+---
+
+## Registro y Documentación
+
+> Todo cambio en el código debe quedar registrado. Sin excepciones.
+> Guía completa: `registro/README.md`
+
+### 1. Bitácora Diaria (`registro/bitacora/`)
+- Al iniciar sesión, verificar si existe `registro/bitacora/YYYY-MM-DD.md` (fecha actual)
+- Si no existe → crearlo con header `# Bitácora — YYYY-MM-DD`
+- Agregar sección `## Sesión N — HH:MM` por cada sesión del día
+- Registrar CADA acción con tags:
+  `[FEAT]` `[FIX]` `[REFACTOR]` `[DB]` `[CONFIG]` `[DEPS]`
+  `[DOCS]` `[UI]` `[SECURITY]` `[PERF]` `[TEST]`
+- Cada entrada incluye: archivos afectados, detalle, decisiones técnicas
+
+### 2. Estado del Proyecto (`registro/estado-actual.md`)
+- Actualizar cuando cambie el estado de un módulo o infraestructura
+- Se sobreescribe — siempre refleja el estado actual real
+
+### 3. Documentación por Módulo (`docs/modulos/`)
+- Al iniciar módulo nuevo → crear `docs/modulos/nombre.md` con estado 🚧
+- Actualizar cada vez que se implemente algo relevante
+- Al completar módulo → cambiar a ✅ y revisar la doc completa
+- Debe reflejar implementación REAL, no specs de arquitectura
+
+### 4. Commits
+- Formato: Conventional Commits en español
+- Prefijos: `feat`, `fix`, `docs`, `refactor`, `chore`, `perf`, `test`
+- Scope del módulo: `feat(auth): implementar OAuth con Google`
+- Cuerpo descriptivo para cambios no obvios

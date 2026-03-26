@@ -1,18 +1,14 @@
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Build
-.react-router/
+build/
 dist/
-
-# Environment
-.dev.vars
-.env
-.env.local
-.env.*.local
 
 # Cloudflare
 .wrangler/
+.dev.vars
 
 # IDE
 .vscode/
@@ -24,9 +20,16 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Agents/AI (local config only)
-.gemini/
+# Logs
+*.log
+
+# Agent directories (no son del proyecto)
 .claude/
 .kiro/
 .pi/
 .trae/
+.cursor/
+
+# Type generation (auto-generated)
+worker-configuration.d.ts
+.react-router/

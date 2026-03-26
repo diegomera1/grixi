@@ -1,0 +1,25 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "grixi-app",
+	"account_id": "9f03d559ba7dab48269e40938b495350",
+	"compatibility_date": "2026-03-17",
+	"main": "./workers/app.ts",
+	"vars": {
+		"APP_ENV": "production",
+		"APP_DOMAIN": "grixi.ai"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"routes": [
+		{ "pattern": "grixi.ai", "custom_domain": true }
+	],
+	"workers_dev": true
+	// Secrets are configured via `wrangler secret put`:
+	// SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+	// Use `.dev.vars` for local development secrets
+}

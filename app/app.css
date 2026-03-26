@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* ============================================
+   GRIXI Design System — CSS Custom Properties
+   Extends Tailwind v4 without replacing defaults
+   ============================================ */
+
+@theme inline {
+  /* Brand Colors — extracted from logo */
+  --color-grixi-purple-50: #f5f3ff;
+  --color-grixi-purple-100: #ede9fe;
+  --color-grixi-purple-200: #ddd6fe;
+  --color-grixi-purple-300: #c4b5fd;
+  --color-grixi-purple-400: #a78bfa;
+  --color-grixi-purple-500: #8b5cf6;
+  --color-grixi-purple-600: #7c3aed;
+  --color-grixi-purple-700: #6d28d9;
+  --color-grixi-purple-800: #5b21b6;
+  --color-grixi-purple-900: #4c1d95;
+
+  --color-grixi-navy-50: #eef2ff;
+  --color-grixi-navy-100: #e0e7ff;
+  --color-grixi-navy-200: #c7d2fe;
+  --color-grixi-navy-300: #a5b4fc;
+  --color-grixi-navy-400: #818cf8;
+  --color-grixi-navy-500: #6366f1;
+  --color-grixi-navy-600: #4f46e5;
+  --color-grixi-navy-700: #4338ca;
+  --color-grixi-navy-800: #1e1b4b;
+  --color-grixi-navy-900: #0f0d2e;
+
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Typography */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Instrument Serif", Georgia, serif;
+}
+
+/* ============================================
+   Dark / Light Mode Variables
+   ============================================ */
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f0d2e;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --card: #ffffff;
+  --card-foreground: #0f0d2e;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --accent: #6366f1;
+  --accent-foreground: #ffffff;
+  --ring: #7c3aed;
+}
+
+.dark {
+  --background: #0a0a0f;
+  --foreground: #f1f5f9;
+  --muted: #1e1b4b;
+  --muted-foreground: #94a3b8;
+  --card: #12101f;
+  --card-foreground: #f1f5f9;
+  --border: #1e293b;
+  --input: #1e293b;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e1b4b;
+  --secondary-foreground: #f1f5f9;
+  --accent: #818cf8;
+  --accent-foreground: #ffffff;
+  --ring: #8b5cf6;
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+}
+
+/* ============================================
+   Glassmorphism
+   ============================================ */
+
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
