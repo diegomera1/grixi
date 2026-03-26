@@ -10,10 +10,13 @@ interface Node {
   radius: number;
   opacity: number;
   pulsePhase: number;
+  baseX: number;
+  baseY: number;
 }
 
 /**
- * Animated network of nodes inspired by the GRIXI logo.
+ * Animated network of nodes that gently attract toward the cursor.
+ * Inspired by the GRIXI logo's network-graph "G" shape.
  * Uses Canvas 2D for smooth 60fps animation.
  */
 export function AnimatedNodes() {
@@ -21,21 +24,27 @@ export function AnimatedNodes() {
   const nodesRef = useRef<Node[]>([]);
   const animRef = useRef<number>(0);
   const mouseRef = useRef({ x: -1000, y: -1000 });
+  const startTimeRef = useRef(Date.now());
 
-  const NODE_COUNT = 60;
-  const CONNECTION_DISTANCE = 150;
-  const MOUSE_INFLUENCE = 200;
+  const NODE_COUNT = 50;
+  const CONNECTION_DISTANCE = 160;
+  const MOUSE_ATTRACT_RADIUS = 280;
+  const MOUSE_ATTRACT_STRENGTH = 0.008;
 
   const initNodes = useCallback((width: number, height: number) => {
     const nodes: Node[] = [];
     for (let i = 0; i < NODE_COUNT; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
       nodes.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        radius: Math.random() * 2 + 1.5,
-        opacity: Math.random() * 0.5 + 0.3,
+        x,
+        y,
+        baseX: x,
+        baseY: y,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        radius: Math.random() * 2 + 1.2,
+        opacity: Math.random() * 0.4 + 0.2,
         pulsePhase: Math.random() * Math.PI * 2,
       });
     }
@@ -50,10 +59,14 @@ export function AnimatedNodes() {
     if (!ctx) return;
 
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.scale(dpr, dpr);
       if (nodesRef.current.length === 0) {
-        initNodes(canvas.width, canvas.height);
+        initNodes(window.innerWidth, window.innerHeight);
       }
     };
 
@@ -61,65 +74,83 @@ export function AnimatedNodes() {
       mouseRef.current = { x: e.clientX, y: e.clientY };
     };
 
+    const handleMouseLeave = () => {
+      mouseRef.current = { x: -1000, y: -1000 };
+    };
+
     handleResize();
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseleave", handleMouseLeave);
 
     const animate = () => {
-      const { width, height } = canvas;
-      ctx.clearRect(0, 0, width, height);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      ctx.clearRect(0, 0, w, h);
 
       const nodes = nodesRef.current;
       const time = Date.now() * 0.001;
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      // Fade-in the canvas over 1.5s
+      const canvasAlpha = Math.min(1, elapsed / 1.5);
+
+      ctx.globalAlpha = canvasAlpha;
 
       // Update & draw nodes
       for (const node of nodes) {
-        // Move
+        // Gentle base drift
         node.x += node.vx;
         node.y += node.vy;
 
-        // Mouse repulsion
-        const dx = node.x - mouseRef.current.x;
-        const dy = node.y - mouseRef.current.y;
+        // Mouse ATTRACTION — nodes gently drift toward cursor
+        const dx = mouseRef.current.x - node.x;
+        const dy = mouseRef.current.y - node.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < MOUSE_INFLUENCE && dist > 0) {
-          const force = (MOUSE_INFLUENCE - dist) / MOUSE_INFLUENCE * 0.02;
+        if (dist < MOUSE_ATTRACT_RADIUS && dist > 1) {
+          const force = (1 - dist / MOUSE_ATTRACT_RADIUS) * MOUSE_ATTRACT_STRENGTH;
           node.vx += (dx / dist) * force;
           node.vy += (dy / dist) * force;
         }
 
-        // Damping
-        node.vx *= 0.998;
-        node.vy *= 0.998;
+        // Gentle spring back toward base position (prevents clustering)
+        node.vx += (node.baseX - node.x) * 0.0003;
+        node.vy += (node.baseY - node.y) * 0.0003;
 
-        // Wrap around edges
-        if (node.x < -20) node.x = width + 20;
-        if (node.x > width + 20) node.x = -20;
-        if (node.y < -20) node.y = height + 20;
-        if (node.y > height + 20) node.y = -20;
+        // Damping
+        node.vx *= 0.995;
+        node.vy *= 0.995;
+
+        // Wrap around edges with margin
+        if (node.x < -30) { node.x = w + 30; node.baseX = node.x; }
+        if (node.x > w + 30) { node.x = -30; node.baseX = node.x; }
+        if (node.y < -30) { node.y = h + 30; node.baseY = node.y; }
+        if (node.y > h + 30) { node.y = -30; node.baseY = node.y; }
 
         // Pulse
-        const pulse = Math.sin(time * 2 + node.pulsePhase) * 0.3 + 0.7;
+        const pulse = Math.sin(time * 1.5 + node.pulsePhase) * 0.3 + 0.7;
         const r = node.radius * pulse;
         const alpha = node.opacity * pulse;
 
-        // Draw node
+        // Draw node with softer purple
         ctx.beginPath();
         ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(139, 92, 246, ${alpha})`;
         ctx.fill();
 
-        // Glow
+        // Subtle glow
         ctx.beginPath();
-        ctx.arc(node.x, node.y, r * 3, 0, Math.PI * 2);
-        const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, r * 3);
-        gradient.addColorStop(0, `rgba(139, 92, 246, ${alpha * 0.3})`);
+        ctx.arc(node.x, node.y, r * 4, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(
+          node.x, node.y, 0,
+          node.x, node.y, r * 4
+        );
+        gradient.addColorStop(0, `rgba(139, 92, 246, ${alpha * 0.15})`);
         gradient.addColorStop(1, "rgba(139, 92, 246, 0)");
         ctx.fillStyle = gradient;
         ctx.fill();
       }
 
-      // Draw connections
+      // Draw connections between nearby nodes
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x;
@@ -127,17 +158,36 @@ export function AnimatedNodes() {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < CONNECTION_DISTANCE) {
-            const alpha = (1 - dist / CONNECTION_DISTANCE) * 0.15;
+            const alpha = (1 - dist / CONNECTION_DISTANCE) * 0.12;
             ctx.beginPath();
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = `rgba(129, 140, 248, ${alpha})`;
-            ctx.lineWidth = 0.5;
+            ctx.strokeStyle = `rgba(139, 92, 246, ${alpha})`;
+            ctx.lineWidth = 0.6;
             ctx.stroke();
           }
         }
       }
 
+      // Draw connections to cursor for nearby nodes (subtle highlight)
+      if (mouseRef.current.x > 0) {
+        for (const node of nodes) {
+          const dx = node.x - mouseRef.current.x;
+          const dy = node.y - mouseRef.current.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < MOUSE_ATTRACT_RADIUS * 0.6) {
+            const alpha = (1 - dist / (MOUSE_ATTRACT_RADIUS * 0.6)) * 0.06;
+            ctx.beginPath();
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(mouseRef.current.x, mouseRef.current.y);
+            ctx.strokeStyle = `rgba(167, 139, 250, ${alpha})`;
+            ctx.lineWidth = 0.4;
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.globalAlpha = 1;
       animRef.current = requestAnimationFrame(animate);
     };
 
@@ -147,6 +197,7 @@ export function AnimatedNodes() {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseleave", handleMouseLeave);
     };
   }, [initNodes]);
 
@@ -154,7 +205,9 @@ export function AnimatedNodes() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-0"
-      style={{ background: "linear-gradient(135deg, #0a0a0f 0%, #0f0d2e 50%, #1e1b4b 100%)" }}
+      style={{
+        background: "linear-gradient(145deg, #06060c 0%, #0c0a24 40%, #15133a 100%)",
+      }}
     />
   );
 }
