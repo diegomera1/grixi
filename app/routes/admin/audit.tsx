@@ -94,7 +94,7 @@ export default function AuditLog() {
               const time = new Date(log.created_at);
 
               return (
-                <div key={log.id} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/[0.02]">
+                <div key={log.id} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/2">
                   {/* Actor Avatar */}
                   {actor.avatar ? (
                     <img src={actor.avatar} className="h-8 w-8 rounded-full ring-2 ring-white/10 shrink-0" referrerPolicy="no-referrer" />

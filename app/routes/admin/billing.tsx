@@ -1,7 +1,7 @@
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/admin.billing";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
-import { DollarSign, Users, Building2, Activity, TrendingUp } from "lucide-react";
+import { DollarSign, Building2, Activity } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export async function loader({ request, context }: Route.LoaderArgs) {

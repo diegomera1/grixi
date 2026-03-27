@@ -235,7 +235,7 @@ export default function AdminDashboard() {
           </div>
           <div className="divide-y" style={{ borderColor: "var(--border)" }}>
             {recentOrgs.map((org: any) => (
-              <Link key={org.id} to={`/admin/organizations/${org.id}`} className="flex items-center justify-between px-6 py-3 hover:bg-white/[0.02] transition-colors">
+              <Link key={org.id} to={`/admin/organizations/${org.id}`} className="flex items-center justify-between px-6 py-3 hover:bg-white/2 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold" style={{ backgroundColor: `${org.settings?.primary_color || "#6366F1"}20`, color: org.settings?.primary_color || "#6366F1" }}>{org.name.charAt(0)}</div>
                   <div>

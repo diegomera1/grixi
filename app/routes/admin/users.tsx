@@ -167,7 +167,7 @@ export default function AdminUsers() {
           </thead>
           <tbody>
             {filtered.map((u: any) => (
-              <tr key={u.id} className="border-b last:border-b-0 transition-colors hover:bg-white/[0.02]" style={{ borderColor: "var(--border)" }}>
+              <tr key={u.id} className="border-b last:border-b-0 transition-colors hover:bg-white/2" style={{ borderColor: "var(--border)" }}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     {u.avatar ? (

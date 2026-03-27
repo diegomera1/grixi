@@ -250,7 +250,7 @@ export default function AdminOrganizations() {
           </thead>
           <tbody>
             {filtered.map((org: any) => (
-              <tr key={org.id} className="border-b last:border-b-0 transition-colors hover:bg-white/[0.02]" style={{ borderColor: "var(--border)" }}>
+              <tr key={org.id} className="border-b last:border-b-0 transition-colors hover:bg-white/2" style={{ borderColor: "var(--border)" }}>
                 <td className="px-6 py-4">
                   <Link to={`/admin/organizations/${org.id}`} className="flex items-center gap-3 group">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>
