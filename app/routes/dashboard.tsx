@@ -1,85 +1,64 @@
-import { redirect, useLoaderData, Link } from "react-router";
-import type { Route } from "./+types/dashboard";
-import { createSupabaseServerClient } from "~/lib/supabase/client.server";
-
-export async function loader({ request, context }: Route.LoaderArgs) {
-  const { supabase, headers } = createSupabaseServerClient(request, context.cloudflare.env);
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return redirect("/login");
-
-  return Response.json(
-    {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.user_metadata?.full_name || user.email,
-        avatar: user.user_metadata?.avatar_url,
-      },
-    },
-    { headers }
-  );
-}
+import { useOutletContext } from "react-router";
 
 export default function DashboardPage() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user } = useOutletContext<{ user: { id: string; email: string; name: string; avatar?: string } }>();
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
-      {/* Top Bar */}
-      <header className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-[var(--foreground)]">
-            <span className="text-[var(--primary)]">GRIXI</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            {user.avatar && (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="h-8 w-8 rounded-full"
-              />
-            )}
-            <span className="text-sm text-[var(--muted-foreground)]">{user.email}</span>
-          </div>
-          <Link
-            to="/auth/signout"
-            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+    <div className="animate-in fade-in duration-500">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+          ¡Bienvenido, {user.name}!
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
+          Tu plataforma empresarial inteligente está lista.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[
+          { name: "Dashboard", desc: "KPIs y métricas principales", progress: 15, color: "#6366F1" },
+          { name: "Almacenes", desc: "Inventario, racks, vista 3D", progress: 0, color: "#16A34A" },
+          { name: "Compras", desc: "POs, proveedores, aprobaciones", progress: 0, color: "#F59E0B" },
+          { name: "Finanzas", desc: "Libro Mayor, CxC, CxP", progress: 0, color: "#3B82F6" },
+          { name: "RRHH", desc: "Empleados, asistencia, nómina", progress: 0, color: "#EC4899" },
+          { name: "Flota", desc: "Vehículos, mantenimiento, logística", progress: 0, color: "#06B6D4" },
+        ].map((module, i) => (
+          <div
+            key={module.name}
+            className="rounded-xl border p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            style={{
+              backgroundColor: "var(--card)",
+              borderColor: "var(--border)",
+            }}
           >
-            Cerrar sesión
-          </Link>
-        </div>
-      </header>
-
-      {/* Content */}
-      <main className="p-8">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-[var(--foreground)] mb-2">
-            ¡Bienvenido, {user.name}!
-          </h2>
-          <p className="text-[var(--muted-foreground)] mb-8">
-            Tu plataforma empresarial inteligente está lista.
-          </p>
-
-          {/* Placeholder cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {["Dashboard", "Almacenes", "Compras"].map((module) => (
+            <div className="mb-3 flex items-center gap-3">
               <div
-                key={module}
-                className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
+                style={{ backgroundColor: `${module.color}20`, color: module.color }}
               >
-                <h3 className="font-semibold text-[var(--foreground)] mb-1">{module}</h3>
-                <p className="text-sm text-[var(--muted-foreground)]">Módulo en desarrollo</p>
-                <div className="mt-4 h-2 w-full rounded-full bg-[var(--muted)]">
-                  <div className="h-2 rounded-full bg-[var(--primary)] w-1/6" />
-                </div>
+                {module.name.charAt(0)}
               </div>
-            ))}
+              <div>
+                <h3 className="font-semibold" style={{ color: "var(--foreground)" }}>{module.name}</h3>
+                <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{module.desc}</p>
+              </div>
+            </div>
+            <div className="h-1.5 w-full rounded-full" style={{ backgroundColor: "var(--muted)" }}>
+              <div
+                className="h-1.5 rounded-full transition-all duration-700"
+                style={{
+                  width: `${Math.max(module.progress, 3)}%`,
+                  backgroundColor: module.color,
+                  opacity: module.progress > 0 ? 1 : 0.3,
+                }}
+              />
+            </div>
+            <p className="mt-2 text-xs" style={{ color: "var(--muted-foreground)" }}>
+              {module.progress > 0 ? `${module.progress}% completado` : "En desarrollo"}
+            </p>
           </div>
-        </div>
-      </main>
+        ))}
+      </div>
     </div>
   );
 }

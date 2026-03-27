@@ -1,9 +1,19 @@
-import { type RouteConfig, index, route } from "@react-router/dev/routes";
+import { type RouteConfig, index, route, layout } from "@react-router/dev/routes";
 
 export default [
+  // Public routes
   index("routes/login.tsx"),
   route("auth/callback", "routes/auth.callback.tsx"),
   route("auth/signout", "routes/auth.signout.tsx"),
   route("select-org", "routes/select-org.tsx"),
-  route("dashboard", "routes/dashboard.tsx"),
+
+  // Authenticated routes (sidebar + topbar layout)
+  layout("routes/authenticated.tsx", [
+    route("dashboard", "routes/dashboard.tsx"),
+
+    // Admin (platform_admin only)
+    route("admin", "routes/admin/index.tsx"),
+    route("admin/organizations", "routes/admin/organizations.tsx"),
+    route("admin/users", "routes/admin/users.tsx"),
+  ]),
 ] satisfies RouteConfig;
