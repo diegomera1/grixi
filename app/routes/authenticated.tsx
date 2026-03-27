@@ -9,10 +9,13 @@ export interface TenantContext {
   isPlatformAdmin: boolean;
   currentOrg: { id: string; name: string; slug: string; role: string; settings: any } | null;
   organizations: Array<{ id: string; name: string; slug: string; role: string }>;
+  /** Subdomain slug from URL, e.g. "empresa-x" from empresa-x.grixi.ai */
+  tenantSlug: string | null;
 }
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
+  const tenantSlug = (context as any).tenantSlug as string | null;
   const { supabase, headers } = createSupabaseServerClient(request, env);
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -42,19 +45,41 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     settings: m.organizations?.settings,
   })).filter((o: any) => o.id);
 
-  // Resolve current org: URL ?org= > cookie > first membership
+  // Resolve current org: subdomain > URL ?org= > cookie > first membership
   const url = new URL(request.url);
   const orgParam = url.searchParams.get("org");
   const cookieHeader = request.headers.get("cookie") || "";
   const cookieOrgId = cookieHeader.match(/grixi_org=([^;]+)/)?.[1];
 
   let currentOrg = null;
-  if (orgParam) {
+
+  // 1. Subdomain slug takes highest priority
+  if (tenantSlug) {
+    currentOrg = organizations.find((o: any) => o.slug === tenantSlug) || null;
+    // If platform admin, allow accessing any org by subdomain even without membership
+    if (!currentOrg && platformAdmin) {
+      const { data: orgBySlug } = await admin
+        .from("organizations")
+        .select("id, name, slug, settings")
+        .eq("slug", tenantSlug)
+        .maybeSingle();
+      if (orgBySlug) {
+        currentOrg = { ...orgBySlug, role: "platform_admin" };
+      }
+    }
+  }
+
+  // 2. URL param
+  if (!currentOrg && orgParam) {
     currentOrg = organizations.find((o: any) => o.id === orgParam || o.slug === orgParam) || null;
   }
+
+  // 3. Cookie
   if (!currentOrg && cookieOrgId) {
     currentOrg = organizations.find((o: any) => o.id === cookieOrgId) || null;
   }
+
+  // 4. First membership
   if (!currentOrg && organizations.length > 0) {
     currentOrg = organizations[0];
   }
@@ -79,6 +104,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       isPlatformAdmin: !!platformAdmin,
       currentOrg,
       organizations,
+      tenantSlug,
     } satisfies TenantContext,
     { headers: responseHeaders }
   );

@@ -205,6 +205,15 @@ body {
   animation: scale-in 0.4s var(--ease-out) forwards;
 }
 
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
 /* ─── Platform Dot Grid Background ──────────────────── */
 
 .platform-dot-grid {

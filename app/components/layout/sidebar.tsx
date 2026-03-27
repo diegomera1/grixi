@@ -106,12 +106,12 @@ export function Sidebar({ isPlatformAdmin }: SidebarProps) {
       <div className="flex h-14 items-center gap-2.5 border-b border-[var(--border)] px-3.5">
         <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden">
           {/* Orb glow behind logo */}
-          <div className="relative shrink-0">
+          <div className="relative shrink-0 overflow-visible">
             <div
-              className="absolute -inset-1.5 rounded-xl blur-lg opacity-30"
-              style={{ background: "radial-gradient(circle, var(--brand) 0%, transparent 70%)" }}
+              className="absolute -inset-3 rounded-2xl blur-xl animate-pulse-slow"
+              style={{ background: "radial-gradient(circle, var(--brand) 0%, transparent 70%)", opacity: 0.4 }}
             />
-            <div className="absolute inset-0 rounded-lg bg-[var(--brand)] opacity-10 blur-md" />
+            <div className="absolute -inset-1 rounded-xl bg-[var(--brand)] opacity-20 blur-lg" />
             <img
               src="/grixi-logo.png"
               alt="GRIXI"
