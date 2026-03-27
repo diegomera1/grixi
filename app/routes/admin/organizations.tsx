@@ -1,6 +1,7 @@
-import { redirect, useLoaderData, useFetcher } from "react-router";
+import { redirect, useLoaderData, useFetcher, Link } from "react-router";
 import type { Route } from "./+types/admin.organizations";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -56,6 +57,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
+  const ip = getClientIP(request);
 
   if (intent === "create") {
     const name = formData.get("name") as string;
@@ -79,6 +81,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       { organization_id: org.id, name: "viewer", description: "Solo lectura", is_system: true },
     ]);
 
+    await logAuditEvent(admin, { actorId: user.id, action: "organization.create", entityType: "organization", entityId: org.id, metadata: { name, slug }, ipAddress: ip });
     return Response.json({ success: true, org }, { headers });
   }
 
@@ -86,6 +89,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     const orgId = formData.get("org_id") as string;
     const newStatus = formData.get("new_status") as string;
     await admin.from("organizations").update({ status: newStatus }).eq("id", orgId);
+    await logAuditEvent(admin, { actorId: user.id, action: "organization.toggle_status", entityType: "organization", entityId: orgId, metadata: { newStatus }, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
@@ -195,12 +199,12 @@ export default function AdminOrganizations() {
             {organizations.map((org: any) => (
               <tr key={org.id} className="border-b last:border-b-0 transition-colors hover:bg-white/[0.02]" style={{ borderColor: "var(--border)" }}>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
+                  <Link to={`/admin/organizations/${org.id}`} className="flex items-center gap-3 group">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>
                       {org.name.charAt(0)}
                     </div>
-                    <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{org.name}</span>
-                  </div>
+                    <span className="text-sm font-medium group-hover:underline" style={{ color: "var(--foreground)" }}>{org.name}</span>
+                  </Link>
                 </td>
                 <td className="px-6 py-4">
                   <code className="text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>{org.slug}</code>

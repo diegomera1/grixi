@@ -1,6 +1,7 @@
 import { redirect, useLoaderData, useFetcher } from "react-router";
 import type { Route } from "./+types/admin.users";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { Shield, ShieldOff } from "lucide-react";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -77,15 +78,18 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
   const targetUserId = formData.get("user_id") as string;
+  const ip = getClientIP(request);
 
   if (intent === "promote") {
     await admin.from("platform_admins").insert({ user_id: targetUserId });
+    await logAuditEvent(admin, { actorId: user.id, action: "user.promote", entityType: "user", entityId: targetUserId, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
   if (intent === "demote") {
     if (targetUserId === user.id) return Response.json({ error: "No puedes removerte como admin" }, { status: 400, headers });
     await admin.from("platform_admins").delete().eq("user_id", targetUserId);
+    await logAuditEvent(admin, { actorId: user.id, action: "user.demote", entityType: "user", entityId: targetUserId, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 

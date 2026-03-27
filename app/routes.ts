@@ -14,6 +14,8 @@ export default [
     // Admin (platform_admin only)
     route("admin", "routes/admin/index.tsx"),
     route("admin/organizations", "routes/admin/organizations.tsx"),
+    route("admin/organizations/:id", "routes/admin/organizations.$id.tsx"),
     route("admin/users", "routes/admin/users.tsx"),
+    route("admin/audit", "routes/admin/audit.tsx"),
   ]),
 ] satisfies RouteConfig;
