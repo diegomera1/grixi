@@ -1,7 +1,8 @@
 import { useOutletContext } from "react-router";
+import type { TenantContext } from "./authenticated";
 
 export default function DashboardPage() {
-  const { user } = useOutletContext<{ user: { id: string; email: string; name: string; avatar?: string } }>();
+  const { user, currentOrg } = useOutletContext<TenantContext>();
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -10,7 +11,7 @@ export default function DashboardPage() {
           ¡Bienvenido, {user.name}!
         </h1>
         <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
-          Tu plataforma empresarial inteligente está lista.
+          {currentOrg ? `${currentOrg.name} — Tu plataforma empresarial inteligente.` : "Tu plataforma empresarial inteligente está lista."}
         </p>
       </div>
 
