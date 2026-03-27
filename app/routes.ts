@@ -10,6 +10,7 @@ export default [
   // Authenticated routes (sidebar + topbar layout)
   layout("routes/authenticated.tsx", [
     route("dashboard", "routes/dashboard.tsx"),
+    route("finanzas", "routes/finanzas.tsx"),
 
     // Admin (platform_admin only)
     route("admin", "routes/admin/index.tsx"),

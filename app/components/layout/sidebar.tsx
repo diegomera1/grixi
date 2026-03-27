@@ -2,12 +2,7 @@ import { Link, useLocation } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
-  Warehouse,
-  ShoppingCart,
   DollarSign,
-  Users,
-  Truck,
-  Bot,
   Shield,
   Building2,
   UserCog,
@@ -15,7 +10,6 @@ import {
   ChevronRight,
   History,
   CreditCard,
-  Search,
   Bell,
 } from "lucide-react";
 import { useState, createContext, useContext } from "react";
@@ -28,13 +22,11 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   color: string;
   glowColor: string;
-  moduleKey?: string;
 };
 
 type NavGroup = {
   label: string;
   items: NavItem[];
-  adminOnly?: boolean;
 };
 
 /* ─── Navigation Config ─────────────────────────────── */
@@ -49,24 +41,13 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "OPERACIONES",
     items: [
-      { label: "Almacenes", href: "/almacenes", icon: Warehouse, color: "#10B981", glowColor: "rgba(16,185,129,0.25)", moduleKey: "almacenes" },
-      { label: "Compras", href: "/compras", icon: ShoppingCart, color: "#F59E0B", glowColor: "rgba(245,158,11,0.25)", moduleKey: "compras" },
-      { label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.25)", moduleKey: "finanzas" },
-      { label: "Flota", href: "/flota", icon: Truck, color: "#0EA5E9", glowColor: "rgba(14,165,233,0.25)", moduleKey: "flota" },
-    ],
-  },
-  {
-    label: "EQUIPO",
-    items: [
-      { label: "Recursos Humanos", href: "/rrhh", icon: Users, color: "#06B6D4", glowColor: "rgba(6,182,212,0.25)", moduleKey: "rrhh" },
-      { label: "GRIXI AI", href: "/ai", icon: Bot, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.25)", moduleKey: "ai" },
+      { label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.25)" },
     ],
   },
 ];
 
 const ADMIN_GROUP: NavGroup = {
   label: "PLATAFORMA",
-  adminOnly: true,
   items: [
     { label: "Admin", href: "/admin", icon: Shield, color: "#F43F5E", glowColor: "rgba(244,63,94,0.25)" },
     { label: "Organizaciones", href: "/admin/organizations", icon: Building2, color: "#6366F1", glowColor: "rgba(99,102,241,0.25)" },
@@ -100,10 +81,9 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
 interface SidebarProps {
   isPlatformAdmin: boolean;
-  enabledModules?: Record<string, boolean>;
 }
 
-export function Sidebar({ isPlatformAdmin, enabledModules }: SidebarProps) {
+export function Sidebar({ isPlatformAdmin }: SidebarProps) {
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
 
@@ -112,14 +92,6 @@ export function Sidebar({ isPlatformAdmin, enabledModules }: SidebarProps) {
     if (href === "/dashboard") return location.pathname === "/dashboard";
     return location.pathname.startsWith(href);
   };
-
-  // Filter modules by org settings
-  const filterItems = (items: NavItem[]) =>
-    items.filter((item) => {
-      if (!item.moduleKey) return true;
-      if (!enabledModules) return true;
-      return enabledModules[item.moduleKey] !== false;
-    });
 
   const groups = isPlatformAdmin ? [...NAV_GROUPS, ADMIN_GROUP] : NAV_GROUPS;
 
@@ -130,10 +102,15 @@ export function Sidebar({ isPlatformAdmin, enabledModules }: SidebarProps) {
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       className="relative m-2 hidden md:flex h-[calc(100vh-16px)] flex-col rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-lg z-30"
     >
-      {/* ── Logo / Brand ──────────────────────── */}
+      {/* ── Logo / Brand with ORB glow ──────────── */}
       <div className="flex h-14 items-center gap-2.5 border-b border-[var(--border)] px-3.5">
         <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden">
+          {/* Orb glow behind logo */}
           <div className="relative shrink-0">
+            <div
+              className="absolute -inset-1.5 rounded-xl blur-lg opacity-30"
+              style={{ background: "radial-gradient(circle, var(--brand) 0%, transparent 70%)" }}
+            />
             <div className="absolute inset-0 rounded-lg bg-[var(--brand)] opacity-10 blur-md" />
             <img
               src="/grixi-logo.png"
@@ -151,7 +128,7 @@ export function Sidebar({ isPlatformAdmin, enabledModules }: SidebarProps) {
                 transition={{ duration: 0.15 }}
                 className="overflow-hidden"
               >
-                <span className="whitespace-nowrap font-display text-base font-semibold italic text-[var(--text-primary)]">
+                <span className="whitespace-nowrap font-serif text-base font-semibold italic text-[var(--text-primary)]">
                   GRIXI
                 </span>
                 <p className="text-[9px] font-medium text-[var(--text-muted)]">
@@ -165,94 +142,89 @@ export function Sidebar({ isPlatformAdmin, enabledModules }: SidebarProps) {
 
       {/* ── Navigation Groups ────────────────── */}
       <nav className="flex-1 overflow-y-auto px-2 py-3 scrollbar-hide">
-        {groups.map((group, gi) => {
-          const items = filterItems(group.items);
-          if (items.length === 0) return null;
+        {groups.map((group, gi) => (
+          <div key={group.label} className={gi > 0 ? "mt-4" : undefined}>
+            {/* Category label */}
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="mb-1.5 px-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]"
+                >
+                  {group.label}
+                </motion.p>
+              )}
+            </AnimatePresence>
 
-          return (
-            <div key={group.label} className={gi > 0 ? "mt-4" : undefined}>
-              {/* Category label */}
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="mb-1.5 px-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]"
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = isActive(item.href);
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={`group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium transition-all duration-200 ${
+                      active
+                        ? "text-[var(--text-primary)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                    } ${collapsed ? "justify-center" : ""}`}
+                    style={
+                      active
+                        ? {
+                            backgroundColor: `${item.color}10`,
+                            boxShadow: `inset 0 0 0 1px ${item.color}25`,
+                          }
+                        : undefined
+                    }
+                    title={collapsed ? item.label : undefined}
                   >
-                    {group.label}
-                  </motion.p>
-                )}
-              </AnimatePresence>
+                    {/* Active indicator bar */}
+                    {active && (
+                      <motion.div
+                        layoutId="sidebar-active"
+                        className="absolute -left-2 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
+                    )}
 
-              <div className="space-y-0.5">
-                {items.map((item) => {
-                  const active = isActive(item.href);
-                  const Icon = item.icon;
+                    {/* Icon with hover glow */}
+                    <div className="relative shrink-0">
+                      <div
+                        className="absolute inset-0 rounded-md opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100"
+                        style={{ backgroundColor: item.glowColor }}
+                      />
+                      <Icon
+                        size={16}
+                        className="relative transition-all duration-200 group-hover:rotate-3"
+                        style={{ color: active ? item.color : undefined }}
+                      />
+                    </div>
 
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className={`group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-medium transition-all duration-200 ${
-                        active
-                          ? "text-[var(--text-primary)]"
-                          : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                      } ${collapsed ? "justify-center" : ""}`}
-                      style={
-                        active
-                          ? {
-                              backgroundColor: `${item.color}10`,
-                              boxShadow: `inset 0 0 0 1px ${item.color}25`,
-                            }
-                          : undefined
-                      }
-                      title={collapsed ? item.label : undefined}
-                    >
-                      {/* Active indicator bar */}
-                      {active && (
-                        <motion.div
-                          layoutId="sidebar-active"
-                          className="absolute -left-2 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full"
-                          style={{ backgroundColor: item.color }}
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
+                    {/* Label with animation */}
+                    <AnimatePresence>
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: "auto" }}
+                          exit={{ opacity: 0, width: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className="overflow-hidden whitespace-nowrap"
+                        >
+                          {item.label}
+                        </motion.span>
                       )}
-
-                      {/* Icon with hover glow */}
-                      <div className="relative shrink-0">
-                        <div
-                          className="absolute inset-0 rounded-md opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100"
-                          style={{ backgroundColor: item.glowColor }}
-                        />
-                        <Icon
-                          size={16}
-                          className="relative transition-all duration-200 group-hover:rotate-3"
-                          style={{ color: active ? item.color : undefined }}
-                        />
-                      </div>
-
-                      {/* Label with animation */}
-                      <AnimatePresence>
-                        {!collapsed && (
-                          <motion.span
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: "auto" }}
-                            exit={{ opacity: 0, width: 0 }}
-                            transition={{ duration: 0.15 }}
-                            className="overflow-hidden whitespace-nowrap"
-                          >
-                            {item.label}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </Link>
-                  );
-                })}
-              </div>
+                    </AnimatePresence>
+                  </Link>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </nav>
 
       {/* ── Bottom Actions ────────────────────── */}
