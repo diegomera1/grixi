@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
-  CreditCard,
   Bell,
 } from "lucide-react";
 import { useState, createContext, useContext } from "react";
@@ -52,7 +51,6 @@ const ADMIN_GROUP: NavGroup = {
     { label: "Admin", href: "/admin", icon: Shield, color: "#F43F5E", glowColor: "rgba(244,63,94,0.25)" },
     { label: "Organizaciones", href: "/admin/organizations", icon: Building2, color: "#6366F1", glowColor: "rgba(99,102,241,0.25)" },
     { label: "Usuarios", href: "/admin/users", icon: UserCog, color: "#F59E0B", glowColor: "rgba(245,158,11,0.25)" },
-    { label: "Billing", href: "/admin/billing", icon: CreditCard, color: "#10B981", glowColor: "rgba(16,185,129,0.25)" },
     { label: "Audit Log", href: "/admin/audit", icon: History, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.25)" },
   ],
 };
@@ -105,13 +103,9 @@ export function Sidebar({ isPlatformAdmin }: SidebarProps) {
       {/* ── Logo / Brand with ORB glow ──────────── */}
       <div className="flex h-14 items-center gap-2.5 border-b border-[var(--border)] px-3.5">
         <Link to="/dashboard" className="flex items-center gap-2.5 overflow-hidden">
-          {/* Orb glow behind logo */}
-          <div className="relative shrink-0 overflow-visible">
-            <div
-              className="absolute -inset-3 rounded-2xl blur-xl animate-pulse-slow"
-              style={{ background: "radial-gradient(circle, var(--brand) 0%, transparent 70%)", opacity: 0.4 }}
-            />
-            <div className="absolute -inset-1 rounded-xl bg-[var(--brand)] opacity-20 blur-lg" />
+          {/* Orb glow behind logo — aligned with demo (subtle) */}
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 rounded-lg bg-[var(--brand)] opacity-10 blur-md" />
             <img
               src="/grixi-logo.png"
               alt="GRIXI"

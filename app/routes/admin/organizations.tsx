@@ -69,7 +69,12 @@ export async function action({ request, context }: Route.ActionArgs) {
 
     const { data: org, error } = await admin
       .from("organizations")
-      .insert({ name, slug, plan, status: "active" })
+      .insert({
+        name,
+        slug,
+        status: "active",
+        settings: { plan, max_users: plan === "enterprise" ? 100 : plan === "professional" ? 50 : plan === "starter" ? 20 : 5 },
+      })
       .select()
       .single();
 
@@ -260,9 +265,9 @@ export default function AdminOrganizations() {
                 </td>
                 <td className="px-5 py-3.5">
                   <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{
-                    backgroundColor: org.plan === "enterprise" ? "#F59E0B20" : org.plan === "professional" ? "#8B5CF620" : "#71717A20",
-                    color: org.plan === "enterprise" ? "#F59E0B" : org.plan === "professional" ? "#8B5CF6" : "#A1A1AA",
-                  }}>{org.plan}</span>
+                    backgroundColor: (org.settings?.plan || org.plan) === "enterprise" ? "#F59E0B20" : (org.settings?.plan || org.plan) === "professional" ? "#8B5CF620" : "#71717A20",
+                    color: (org.settings?.plan || org.plan) === "enterprise" ? "#F59E0B" : (org.settings?.plan || org.plan) === "professional" ? "#8B5CF6" : "#A1A1AA",
+                  }}>{org.settings?.plan || org.plan || "demo"}</span>
                 </td>
                 <td className="px-5 py-3.5">
                   <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{

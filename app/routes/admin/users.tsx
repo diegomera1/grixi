@@ -117,102 +117,104 @@ export default function AdminUsers() {
   };
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Usuarios</h1>
-        <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Gestión global de usuarios · {filtered.length} de {users.length}</p>
+    <div className="w-full space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-[var(--text-primary)]">Usuarios</h1>
+          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Gestión global de usuarios · {filtered.length} de {users.length}</p>
+        </div>
       </div>
 
       {/* Search + Filter */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
+          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nombre o email…"
-            className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm outline-none"
-            style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] py-2 pl-9 pr-3 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition-all focus:border-[var(--brand)]"
           />
         </div>
-        <select value={filterAdmin} onChange={(e) => setFilterAdmin(e.target.value)} className="rounded-lg border px-3 py-2 text-xs outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+        <select value={filterAdmin} onChange={(e) => setFilterAdmin(e.target.value)} className="appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] outline-none transition-all focus:border-[var(--brand)]">
           <option value="">Todos</option>
           <option value="admin">Platform Admins</option>
           <option value="user">Usuarios</option>
         </select>
         <button
           onClick={() => {
-            const headers = ["Nombre", "Email", "Admin", "Creado"];
+            const headers = ["Nombre", "Email", "Admin", "Último acceso"];
             const rows = filtered.map((u: any) => [
-              u.name || "", u.email || "", u.isPlatformAdmin ? "Sí" : "No", new Date(u.created_at).toLocaleDateString("es")
+              u.name || "", u.email || "", u.isPlatformAdmin ? "Sí" : "No", u.lastSignIn ? new Date(u.lastSignIn).toLocaleDateString("es") : "—"
             ]);
             exportCSV("usuarios", headers, rows);
           }}
-          className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-white/5"
-          style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+          className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-[11px] font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--brand)] hover:text-[var(--brand)]"
         >
-          <Download size={13} /> CSV
+          <Download size={12} /> CSV
         </button>
       </div>
 
-      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+      {/* Table */}
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b" style={{ borderColor: "var(--border)" }}>
+            <tr className="border-b border-[var(--border)]">
               {["Usuario", "Organizaciones", "Último acceso", "Platform Admin", "Acciones"].map((h) => (
-                <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>
+                <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((u: any) => (
-              <tr key={u.id} className="border-b last:border-b-0 transition-colors hover:bg-white/2" style={{ borderColor: "var(--border)" }}>
-                <td className="px-6 py-4">
+              <tr key={u.id} className="border-b border-[var(--border)] last:border-b-0 transition-colors hover:bg-[var(--bg-muted)]/50">
+                <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     {u.avatar ? (
-                      <img src={u.avatar} alt={u.name} className="h-9 w-9 rounded-full ring-2 ring-white/10" referrerPolicy="no-referrer" />
+                      <img src={u.avatar} alt={u.name} className="h-8 w-8 rounded-full ring-2 ring-white/10" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold" style={{ backgroundColor: "var(--muted)", color: "var(--foreground)" }}>
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[10px] font-bold text-[var(--text-secondary)]">
                         {u.name?.charAt(0)?.toUpperCase() || "U"}
                       </div>
                     )}
                     <div>
-                      <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{u.name}</p>
-                      <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{u.email}</p>
+                      <p className="text-[12px] font-medium text-[var(--text-primary)]">{u.name}</p>
+                      <p className="text-[10px] text-[var(--text-muted)]">{u.email}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-5 py-3.5">
                   <div className="flex flex-wrap gap-1.5">
                     {u.memberships?.length > 0 ? u.memberships.map((m: any, i: number) => (
-                      <span key={i} className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>
+                      <span key={i} className="rounded-full px-2.5 py-0.5 text-[10px] font-medium" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>
                         {m.orgName} ({m.roleName})
                       </span>
                     )) : (
-                      <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>Sin organización</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">Sin organización</span>
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs" style={{ color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
+                <td className="px-5 py-3.5">
+                  <span className="text-[11px] tabular-nums text-[var(--text-muted)]">
                     {u.lastSignIn ? new Date(u.lastSignIn).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                   </span>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-5 py-3.5">
                   {u.isPlatformAdmin ? (
-                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ backgroundColor: "#F59E0B20", color: "#F59E0B" }}>
-                      <Shield size={12} /> Admin
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium" style={{ backgroundColor: "#F59E0B20", color: "#F59E0B" }}>
+                      <Shield size={11} /> Admin
                     </span>
-                  ) : <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>—</span>}
+                  ) : <span className="text-[10px] text-[var(--text-muted)]">—</span>}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-5 py-3.5">
                   <button
                     onClick={() => handleToggleAdmin(u.id, u.isPlatformAdmin)}
-                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/5"
+                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[10px] font-medium transition-colors hover:bg-[var(--bg-muted)]"
                     style={{ color: u.isPlatformAdmin ? "#EF4444" : "#16A34A" }}
                   >
-                    {u.isPlatformAdmin ? <><ShieldOff size={14} /> Revocar</> : <><Shield size={14} /> Promover</>}
+                    {u.isPlatformAdmin ? <><ShieldOff size={13} /> Revocar</> : <><Shield size={13} /> Promover</>}
                   </button>
                 </td>
               </tr>

@@ -18,6 +18,5 @@ export default [
     route("admin/organizations/:id", "routes/admin/organizations.$id.tsx"),
     route("admin/users", "routes/admin/users.tsx"),
     route("admin/audit", "routes/admin/audit.tsx"),
-    route("admin/billing", "routes/admin/billing.tsx"),
   ]),
 ] satisfies RouteConfig;
