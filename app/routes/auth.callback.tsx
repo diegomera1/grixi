@@ -11,6 +11,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     return redirect("/login?error=generic");
   }
 
+  // Determine return URL (subdomain that initiated the OAuth flow)
+  const returnTo = url.searchParams.get("return_to");
+  // Security: only allow redirects to *.grixi.ai subdomains
+  const isValidReturn = returnTo &&
+    (new URL(returnTo).hostname.endsWith(".grixi.ai") || new URL(returnTo).hostname === "grixi.ai");
+  const baseUrl = isValidReturn ? returnTo : "";
+
   const { supabase, headers } = createSupabaseServerClient(request, env);
 
   // Exchange code for session
@@ -18,12 +25,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   if (authError || !sessionData.user) {
     console.error("Auth callback error:", authError);
-    return redirect("/login?error=generic");
+    return redirect(`${baseUrl}/login?error=generic`);
   }
 
   const userEmail = sessionData.user.email;
   if (!userEmail) {
-    return redirect("/login?error=generic");
+    return redirect(`${baseUrl}/login?error=generic`);
   }
 
   // Check whitelist access using admin client (bypasses RLS)
@@ -38,10 +45,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   if (existingMemberships && existingMemberships.length > 0) {
     // User already has access — route to org
     if (existingMemberships.length === 1) {
-      const org = (existingMemberships[0] as any).organizations;
-      return redirect(`/dashboard`, { headers });
+      return redirect(`${baseUrl}/dashboard`, { headers });
     }
-    return redirect("/select-org", { headers });
+    return redirect(`${baseUrl}/select-org`, { headers });
   }
 
   // 2. Verify whitelist (invitations + domain whitelists)
@@ -53,7 +59,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   if (whitelistError || !whitelistAccess || whitelistAccess.length === 0) {
     // No access — sign out and redirect
     await supabase.auth.signOut();
-    return redirect("/login?error=unauthorized");
+    return redirect(`${baseUrl}/login?error=unauthorized`);
   }
 
   // 3. Create memberships for each whitelisted org
@@ -90,8 +96,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   // Route based on number of orgs
   if (whitelistAccess.length === 1) {
-    return redirect("/dashboard", { headers });
+    return redirect(`${baseUrl}/dashboard`, { headers });
   }
 
-  return redirect("/select-org", { headers });
+  return redirect(`${baseUrl}/select-org`, { headers });
 }

@@ -115,10 +115,20 @@ function GoogleSignInButton({
     const { createBrowserClient } = await import("@supabase/ssr");
     const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
+    // Always redirect OAuth to root domain (grixi.ai) for centralized auth.
+    // Preserve the current subdomain origin via return_to param so we can
+    // redirect back to the correct tenant subdomain after authentication.
+    const currentOrigin = window.location.origin;
+    const isSubdomain = window.location.hostname !== "grixi.ai" &&
+                        window.location.hostname.endsWith(".grixi.ai");
+    const callbackUrl = isSubdomain
+      ? `https://grixi.ai/auth/callback?return_to=${encodeURIComponent(currentOrigin)}`
+      : `${currentOrigin}/auth/callback`;
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
       },
     });
   };

@@ -11,6 +11,11 @@ export function createSupabaseServerClient(
 ): { supabase: SupabaseClient; headers: Headers } {
   const headers = new Headers();
 
+  // Determine cookie domain: use .grixi.ai for production (shared across subdomains)
+  const hostname = new URL(request.url).hostname;
+  const isProduction = hostname.endsWith("grixi.ai") && !hostname.endsWith(".workers.dev");
+  const cookieDomain = isProduction ? ".grixi.ai" : undefined;
+
   const supabase = createServerClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
     cookies: {
       getAll() {
@@ -18,7 +23,13 @@ export function createSupabaseServerClient(
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          headers.append("Set-Cookie", serializeCookieHeader(name, value, options));
+          headers.append(
+            "Set-Cookie",
+            serializeCookieHeader(name, value, {
+              ...options,
+              domain: cookieDomain,
+            })
+          );
         });
       },
     },
