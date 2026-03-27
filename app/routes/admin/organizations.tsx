@@ -2,8 +2,8 @@ import { redirect, useLoaderData, useFetcher, Link } from "react-router";
 import type { Route } from "./+types/admin.organizations";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { Plus, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
@@ -103,6 +103,18 @@ export default function AdminOrganizations() {
   const [newName, setNewName] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [newPlan, setNewPlan] = useState("demo");
+  const [search, setSearch] = useState("");
+  const [filterPlan, setFilterPlan] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  const filtered = useMemo(() => {
+    return organizations.filter((org: any) => {
+      const matchSearch = !search || org.name.toLowerCase().includes(search.toLowerCase()) || org.slug.toLowerCase().includes(search.toLowerCase());
+      const matchPlan = !filterPlan || (org.plan || org.settings?.plan) === filterPlan;
+      const matchStatus = !filterStatus || org.status === filterStatus;
+      return matchSearch && matchPlan && matchStatus;
+    });
+  }, [organizations, search, filterPlan, filterStatus]);
 
   const handleCreate = () => {
     fetcher.submit({ intent: "create", name: newName, slug: newSlug, plan: newPlan }, { method: "post" });
@@ -124,7 +136,7 @@ export default function AdminOrganizations() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Organizaciones</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Gestionar tenants de la plataforma</p>
+          <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Gestionar tenants de la plataforma · {filtered.length} de {organizations.length}</p>
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
@@ -134,6 +146,33 @@ export default function AdminOrganizations() {
           <Plus size={16} />
           Crear Organización
         </button>
+      </div>
+
+      {/* Search + Filters */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre o slug…"
+            className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:ring-1"
+            style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}
+          />
+        </div>
+        <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)} className="rounded-lg border px-3 py-2 text-xs outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+          <option value="">Todos los planes</option>
+          <option value="demo">Demo</option>
+          <option value="starter">Starter</option>
+          <option value="professional">Professional</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="rounded-lg border px-3 py-2 text-xs outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+          <option value="">Todos los estados</option>
+          <option value="active">Activo</option>
+          <option value="suspended">Suspendido</option>
+        </select>
       </div>
 
       {/* Create Form */}
@@ -196,7 +235,7 @@ export default function AdminOrganizations() {
             </tr>
           </thead>
           <tbody>
-            {organizations.map((org: any) => (
+            {filtered.map((org: any) => (
               <tr key={org.id} className="border-b last:border-b-0 transition-colors hover:bg-white/[0.02]" style={{ borderColor: "var(--border)" }}>
                 <td className="px-6 py-4">
                   <Link to={`/admin/organizations/${org.id}`} className="flex items-center gap-3 group">

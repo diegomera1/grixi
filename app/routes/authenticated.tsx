@@ -90,7 +90,7 @@ function AuthenticatedContent() {
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: "var(--background)" }}>
-      <Sidebar isPlatformAdmin={data.isPlatformAdmin} />
+      <Sidebar isPlatformAdmin={data.isPlatformAdmin} enabledModules={data.currentOrg?.settings?.enabled_modules} />
       <div
         className="flex flex-1 flex-col transition-all duration-300"
         style={{ marginLeft: collapsed ? 68 : 240 }}

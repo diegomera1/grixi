@@ -2,7 +2,8 @@ import { redirect, useLoaderData, useFetcher } from "react-router";
 import type { Route } from "./+types/admin.users";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
-import { Shield, ShieldOff } from "lucide-react";
+import { Shield, ShieldOff, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
@@ -99,6 +100,16 @@ export async function action({ request, context }: Route.ActionArgs) {
 export default function AdminUsers() {
   const { users } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
+  const [search, setSearch] = useState("");
+  const [filterAdmin, setFilterAdmin] = useState("");
+
+  const filtered = useMemo(() => {
+    return users.filter((u: any) => {
+      const matchSearch = !search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
+      const matchAdmin = !filterAdmin || (filterAdmin === "admin" ? u.isPlatformAdmin : !u.isPlatformAdmin);
+      return matchSearch && matchAdmin;
+    });
+  }, [users, search, filterAdmin]);
 
   const handleToggleAdmin = (userId: string, isAdmin: boolean) => {
     fetcher.submit({ intent: isAdmin ? "demote" : "promote", user_id: userId }, { method: "post" });
@@ -108,7 +119,27 @@ export default function AdminUsers() {
     <div className="animate-in fade-in duration-500">
       <div className="mb-6">
         <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Usuarios</h1>
-        <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Gestión global de usuarios de la plataforma</p>
+        <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Gestión global de usuarios · {filtered.length} de {users.length}</p>
+      </div>
+
+      {/* Search + Filter */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre o email…"
+            className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm outline-none"
+            style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}
+          />
+        </div>
+        <select value={filterAdmin} onChange={(e) => setFilterAdmin(e.target.value)} className="rounded-lg border px-3 py-2 text-xs outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+          <option value="">Todos</option>
+          <option value="admin">Platform Admins</option>
+          <option value="user">Usuarios</option>
+        </select>
       </div>
 
       <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
@@ -121,7 +152,7 @@ export default function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {users.map((u: any) => (
+            {filtered.map((u: any) => (
               <tr key={u.id} className="border-b last:border-b-0 transition-colors hover:bg-white/[0.02]" style={{ borderColor: "var(--border)" }}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">

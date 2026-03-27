@@ -21,16 +21,17 @@ interface NavItem {
   href: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
+  moduleKey?: string; // maps to enabled_modules keys
 }
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={20} /> },
-  { label: "Almacenes", href: "/almacenes", icon: <Warehouse size={20} /> },
-  { label: "Compras", href: "/compras", icon: <ShoppingCart size={20} /> },
-  { label: "Finanzas", href: "/finanzas", icon: <DollarSign size={20} /> },
-  { label: "RRHH", href: "/rrhh", icon: <Users size={20} /> },
-  { label: "Flota", href: "/flota", icon: <Truck size={20} /> },
-  { label: "GRIXI AI", href: "/ai", icon: <Bot size={20} /> },
+  { label: "Almacenes", href: "/almacenes", icon: <Warehouse size={20} />, moduleKey: "almacenes" },
+  { label: "Compras", href: "/compras", icon: <ShoppingCart size={20} />, moduleKey: "compras" },
+  { label: "Finanzas", href: "/finanzas", icon: <DollarSign size={20} />, moduleKey: "finanzas" },
+  { label: "RRHH", href: "/rrhh", icon: <Users size={20} />, moduleKey: "rrhh" },
+  { label: "Flota", href: "/flota", icon: <Truck size={20} />, moduleKey: "flota" },
+  { label: "GRIXI AI", href: "/ai", icon: <Bot size={20} />, moduleKey: "ai" },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
@@ -58,7 +59,12 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Sidebar({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
+interface SidebarProps {
+  isPlatformAdmin: boolean;
+  enabledModules?: Record<string, boolean>;
+}
+
+export function Sidebar({ isPlatformAdmin, enabledModules }: SidebarProps) {
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
 
@@ -66,6 +72,13 @@ export function Sidebar({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
     if (href === "/admin") return location.pathname === "/admin";
     return location.pathname.startsWith(href);
   };
+
+  // Filter nav items: Dashboard always visible, modules filtered by enabledModules
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
+    if (!item.moduleKey) return true; // Dashboard is always visible
+    if (!enabledModules) return true; // No org settings = show all (platform admins, etc.)
+    return enabledModules[item.moduleKey] !== false; // Only hide if explicitly false
+  });
 
   return (
     <aside
@@ -87,7 +100,7 @@ export function Sidebar({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {NAV_ITEMS.map((item) => (
+        {visibleNavItems.map((item) => (
           <NavLink key={item.href} item={item} active={isActive(item.href)} collapsed={collapsed} />
         ))}
 
