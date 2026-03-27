@@ -16,9 +16,8 @@
 		"nodejs_compat"
 	],
 	"routes": [
-		{ "pattern": "grixi.ai", "custom_domain": true }
-		// TODO: Add wildcard route after DNS CNAME *.grixi.ai is created
-		// { "pattern": "*.grixi.ai/*", "zone_name": "grixi.ai" }
+		{ "pattern": "grixi.ai", "custom_domain": true },
+		{ "pattern": "*.grixi.ai/*", "zone_name": "grixi.ai" }
 	],
 	"workers_dev": true
 	// Secrets are configured via `wrangler secret put`:
