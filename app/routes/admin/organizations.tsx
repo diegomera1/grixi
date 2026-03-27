@@ -2,7 +2,8 @@ import { redirect, useLoaderData, useFetcher, Link } from "react-router";
 import type { Route } from "./+types/admin.organizations";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
-import { Plus, Search } from "lucide-react";
+import { exportCSV } from "~/lib/export";
+import { Plus, Search, Download } from "lucide-react";
 import { useState, useMemo } from "react";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -173,6 +174,19 @@ export default function AdminOrganizations() {
           <option value="active">Activo</option>
           <option value="suspended">Suspendido</option>
         </select>
+        <button
+          onClick={() => {
+            const headers = ["Nombre", "Slug", "Plan", "Status", "Miembros", "Creado"];
+            const rows = filtered.map((org: any) => [
+              org.name, org.slug, org.settings?.plan || "demo", org.status, String(orgMemberMap[org.id] || 0), new Date(org.created_at).toLocaleDateString("es")
+            ]);
+            exportCSV("organizaciones", headers, rows);
+          }}
+          className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-white/5"
+          style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+        >
+          <Download size={13} /> CSV
+        </button>
       </div>
 
       {/* Create Form */}

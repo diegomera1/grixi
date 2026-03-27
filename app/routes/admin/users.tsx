@@ -2,7 +2,8 @@ import { redirect, useLoaderData, useFetcher } from "react-router";
 import type { Route } from "./+types/admin.users";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
-import { Shield, ShieldOff, Search } from "lucide-react";
+import { exportCSV } from "~/lib/export";
+import { Shield, ShieldOff, Search, Download } from "lucide-react";
 import { useState, useMemo } from "react";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -140,6 +141,19 @@ export default function AdminUsers() {
           <option value="admin">Platform Admins</option>
           <option value="user">Usuarios</option>
         </select>
+        <button
+          onClick={() => {
+            const headers = ["Nombre", "Email", "Admin", "Creado"];
+            const rows = filtered.map((u: any) => [
+              u.name || "", u.email || "", u.isPlatformAdmin ? "Sí" : "No", new Date(u.created_at).toLocaleDateString("es")
+            ]);
+            exportCSV("usuarios", headers, rows);
+          }}
+          className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-white/5"
+          style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+        >
+          <Download size={13} /> CSV
+        </button>
       </div>
 
       <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>

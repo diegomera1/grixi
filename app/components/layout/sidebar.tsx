@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
+  CreditCard,
 } from "lucide-react";
 import { useState, createContext, useContext } from "react";
 
@@ -38,6 +39,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { label: "Admin", href: "/admin", icon: <Shield size={20} />, adminOnly: true },
   { label: "Organizaciones", href: "/admin/organizations", icon: <Building2 size={20} />, adminOnly: true },
   { label: "Usuarios", href: "/admin/users", icon: <UserCog size={20} />, adminOnly: true },
+  { label: "Billing", href: "/admin/billing", icon: <CreditCard size={20} />, adminOnly: true },
   { label: "Audit Log", href: "/admin/audit", icon: <History size={20} />, adminOnly: true },
 ];
 
