@@ -1,6 +1,6 @@
 # Estado Actual — GRIXI-APP
 
-**Última actualización:** 2026-03-25
+**Última actualización:** 2026-03-26
 
 ---
 
@@ -8,18 +8,19 @@
 
 | Componente | Estado | Notas |
 |------------|--------|-------|
-| Supabase | ⬜ Pendiente | — |
-| Cloudflare Workers | ⬜ Pendiente | — |
+| Supabase | ✅ Activo | Auth + PostgreSQL + RLS + audit_logs |
+| Cloudflare Workers | ✅ Activo | grixi.ai (v87426b59) |
 | CI/CD (GitHub Actions) | ⬜ Pendiente | — |
-| Dominio grixi.io | ⬜ Pendiente | — |
+| Dominio grixi.ai | ✅ Activo | Custom domain en Workers |
 | Google Workspace CLI | ✅ Configurado | `dmera@grixi.ai` via `gws` |
 
 ## Módulos
 
 | Módulo | Estado | Progreso | Documentación |
 |--------|--------|----------|---------------|
-| Auth | ⬜ Pendiente | 0% | — |
-| Dashboard | ⬜ Pendiente | 0% | — |
+| Auth | ✅ Implementado | 100% | Google OAuth + session |
+| Admin Panel | ✅ Implementado | 100% | 6 páginas admin |
+| Dashboard | 🚧 Parcial | 30% | Tenant-aware welcome |
 | Almacenes | ⬜ Pendiente | 0% | — |
 | Compras | ⬜ Pendiente | 0% | — |
 | Finanzas | ⬜ Pendiente | 0% | — |
@@ -29,6 +30,24 @@
 | Calidad | ⬜ Pendiente | 0% | — |
 | Reportes | ⬜ Pendiente | 0% | — |
 | GRIXI AI | ⬜ Pendiente | 0% | — |
+
+## Admin Panel — Detalle
+
+| Página | Ruta | Features |
+|--------|------|----------|
+| Dashboard | `/admin` | KPIs, Recharts (Area/Pie/Bar), audit timeline, org links |
+| Organizaciones | `/admin/organizations` | CRUD, search, filters, CSV export |
+| Detalle Org | `/admin/organizations/:id` | 5 tabs (Miembros, Módulos, Invitaciones, Dominios, Config) |
+| Usuarios | `/admin/users` | Promote/demote admin, search, CSV export |
+| Billing | `/admin/billing` | MRR, revenue chart, usage tracking |
+| Audit Log | `/admin/audit` | Filtro por acción, actor avatar, IP tracking |
+
+## Arquitectura Multi-Tenant
+
+- **Tenant Resolution**: URL `?org=` > cookie `grixi_org` > primer membership
+- **Org Switcher**: Topbar dropdown con cookie persistence (1 año)
+- **Module Filtering**: Sidebar dinámico basado en `org.settings.enabled_modules`
+- **Security**: `createSupabaseAdminClient` para ops admin, RLS para usuarios
 
 ## Documentación
 
@@ -42,11 +61,15 @@
 
 | Paquete | Versión | Propósito |
 |---------|---------|-----------|
-| *(aún no inicializado)* | — | — |
+| react-router | v7 | SSR + routing |
+| vite | v8.0.2 | Build tool |
+| recharts | ^2 | Charts admin dashboard |
+| lucide-react | ^0.4 | Iconos |
+| @supabase/supabase-js | ^2 | Backend client |
 
 ## Próximos Pasos
 
-1. Configurar proyecto base (React Router v7 + Vite 8)
-2. Configurar Supabase (proyecto + schema base)
-3. Configurar Cloudflare Workers
-4. Implementar módulo de Auth
+1. Implementar páginas de módulos (Almacenes, Compras, etc.)
+2. Supabase Realtime subscriptions para dashboard
+3. R2 para almacenamiento de archivos
+4. Hyperdrive para conexiones PostgreSQL optimizadas
