@@ -1,105 +1,250 @@
 @import "tailwindcss";
 
-/* ============================================
-   GRIXI Design System — CSS Custom Properties
-   Extends Tailwind v4 without replacing defaults
-   ============================================ */
+/* ─── Design Tokens ──────────────────────────────────── */
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #FAFAFA;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-muted: #F4F4F5;
+
+  /* Borders */
+  --border: #E4E4E7;
+  --border-hover: #D4D4D8;
+
+  /* Text */
+  --text-primary: #09090B;
+  --text-secondary: #71717A;
+  --text-muted: #A1A1AA;
+
+  /* Brand */
+  --brand: #7C3AED;
+  --brand-light: #A78BFA;
+  --brand-surface: #F5F3FF;
+  --brand-dark: #6D28D9;
+
+  /* Status */
+  --success: #10B981;
+  --success-light: #D1FAE5;
+  --warning: #F59E0B;
+  --warning-light: #FEF3C7;
+  --error: #EF4444;
+  --error-light: #FEE2E2;
+  --info: #3B82F6;
+  --info-light: #DBEAFE;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Timing */
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-dramatic: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Legacy compat */
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --muted: var(--bg-muted);
+  --muted-foreground: var(--text-muted);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --ring: var(--brand);
+}
+
+.dark {
+  --bg-primary: #09090B;
+  --bg-surface: #111113;
+  --bg-elevated: #1A1A1D;
+  --bg-muted: #27272A;
+
+  --border: #27272A;
+  --border-hover: #3F3F46;
+
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-muted: #71717A;
+
+  --brand: #A78BFA;
+  --brand-light: #C4B5FD;
+  --brand-surface: #1E1533;
+  --brand-dark: #8B5CF6;
+
+  --success-light: #064E3B;
+  --warning-light: #78350F;
+  --error-light: #7F1D1D;
+  --info-light: #1E3A5F;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --muted: var(--bg-muted);
+  --muted-foreground: var(--text-muted);
+  --primary: var(--brand);
+  --ring: var(--brand);
+}
+
+/* ─── Tailwind Theme Extension ──────────────────────── */
 
 @theme inline {
-  /* Brand Colors — extracted from logo */
-  --color-grixi-purple-50: #f5f3ff;
-  --color-grixi-purple-100: #ede9fe;
-  --color-grixi-purple-200: #ddd6fe;
-  --color-grixi-purple-300: #c4b5fd;
-  --color-grixi-purple-400: #a78bfa;
-  --color-grixi-purple-500: #8b5cf6;
-  --color-grixi-purple-600: #7c3aed;
-  --color-grixi-purple-700: #6d28d9;
-  --color-grixi-purple-800: #5b21b6;
-  --color-grixi-purple-900: #4c1d95;
-
-  --color-grixi-navy-50: #eef2ff;
-  --color-grixi-navy-100: #e0e7ff;
-  --color-grixi-navy-200: #c7d2fe;
-  --color-grixi-navy-300: #a5b4fc;
-  --color-grixi-navy-400: #818cf8;
-  --color-grixi-navy-500: #6366f1;
-  --color-grixi-navy-600: #4f46e5;
-  --color-grixi-navy-700: #4338ca;
-  --color-grixi-navy-800: #1e1b4b;
-  --color-grixi-navy-900: #0f0d2e;
-
-  /* Semantic Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-surface: var(--brand-surface);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-muted: var(--bg-muted);
+  --color-border: var(--border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #3b82f6;
-
-  /* Typography */
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-display: "Instrument Serif", Georgia, serif;
 }
 
-/* ============================================
-   Dark / Light Mode Variables
-   ============================================ */
-
-:root {
-  --background: #ffffff;
-  --foreground: #0f0d2e;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --card: #ffffff;
-  --card-foreground: #0f0d2e;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --primary: #7c3aed;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --accent: #6366f1;
-  --accent-foreground: #ffffff;
-  --ring: #7c3aed;
-}
-
-.dark {
-  --background: #0a0a0f;
-  --foreground: #f1f5f9;
-  --muted: #1e1b4b;
-  --muted-foreground: #94a3b8;
-  --card: #12101f;
-  --card-foreground: #f1f5f9;
-  --border: #1e293b;
-  --input: #1e293b;
-  --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
-  --secondary: #1e1b4b;
-  --secondary-foreground: #f1f5f9;
-  --accent: #818cf8;
-  --accent-foreground: #ffffff;
-  --ring: #8b5cf6;
-}
-
-/* ============================================
-   Base Styles
-   ============================================ */
+/* ─── Base Styles ───────────────────────────────────── */
 
 * {
   border-color: var(--border);
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
 }
 
-/* ============================================
-   Glassmorphism
-   ============================================ */
+/* ─── Selection ─────────────────────────────────────── */
+
+::selection {
+  background: var(--brand);
+  color: white;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ─── Animations ────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+  50% { box-shadow: 0 0 20px 8px rgba(124, 58, 237, 0.1); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s var(--ease-spring) forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s var(--ease-spring) forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s var(--ease-out) forwards;
+}
+
+/* ─── Platform Dot Grid Background ──────────────────── */
+
+.platform-dot-grid {
+  position: relative;
+}
+
+.platform-dot-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--border) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  opacity: 0.4;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 80%);
+  z-index: 0;
+}
+
+.dark .platform-dot-grid::before {
+  opacity: 0.25;
+}
+
+/* ─── Card Hover Elevation ──────────────────────────── */
+
+.card-elevated {
+  transition: transform 0.25s var(--ease-spring), box-shadow 0.25s var(--ease-spring), border-color 0.25s var(--ease-out);
+}
+
+.card-elevated:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 10px -4px rgba(0, 0, 0, 0.04);
+  border-color: var(--border-hover);
+}
+
+.dark .card-elevated:hover {
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3), 0 4px 10px -4px rgba(0, 0, 0, 0.2);
+}
+
+/* ─── Glassmorphism ─────────────────────────────────── */
 
 .glass {
   background: rgba(255, 255, 255, 0.08);
@@ -115,24 +260,24 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* ============================================
-   Scrollbar
-   ============================================ */
+/* ─── Utilities ─────────────────────────────────────── */
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* Touch target minimum */
+@media (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 
-::-webkit-scrollbar-thumb {
-  background: var(--muted-foreground);
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+  .card-elevated:hover {
+    transform: none;
+  }
 }

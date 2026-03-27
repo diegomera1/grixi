@@ -1,7 +1,7 @@
 import { redirect, useLoaderData, Outlet } from "react-router";
 import type { Route } from "./+types/authenticated";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
-import { Sidebar, SidebarProvider, useSidebar } from "~/components/layout/sidebar";
+import { Sidebar, SidebarProvider } from "~/components/layout/sidebar";
 import { Topbar } from "~/components/layout/topbar";
 
 export interface TenantContext {
@@ -86,18 +86,16 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 function AuthenticatedContent() {
   const data = useLoaderData<typeof loader>() as TenantContext;
-  const { collapsed } = useSidebar();
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: "var(--background)" }}>
+    <div className="flex h-screen overflow-hidden bg-[var(--bg-primary)]">
       <Sidebar isPlatformAdmin={data.isPlatformAdmin} enabledModules={data.currentOrg?.settings?.enabled_modules} />
-      <div
-        className="flex flex-1 flex-col transition-all duration-300"
-        style={{ marginLeft: collapsed ? 68 : 240 }}
-      >
+      <div className="flex flex-1 flex-col min-w-0">
         <Topbar user={data.user} currentOrg={data.currentOrg} organizations={data.organizations} />
-        <main className="flex-1 p-6">
-          <Outlet context={data} />
+        <main className="platform-dot-grid relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-6 md:px-6 lg:px-8">
+          <div className="relative z-10 pt-4">
+            <Outlet context={data} />
+          </div>
         </main>
       </div>
     </div>

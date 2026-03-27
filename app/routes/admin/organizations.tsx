@@ -133,43 +133,43 @@ export default function AdminOrganizations() {
   };
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="w-full space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Organizaciones</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Gestionar tenants de la plataforma · {filtered.length} de {organizations.length}</p>
+          <h1 className="text-lg font-bold text-[var(--text-primary)]">Organizaciones</h1>
+          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Gestionar tenants de la plataforma · {filtered.length} de {organizations.length}</p>
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 active:scale-[0.97]"
-          style={{ backgroundColor: "#7c3aed" }}
+          className="flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-[12px] font-medium text-white transition-all hover:opacity-90 active:scale-[0.97]"
+          style={{ boxShadow: "0 4px 14px rgba(124,58,237,0.3)" }}
         >
-          <Plus size={16} />
+          <Plus size={14} />
           Crear Organización
         </button>
       </div>
 
       {/* Search + Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
+          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nombre o slug…"
-            className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:ring-1"
-            style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] py-2 pl-9 pr-3 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition-all focus:border-[var(--brand)]"
           />
         </div>
-        <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)} className="rounded-lg border px-3 py-2 text-xs outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+        <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)} className="appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] outline-none transition-all focus:border-[var(--brand)]">
           <option value="">Todos los planes</option>
           <option value="demo">Demo</option>
           <option value="starter">Starter</option>
           <option value="professional">Professional</option>
           <option value="enterprise">Enterprise</option>
         </select>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="rounded-lg border px-3 py-2 text-xs outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] outline-none transition-all focus:border-[var(--brand)]">
           <option value="">Todos los estados</option>
           <option value="active">Activo</option>
           <option value="suspended">Suspendido</option>
@@ -182,47 +182,43 @@ export default function AdminOrganizations() {
             ]);
             exportCSV("organizaciones", headers, rows);
           }}
-          className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-white/5"
-          style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+          className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-[11px] font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--brand)] hover:text-[var(--brand)]"
         >
-          <Download size={13} /> CSV
+          <Download size={12} /> CSV
         </button>
       </div>
 
       {/* Create Form */}
       {showCreate && (
-        <div className="mb-6 rounded-xl border p-6" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-          <h3 className="mb-4 font-semibold" style={{ color: "var(--foreground)" }}>Nueva Organización</h3>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
+          <h3 className="mb-4 text-[13px] font-semibold text-[var(--text-primary)]">Nueva Organización</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Nombre</label>
+              <label className="mb-1.5 block text-[10px] font-medium text-[var(--text-muted)]">Nombre</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => { setNewName(e.target.value); setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")); }}
-                className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
-                style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--brand)]"
                 placeholder="Empresa X"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Slug</label>
+              <label className="mb-1.5 block text-[10px] font-medium text-[var(--text-muted)]">Slug</label>
               <input
                 type="text"
                 value={newSlug}
                 onChange={(e) => setNewSlug(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
-                style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--brand)]"
                 placeholder="empresa-x"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Plan</label>
+              <label className="mb-1.5 block text-[10px] font-medium text-[var(--text-muted)]">Plan</label>
               <select
                 value={newPlan}
                 onChange={(e) => setNewPlan(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
-                style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--brand)]"
               >
                 <option value="demo">Demo</option>
                 <option value="starter">Starter</option>
@@ -232,53 +228,53 @@ export default function AdminOrganizations() {
             </div>
           </div>
           <div className="mt-4 flex gap-3">
-            <button onClick={handleCreate} className="rounded-lg px-4 py-2 text-sm font-medium text-white" style={{ backgroundColor: "#7c3aed" }}>Crear</button>
-            <button onClick={() => setShowCreate(false)} className="rounded-lg px-4 py-2 text-sm font-medium hover:bg-white/5" style={{ color: "var(--muted-foreground)" }}>Cancelar</button>
+            <button onClick={handleCreate} className="rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-medium text-white">Crear</button>
+            <button onClick={() => setShowCreate(false)} className="rounded-xl px-4 py-2 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-muted)]">Cancelar</button>
           </div>
         </div>
       )}
 
       {/* Table */}
-      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b" style={{ borderColor: "var(--border)" }}>
+            <tr className="border-b border-[var(--border)]">
               {["Organización", "Slug", "Plan", "Estado", "Usuarios", "Acciones"].map((h) => (
-                <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>
+                <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((org: any) => (
-              <tr key={org.id} className="border-b last:border-b-0 transition-colors hover:bg-white/2" style={{ borderColor: "var(--border)" }}>
-                <td className="px-6 py-4">
+              <tr key={org.id} className="border-b border-[var(--border)] last:border-b-0 transition-colors hover:bg-[var(--bg-muted)]/50">
+                <td className="px-5 py-3.5">
                   <Link to={`/admin/organizations/${org.id}`} className="flex items-center gap-3 group">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-bold" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>
                       {org.name.charAt(0)}
                     </div>
-                    <span className="text-sm font-medium group-hover:underline" style={{ color: "var(--foreground)" }}>{org.name}</span>
+                    <span className="text-[12px] font-medium text-[var(--text-primary)] group-hover:underline">{org.name}</span>
                   </Link>
                 </td>
-                <td className="px-6 py-4">
-                  <code className="text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>{org.slug}</code>
+                <td className="px-5 py-3.5">
+                  <code className="font-mono text-[11px] text-[var(--text-muted)]">{org.slug}</code>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{
+                <td className="px-5 py-3.5">
+                  <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{
                     backgroundColor: org.plan === "enterprise" ? "#F59E0B20" : org.plan === "professional" ? "#8B5CF620" : "#71717A20",
                     color: org.plan === "enterprise" ? "#F59E0B" : org.plan === "professional" ? "#8B5CF6" : "#A1A1AA",
                   }}>{org.plan}</span>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{
-                    backgroundColor: org.status === "active" ? "#16A34A20" : "#EF444420",
-                    color: org.status === "active" ? "#16A34A" : "#EF4444",
+                <td className="px-5 py-3.5">
+                  <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{
+                    backgroundColor: org.status === "active" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                    color: org.status === "active" ? "var(--success)" : "var(--error)",
                   }}>{org.status}</span>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm" style={{ color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>{orgMemberMap[org.id] || 0}</span>
+                <td className="px-5 py-3.5">
+                  <span className="font-mono text-[12px] font-bold text-[var(--text-primary)] tabular-nums">{orgMemberMap[org.id] || 0}</span>
                 </td>
-                <td className="px-6 py-4">
-                  <button onClick={() => handleToggle(org.id, org.status)} className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/5" style={{ color: "var(--muted-foreground)" }}>
+                <td className="px-5 py-3.5">
+                  <button onClick={() => handleToggle(org.id, org.status)} className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]">
                     {org.status === "active" ? "Suspender" : "Activar"}
                   </button>
                 </td>

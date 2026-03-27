@@ -1,8 +1,15 @@
 import { redirect, useLoaderData, Link } from "react-router";
 import type { Route } from "./+types/admin";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
-import { Building2, Users, Activity, TrendingUp, History, ArrowUpRight } from "lucide-react";
-import { BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import {
+  Building2, Users, Activity, TrendingUp, History,
+  ArrowUpRight, Shield, Zap, FileText
+} from "lucide-react";
+import {
+  BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+} from "recharts";
+import { motion } from "framer-motion";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
@@ -84,192 +91,285 @@ const PLAN_COLORS: Record<string, string> = {
   enterprise: "#F59E0B",
 };
 
-const CHART_TOOLTIP_STYLE = {
+const CHART_TOOLTIP = {
   contentStyle: {
-    backgroundColor: "#1a1625",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 10,
+    backgroundColor: "var(--bg-elevated)",
+    border: "1px solid var(--border)",
+    borderRadius: 12,
     fontSize: 12,
-    color: "#e2e8f0",
+    color: "var(--text-primary)",
+    boxShadow: "var(--shadow-lg)",
   },
+  cursor: { fill: "var(--brand-surface)" },
 };
 
 export default function AdminDashboard() {
   const { stats, planData, orgBarData, growthData, invStats, recentAudit, recentOrgs } = useLoaderData<typeof loader>();
 
   const kpis = [
-    { label: "Organizaciones", value: stats.organizations, icon: <Building2 size={22} />, color: "#6366F1", href: "/admin/organizations" },
-    { label: "Usuarios", value: stats.users, icon: <Users size={22} />, color: "#EC4899", href: "/admin/users" },
-    { label: "Membresías Activas", value: stats.activeMemberships, icon: <Activity size={22} />, color: "#16A34A" },
-    { label: "Invitaciones", value: stats.invitations, icon: <TrendingUp size={22} />, color: "#F59E0B" },
+    { label: "Organizaciones", value: stats.organizations, icon: Building2, color: "#6366F1", trend: "+4.2%", href: "/admin/organizations" },
+    { label: "Usuarios", value: stats.users, icon: Users, color: "#EC4899", trend: "+12.5%" , href: "/admin/users" },
+    { label: "Membresías Activas", value: stats.activeMemberships, icon: Activity, color: "#10B981", trend: "+8.3%" },
+    { label: "Invitaciones", value: stats.invitations, icon: FileText, color: "#F59E0B", trend: "+3.2%" },
   ];
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: "#8b5cf620" }}>
-            <span className="text-lg">⚡</span>
+    <div className="w-full space-y-5">
+      {/* ── Hero Header ─────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--bg-surface)] via-[var(--bg-surface)] to-[var(--brand-surface)]"
+      >
+        {/* Decorative dot grid */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: "radial-gradient(circle, var(--brand) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-[var(--brand)] opacity-[0.06] blur-[100px]" />
+
+        <div className="relative px-5 py-5">
+          <div className="mb-4 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--brand)] shadow-md" style={{ boxShadow: "0 4px 14px rgba(124,58,237,0.3)" }}>
+              <Shield size={16} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-[var(--text-primary)]">
+                Panel de Administración
+              </h2>
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                Vista global de la plataforma GRIXI
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>Panel de Administración</h1>
+
+          {/* Hero KPI Stats */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {kpis.map((kpi, i) => {
+              const Icon = kpi.icon;
+              return (
+                <motion.div
+                  key={kpi.label}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.08 }}
+                  className="card-elevated rounded-xl border border-[var(--border)] bg-[var(--bg-primary)]/60 p-3 backdrop-blur-sm"
+                >
+                  {kpi.href ? (
+                    <Link to={kpi.href} className="block">
+                      <div className="flex items-center justify-between">
+                        <Icon size={13} style={{ color: kpi.color }} />
+                        <span className="flex items-center gap-0.5 text-[9px] font-semibold text-[var(--success)]">
+                          <TrendingUp size={9} />
+                          {kpi.trend}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-lg font-bold tabular-nums text-[var(--text-primary)]">{kpi.value}</p>
+                      <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{kpi.label}</p>
+                    </Link>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <Icon size={13} style={{ color: kpi.color }} />
+                        <span className="flex items-center gap-0.5 text-[9px] font-semibold text-[var(--success)]">
+                          <TrendingUp size={9} />
+                          {kpi.trend}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-lg font-bold tabular-nums text-[var(--text-primary)]">{kpi.value}</p>
+                      <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{kpi.label}</p>
+                    </>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
-        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Vista global de la plataforma GRIXI</p>
-      </div>
+      </motion.div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="group rounded-xl border p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-            {kpi.href ? (
-              <Link to={kpi.href} className="block">
-                <KPIContent kpi={kpi} />
-              </Link>
-            ) : (
-              <KPIContent kpi={kpi} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      {/* ── Charts Row 1: Growth + Plan Distribution ─── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Membership Growth — Area */}
-        <ChartCard title="Crecimiento (7 días)" className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={growthData}>
-              <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.3} /><stop offset="100%" stopColor="#8B5CF6" stopOpacity={0} /></linearGradient></defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="date" tick={{ fill: "#71717a", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#71717a", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip {...CHART_TOOLTIP_STYLE} />
-              <Area type="monotone" dataKey="nuevos" stroke="#8B5CF6" strokeWidth={2} fill="url(#areaGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartCard>
+        <div className="col-span-1 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Crecimiento de Membresías</h3>
+              <p className="text-[10px] text-[var(--text-muted)]">Nuevas membresías — últimos 7 días</p>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-lg bg-[var(--bg-muted)] px-2 py-1 text-[10px] font-medium text-[var(--text-secondary)]">
+              <Activity size={10} />
+              En vivo
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--success)]" />
+            </div>
+          </div>
+          <div className="h-[180px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={growthData}>
+                <defs>
+                  <linearGradient id="brandGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="var(--brand)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--text-muted)", fontSize: 10 }} width={35} allowDecimals={false} />
+                <Tooltip {...CHART_TOOLTIP} />
+                <Area type="monotone" dataKey="nuevos" stroke="var(--brand)" strokeWidth={2.5} fill="url(#brandGradient)" name="Nuevos" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
         {/* Plan Distribution — Donut */}
-        <ChartCard title="Distribución de Planes">
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={planData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" stroke="none">
-                {planData.map((entry: any, i: number) => <Cell key={i} fill={PLAN_COLORS[entry.name] || "#6366F1"} />)}
-              </Pie>
-              <Tooltip {...CHART_TOOLTIP_STYLE} />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+          <h3 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">Distribución de Planes</h3>
+          <div className="h-[160px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={planData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4} dataKey="value" stroke="none">
+                  {planData.map((entry: any, i: number) => <Cell key={i} fill={PLAN_COLORS[entry.name] || "#6366F1"} />)}
+                </Pie>
+                <Tooltip {...CHART_TOOLTIP} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
           <div className="flex flex-wrap gap-3 justify-center mt-1">
             {planData.map((p: any) => (
-              <div key={p.name} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--muted-foreground)" }}>
+              <div key={p.name} className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
                 <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: PLAN_COLORS[p.name] || "#6366F1" }} />
                 {p.name} ({p.value})
               </div>
             ))}
           </div>
-        </ChartCard>
+        </div>
       </div>
 
-      {/* Second Row: Bar + Invitations */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      {/* ── Charts Row 2: Members Bar + Invitations ─── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Members per Org — Bar */}
-        <ChartCard title="Miembros por Organización" className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={orgBarData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="name" tick={{ fill: "#71717a", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#71717a", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip {...CHART_TOOLTIP_STYLE} />
-              <Bar dataKey="miembros" fill="#6366F1" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
+        <div className="col-span-1 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 lg:col-span-2">
+          <div className="mb-3">
+            <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Miembros por Organización</h3>
+            <p className="text-[10px] text-[var(--text-muted)]">Distribución de miembros activos</p>
+          </div>
+          <div className="h-[180px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={orgBarData} barSize={16}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "var(--text-muted)", fontSize: 10 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--text-muted)", fontSize: 10 }} width={35} allowDecimals={false} />
+                <Tooltip {...CHART_TOOLTIP} />
+                <Bar dataKey="miembros" fill="var(--brand)" radius={[6, 6, 0, 0]} name="Miembros" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
         {/* Invitation Stats */}
-        <ChartCard title="Estado de Invitaciones">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+          <h3 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">Estado de Invitaciones</h3>
           <div className="space-y-4 py-2">
             {[
-              { label: "Pendientes", value: invStats.pending, color: "#F59E0B" },
-              { label: "Aceptadas", value: invStats.accepted, color: "#16A34A" },
-              { label: "Canceladas", value: invStats.cancelled, color: "#EF4444" },
+              { label: "Pendientes", value: invStats.pending, color: "var(--warning)" },
+              { label: "Aceptadas", value: invStats.accepted, color: "var(--success)" },
+              { label: "Canceladas", value: invStats.cancelled, color: "var(--error)" },
             ].map((s) => (
               <div key={s.label}>
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span style={{ color: "var(--muted-foreground)" }}>{s.label}</span>
-                  <span className="font-medium" style={{ color: s.color }}>{s.value}</span>
+                <div className="flex items-center justify-between text-[12px] mb-1.5">
+                  <span className="text-[var(--text-secondary)]">{s.label}</span>
+                  <span className="font-mono font-bold" style={{ color: s.color }}>{s.value}</span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (s.value / Math.max(stats.invitations, 1)) * 100)}%`, backgroundColor: s.color }} />
+                <div className="h-1.5 rounded-full overflow-hidden bg-[var(--bg-muted)]">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, (s.value / Math.max(stats.invitations, 1)) * 100)}%` }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: s.color }}
+                  />
                 </div>
               </div>
             ))}
           </div>
-        </ChartCard>
+        </div>
       </div>
 
-      {/* Bottom: Recent Audit + Orgs */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* ── Bottom: Recent Audit + Recent Orgs ─────── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Recent Audit */}
-        <div className="rounded-xl border" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-          <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: "var(--border)" }}>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Actividad Reciente</h3>
-            <Link to="/admin/audit" className="flex items-center gap-1 text-xs hover:underline" style={{ color: "#8B5CF6" }}><History size={12} /> Ver todo</Link>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
+            <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Actividad Reciente</h3>
+            <Link to="/admin/audit" className="flex items-center gap-1 text-[11px] font-medium text-[var(--brand)] hover:underline">
+              <History size={12} /> Ver todo
+            </Link>
           </div>
-          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+          <div className="divide-y divide-[var(--border)]">
             {recentAudit.slice(0, 5).map((log: any) => (
-              <div key={log.id} className="flex items-center gap-3 px-6 py-3">
-                <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: "#8B5CF6" }} />
+              <div key={log.id} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--bg-muted)]/50">
+                <div className="h-2.5 w-2.5 rounded-full shrink-0 bg-[var(--brand)]" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs truncate" style={{ color: "var(--foreground)" }}>{log.action}</p>
-                  <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{new Date(log.created_at).toLocaleString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                  <p className="text-[12px] font-medium truncate text-[var(--text-primary)]">{log.action}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">
+                    {new Date(log.created_at).toLocaleString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
                 </div>
               </div>
             ))}
-            {recentAudit.length === 0 && <div className="px-6 py-6 text-center text-xs" style={{ color: "var(--muted-foreground)" }}>Sin actividad</div>}
+            {recentAudit.length === 0 && (
+              <div className="px-5 py-8 text-center text-[12px] text-[var(--text-muted)]">Sin actividad registrada</div>
+            )}
           </div>
         </div>
 
         {/* Recent Orgs */}
-        <div className="rounded-xl border" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-          <div className="flex items-center justify-between border-b px-6 py-4" style={{ borderColor: "var(--border)" }}>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Organizaciones</h3>
-            <Link to="/admin/organizations" className="flex items-center gap-1 text-xs hover:underline" style={{ color: "#6366F1" }}><ArrowUpRight size={12} /> Todas</Link>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
+            <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Organizaciones</h3>
+            <Link to="/admin/organizations" className="flex items-center gap-1 text-[11px] font-medium text-[var(--brand)] hover:underline">
+              <ArrowUpRight size={12} /> Todas
+            </Link>
           </div>
-          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+          <div className="divide-y divide-[var(--border)]">
             {recentOrgs.map((org: any) => (
-              <Link key={org.id} to={`/admin/organizations/${org.id}`} className="flex items-center justify-between px-6 py-3 hover:bg-white/2 transition-colors">
+              <Link
+                key={org.id}
+                to={`/admin/organizations/${org.id}`}
+                className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-[var(--bg-muted)]/50"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold" style={{ backgroundColor: `${org.settings?.primary_color || "#6366F1"}20`, color: org.settings?.primary_color || "#6366F1" }}>{org.name.charAt(0)}</div>
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-bold"
+                    style={{
+                      backgroundColor: `${org.settings?.primary_color || "#6366F1"}20`,
+                      color: org.settings?.primary_color || "#6366F1",
+                    }}
+                  >
+                    {org.name.charAt(0)}
+                  </div>
                   <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{org.name}</p>
-                    <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{org.slug}.grixi.ai</p>
+                    <p className="text-[12px] font-medium text-[var(--text-primary)]">{org.name}</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">{org.slug}.grixi.ai</p>
                   </div>
                 </div>
-                <span className="rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: org.status === "active" ? "#16A34A20" : "#EF444420", color: org.status === "active" ? "#16A34A" : "#EF4444" }}>{org.status}</span>
+                <span
+                  className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                  style={{
+                    backgroundColor: org.status === "active" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                    color: org.status === "active" ? "var(--success)" : "var(--error)",
+                  }}
+                >
+                  {org.status}
+                </span>
               </Link>
             ))}
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function KPIContent({ kpi }: { kpi: any }) {
-  return (
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--muted-foreground)" }}>{kpi.label}</p>
-        <p className="mt-1 text-3xl font-bold" style={{ color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>{kpi.value}</p>
-      </div>
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: `${kpi.color}15`, color: kpi.color }}>{kpi.icon}</div>
-    </div>
-  );
-}
-
-function ChartCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-xl border p-5 ${className || ""}`} style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-      <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--foreground)" }}>{title}</h3>
-      {children}
     </div>
   );
 }
