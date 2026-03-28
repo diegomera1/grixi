@@ -115,7 +115,7 @@ function AuthenticatedContent() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg-primary)]">
-      <Sidebar isPlatformAdmin={data.isPlatformAdmin} />
+      <Sidebar isPlatformAdmin={data.isPlatformAdmin} tenantSlug={data.tenantSlug} />
       <div className="flex flex-1 flex-col min-w-0">
         <Topbar user={data.user} currentOrg={data.currentOrg} organizations={data.organizations} />
         <main className="platform-dot-grid relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-6 md:px-6 lg:px-8">

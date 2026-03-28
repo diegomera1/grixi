@@ -1,6 +1,7 @@
 import { redirect, useLoaderData, useFetcher } from "react-router";
 import type { Route } from "./+types/admin.users";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { isPlatformTenant } from "~/lib/platform-guard";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { exportCSV } from "~/lib/export";
 import { Shield, ShieldOff, Search, Download } from "lucide-react";
@@ -12,6 +13,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return redirect("/", { headers });
+
+  // Platform admin routes ONLY accessible from grixi.grixi.ai
+  if (!isPlatformTenant(context)) return redirect("/dashboard", { headers });
 
   const admin = createSupabaseAdminClient(env);
   const { data: platformAdmin } = await admin

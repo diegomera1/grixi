@@ -79,9 +79,10 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
 interface SidebarProps {
   isPlatformAdmin: boolean;
+  tenantSlug?: string | null;
 }
 
-export function Sidebar({ isPlatformAdmin }: SidebarProps) {
+export function Sidebar({ isPlatformAdmin, tenantSlug }: SidebarProps) {
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
 
@@ -91,7 +92,9 @@ export function Sidebar({ isPlatformAdmin }: SidebarProps) {
     return location.pathname.startsWith(href);
   };
 
-  const groups = isPlatformAdmin ? [...NAV_GROUPS, ADMIN_GROUP] : NAV_GROUPS;
+  // Admin section ONLY visible on grixi.grixi.ai (tenantSlug === 'grixi')
+  const showAdmin = isPlatformAdmin && tenantSlug === "grixi";
+  const groups = showAdmin ? [...NAV_GROUPS, ADMIN_GROUP] : NAV_GROUPS;
 
   return (
     <motion.aside
