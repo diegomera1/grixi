@@ -1,8 +1,10 @@
 -- ============================================================
 -- GRIXI: Enterprise RLS Policies Migration
 -- Fecha: 2026-03-27
--- Descripción: Aplica RLS policies en tablas admin para 
---              defensa a nivel de base de datos
+-- Descripción: Aplica RLS policies adicionales (tenant isolation)
+--              como capa extra de defensa a nivel de base de datos.
+--              Estas policies usan get_user_org_ids() para 
+--              multi-org isolation.
 -- ============================================================
 
 -- ============================================================
@@ -82,7 +84,7 @@ CREATE POLICY "tenant_isolation" ON memberships
   );
 
 -- ============================================================
--- 7. roles — Tenant isolation
+-- 6. roles — Tenant isolation
 -- ============================================================
 
 CREATE POLICY "tenant_isolation" ON roles
@@ -91,7 +93,7 @@ CREATE POLICY "tenant_isolation" ON roles
   );
 
 -- ============================================================
--- 8. profiles — Usuarios ven su propio perfil
+-- 7. profiles — Usuarios ven su propio perfil
 -- ============================================================
 
 CREATE POLICY "users_see_own_profile" ON profiles
@@ -101,18 +103,10 @@ CREATE POLICY "users_update_own_profile" ON profiles
   FOR UPDATE USING (id = auth.uid());
 
 -- ============================================================
--- 9. invitations — Tenant isolation
+-- 8. invitations — Tenant isolation
 -- ============================================================
 
 CREATE POLICY "tenant_isolation" ON invitations
   FOR ALL USING (
     organization_id IN (SELECT get_user_org_ids()) OR is_platform_admin()
   );
-
--- ============================================================
--- VERIFICACIÓN: Ejecutar después de aplicar
--- ============================================================
--- SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual
--- FROM pg_policies
--- WHERE schemaname = 'public'
--- ORDER BY tablename, policyname;
