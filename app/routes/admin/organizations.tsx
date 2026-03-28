@@ -51,6 +51,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return redirect("/", { headers });
 
+  // CRITICAL: Block mutations from non-platform tenants
+  if (!isPlatformTenant(context)) return Response.json({ error: "Forbidden" }, { status: 403, headers });
+
   const admin = createSupabaseAdminClient(env);
   const { data: platformAdmin } = await admin
     .from("platform_admins")
