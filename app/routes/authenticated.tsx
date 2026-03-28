@@ -67,6 +67,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
         currentOrg = { ...orgBySlug, role: "platform_admin" };
       }
     }
+    // MEMBERSHIP GUARD: User must be member of tenant or platform admin
+    if (!currentOrg && !platformAdmin) {
+      return redirect("/unauthorized", { headers });
+    }
   }
 
   // 2. URL param

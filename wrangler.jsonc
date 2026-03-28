@@ -19,7 +19,18 @@
 		{ "pattern": "grixi.ai", "custom_domain": true },
 		{ "pattern": "*.grixi.ai/*", "zone_name": "grixi.ai" }
 	],
-	"workers_dev": true
+	"workers_dev": true,
+	// Rate Limiting: protección anti-brute-force para rutas admin
+	"ratelimits": [
+		{
+			"name": "ADMIN_RATE_LIMITER",
+			"namespace_id": "1001",
+			"simple": {
+				"limit": 30,
+				"period": 60
+			}
+		}
+	]
 	// Secrets are configured via `wrangler secret put`:
 	// SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 	// Use `.dev.vars` for local development secrets

@@ -41,7 +41,28 @@ function getTenantSlug(request: Request, appDomain: string): string | null {
 
 export default {
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
     const tenantSlug = getTenantSlug(request, env.APP_DOMAIN);
+
+    // Rate limit admin routes: 30 req/min per IP
+    if (url.pathname.startsWith("/admin") && env.ADMIN_RATE_LIMITER) {
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      const { success } = await env.ADMIN_RATE_LIMITER.limit({
+        key: `admin_${ip}`,
+      });
+      if (!success) {
+        return new Response(
+          JSON.stringify({ error: "Too Many Requests" }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Retry-After": "60",
+            },
+          }
+        );
+      }
+    }
 
     return requestHandler(request, {
       cloudflare: { env, ctx },

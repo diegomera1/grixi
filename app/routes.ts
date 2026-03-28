@@ -6,6 +6,7 @@ export default [
   route("auth/callback", "routes/auth.callback.tsx"),
   route("auth/signout", "routes/auth.signout.tsx"),
   route("select-org", "routes/select-org.tsx"),
+  route("unauthorized", "routes/unauthorized.tsx"),
 
   // Authenticated routes (sidebar + topbar layout)
   layout("routes/authenticated.tsx", [
