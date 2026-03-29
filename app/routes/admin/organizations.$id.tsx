@@ -283,6 +283,170 @@ function MembersTab({ members, roles, fetcher }: { members: any[]; roles: any[];
   );
 }
 
+const PLAN_COLORS: Record<string, string> = { starter: "#3B82F6", professional: "#8B5CF6", enterprise: "#F59E0B" };
+
+function RolesTab({ roles, allPermissions, settings, fetcher }: { roles: any[]; allPermissions: any[]; settings: any; fetcher: any }) {
+  const [expandedRole, setExpandedRole] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newLevel, setNewLevel] = useState("30");
+
+  // Track local permission edits per role
+  const [editedPerms, setEditedPerms] = useState<Record<string, string[]>>({});
+
+  const orgPlan = settings.plan || "demo";
+  const planHierarchy: Record<string, number> = { starter: 1, professional: 2, enterprise: 3 };
+  const orgPlanLevel = planHierarchy[orgPlan] || 0;
+
+  // Group permissions by category
+  const permsByCategory = allPermissions.reduce((acc: Record<string, any[]>, p: any) => {
+    const cat = p.category || "general";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(p);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const getPermsForRole = (role: any): string[] => {
+    if (editedPerms[role.id]) return editedPerms[role.id];
+    return (role.role_permissions || []).map((rp: any) => rp.permission_id);
+  };
+
+  const togglePerm = (roleId: string, permId: string, currentPerms: string[]) => {
+    const newPerms = currentPerms.includes(permId) ? currentPerms.filter(id => id !== permId) : [...currentPerms, permId];
+    setEditedPerms(prev => ({ ...prev, [roleId]: newPerms }));
+  };
+
+  const savePerms = (roleId: string) => {
+    const perms = editedPerms[roleId];
+    if (!perms) return;
+    fetcher.submit({ intent: "update_role_permissions", role_id: roleId, permission_ids: JSON.stringify(perms) }, { method: "post" });
+    setEditedPerms(prev => { const next = { ...prev }; delete next[roleId]; return next; });
+  };
+
+  const createRole = () => {
+    if (!newName) return;
+    fetcher.submit({ intent: "create_role", role_name: newName, role_desc: newDesc, hierarchy_level: newLevel }, { method: "post" });
+    setNewName(""); setNewDesc(""); setNewLevel("30"); setShowCreate(false);
+  };
+
+  const deleteRole = (roleId: string) => {
+    if (!confirm("¿Eliminar este rol? Los usuarios asignados deberán ser reasignados.")) return;
+    fetcher.submit({ intent: "delete_role", role_id: roleId }, { method: "post" });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Roles de la Organización</h3>
+          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Gestionar roles y sus permisos granulares</p>
+        </div>
+        <button onClick={() => setShowCreate(!showCreate)} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-white" style={{ backgroundColor: "#7c3aed" }}>
+          <Plus size={14} /> Crear Rol Custom
+        </button>
+      </div>
+
+      {/* Create form */}
+      {showCreate && (
+        <div className="rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label className="mb-1 block text-[10px] font-medium" style={{ color: "var(--muted-foreground)" }}>Nombre</label>
+              <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="supervisor" className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-medium" style={{ color: "var(--muted-foreground)" }}>Descripción</label>
+              <input type="text" value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Supervisor de área" className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-medium" style={{ color: "var(--muted-foreground)" }}>Nivel Jerárquico (10-79)</label>
+              <input type="number" min={10} max={79} value={newLevel} onChange={e => setNewLevel(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={createRole} className="rounded-lg px-3 py-1.5 text-xs font-medium text-white" style={{ backgroundColor: "#7c3aed" }}>Crear</button>
+            <button onClick={() => setShowCreate(false)} className="rounded-lg px-3 py-1.5 text-xs" style={{ color: "var(--muted-foreground)" }}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Roles list */}
+      <div className="space-y-2">
+        {roles.map((role: any) => {
+          const isExpanded = expandedRole === role.id;
+          const currentPerms = getPermsForRole(role);
+          const hasEdits = !!editedPerms[role.id];
+
+          return (
+            <div key={role.id} className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: isExpanded ? "#7c3aed" : "var(--border)" }}>
+              {/* Role header */}
+              <button onClick={() => setExpandedRole(isExpanded ? null : role.id)} className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-white/[0.02]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-bold" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>
+                    {role.hierarchy_level}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{role.name}</p>
+                    <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{role.description || "—"} · {currentPerms.length} permisos</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {role.is_system && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>Sistema</span>}
+                  {role.is_default && <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{ backgroundColor: "#16A34A15", color: "#16A34A" }}>Default</span>}
+                  <Shield size={14} style={{ color: "var(--muted-foreground)", transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+                </div>
+              </button>
+
+              {/* Expanded: permission matrix */}
+              {isExpanded && (
+                <div className="border-t px-5 pb-5 pt-4" style={{ borderColor: "var(--border)" }}>
+                  {Object.entries(permsByCategory).map(([category, perms]) => (
+                    <div key={category} className="mb-4">
+                      <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{category}</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                        {(perms as any[]).map((perm: any) => {
+                          const permPlanLevel = planHierarchy[perm.min_plan || "starter"] || 0;
+                          const isAvailable = permPlanLevel <= orgPlanLevel;
+                          const isChecked = currentPerms.includes(perm.id);
+                          return (
+                            <label key={perm.id} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors cursor-pointer ${!isAvailable ? "opacity-30 cursor-not-allowed" : "hover:bg-white/[0.03]"}`}>
+                              <input type="checkbox" checked={isChecked} disabled={!isAvailable} onChange={() => togglePerm(role.id, perm.id, currentPerms)}
+                                className="h-3.5 w-3.5 rounded border accent-purple-500" />
+                              <span style={{ color: "var(--foreground)" }}>{perm.key}</span>
+                              {perm.min_plan && perm.min_plan !== "starter" && (
+                                <span className="rounded-full px-1.5 py-0 text-[8px] font-bold uppercase" style={{ backgroundColor: (PLAN_COLORS[perm.min_plan] || "#999") + "20", color: PLAN_COLORS[perm.min_plan] || "#999" }}>{perm.min_plan}</span>
+                              )}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Actions */}
+                  <div className="mt-4 flex items-center gap-3 border-t pt-4" style={{ borderColor: "var(--border)" }}>
+                    <button onClick={() => savePerms(role.id)} disabled={!hasEdits} className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium text-white transition-all ${hasEdits ? "" : "opacity-40 cursor-not-allowed"}`} style={{ backgroundColor: "#7c3aed" }}>
+                      <Save size={13} /> Guardar Permisos
+                    </button>
+                    {!role.is_system && (
+                      <button onClick={() => deleteRole(role.id)} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:bg-red-500/10" style={{ color: "#EF4444" }}>
+                        <Trash2 size={13} /> Eliminar Rol
+                      </button>
+                    )}
+                    <span className="ml-auto text-[10px]" style={{ color: "var(--muted-foreground)" }}>{currentPerms.length} de {allPermissions.length} permisos asignados</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ModulesTab({ settings, fetcher }: { settings: any; fetcher: any }) {
   const [modules, setModules] = useState<string[]>(settings.enabled_modules || ["dashboard"]);
 
