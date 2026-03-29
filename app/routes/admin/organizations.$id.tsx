@@ -3,7 +3,7 @@ import type { Route } from "./+types/admin.organizations.$id";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { isPlatformTenant } from "~/lib/platform-guard";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
-import { ArrowLeft, Users, Puzzle, Mail, Globe, Settings, Save } from "lucide-react";
+import { ArrowLeft, Users, Puzzle, Mail, Globe, Settings, Save, Shield, Trash2, Plus } from "lucide-react";
 import { useState } from "react";
 
 const ALL_MODULES = [
@@ -35,13 +35,14 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const orgId = params.id;
 
-  const [orgRes, membersRes, invitationsRes, domainsRes, rolesRes] = await Promise.all([
+  const [orgRes, membersRes, invitationsRes, domainsRes, rolesRes, permsRes] = await Promise.all([
     admin.from("organizations").select("*").eq("id", orgId).single(),
-    admin.from("memberships").select("*, profiles(id, full_name, avatar_url), roles(name)")
+    admin.from("memberships").select("*, profiles(id, full_name, avatar_url), roles(name, hierarchy_level)")
       .eq("organization_id", orgId).eq("status", "active"),
     admin.from("invitations").select("*, roles(name)").eq("organization_id", orgId).order("created_at", { ascending: false }),
     admin.from("domain_whitelists").select("*").eq("organization_id", orgId),
-    admin.from("roles").select("id, name").eq("organization_id", orgId),
+    admin.from("roles").select("id, name, hierarchy_level, is_system, is_default, description, role_permissions(permission_id, permissions(id, key, description, category, min_plan))").eq("organization_id", orgId).order("hierarchy_level", { ascending: false }),
+    admin.from("permissions").select("id, key, description, category, min_plan").order("category").order("key"),
   ]);
 
   if (!orgRes.data) return redirect("/admin/organizations", { headers });
@@ -64,6 +65,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     invitations: invitationsRes.data || [],
     domains: domainsRes.data || [],
     roles: rolesRes.data || [],
+    allPermissions: permsRes.data || [],
   }, { headers });
 }
 
@@ -149,11 +151,46 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return Response.json({ success: true }, { headers });
   }
 
+  if (intent === "create_role") {
+    const roleName = formData.get("role_name") as string;
+    const roleDesc = formData.get("role_desc") as string;
+    const hierarchyLevel = parseInt(formData.get("hierarchy_level") as string) || 30;
+    if (!roleName) return Response.json({ error: "Nombre requerido" }, { status: 400, headers });
+    const { data: newRole, error } = await admin.from("roles").insert({
+      organization_id: orgId, name: roleName.toLowerCase().replace(/\s+/g, "_"),
+      description: roleDesc || roleName, is_system: false, hierarchy_level: hierarchyLevel, is_default: false,
+    }).select().single();
+    if (error) return Response.json({ error: error.message }, { status: 400, headers });
+    await logAuditEvent(admin, { actorId: user.id, action: "role.create", entityType: "role", entityId: newRole.id, metadata: { roleName, hierarchyLevel }, ipAddress: ip, organizationId: orgId });
+    return Response.json({ success: true }, { headers });
+  }
+
+  if (intent === "update_role_permissions") {
+    const roleId = formData.get("role_id") as string;
+    const permissionIds = JSON.parse(formData.get("permission_ids") as string) as string[];
+    // Delete existing role_permissions, then re-insert
+    await admin.from("role_permissions").delete().eq("role_id", roleId);
+    if (permissionIds.length > 0) {
+      await admin.from("role_permissions").insert(permissionIds.map((pid: string) => ({ role_id: roleId, permission_id: pid })));
+    }
+    await logAuditEvent(admin, { actorId: user.id, action: "role.update_permissions", entityType: "role", entityId: roleId, metadata: { permissionCount: permissionIds.length }, ipAddress: ip, organizationId: orgId });
+    return Response.json({ success: true }, { headers });
+  }
+
+  if (intent === "delete_role") {
+    const roleId = formData.get("role_id") as string;
+    await admin.from("role_permissions").delete().eq("role_id", roleId);
+    await admin.from("roles").delete().eq("id", roleId).eq("is_system", false);
+    await logAuditEvent(admin, { actorId: user.id, action: "role.delete", entityType: "role", entityId: roleId, ipAddress: ip, organizationId: orgId });
+    return Response.json({ success: true }, { headers });
+  }
+
   return Response.json({ error: "Unknown intent" }, { status: 400, headers });
 }
 
 const TABS = [
   { id: "members", label: "Miembros", icon: <Users size={16} /> },
+  { id: "roles", label: "Roles & Permisos", icon: <Shield size={16} /> },
   { id: "modules", label: "Módulos", icon: <Puzzle size={16} /> },
   { id: "invitations", label: "Invitaciones", icon: <Mail size={16} /> },
   { id: "domains", label: "Dominios", icon: <Globe size={16} /> },
@@ -161,7 +198,7 @@ const TABS = [
 ];
 
 export default function OrgDetail() {
-  const { org, members, invitations, domains, roles } = useLoaderData<typeof loader>();
+  const { org, members, invitations, domains, roles, allPermissions } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [activeTab, setActiveTab] = useState("members");
   const settings = org.settings || {};
@@ -191,12 +228,12 @@ export default function OrgDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 border-b" style={{ borderColor: "var(--border)" }}>
+      <div className="mb-6 flex gap-1 overflow-x-auto border-b" style={{ borderColor: "var(--border)" }}>
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 -mb-px ${activeTab === tab.id ? "border-purple-500 text-white" : "border-transparent hover:text-white/70"}`}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${activeTab === tab.id ? "border-purple-500 text-white" : "border-transparent hover:text-white/70"}`}
             style={{ color: activeTab === tab.id ? "var(--foreground)" : "var(--muted-foreground)" }}
           >
             {tab.icon} {tab.label}
@@ -205,7 +242,8 @@ export default function OrgDetail() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "members" && <MembersTab members={members} />}
+      {activeTab === "members" && <MembersTab members={members} roles={roles} fetcher={fetcher} />}
+      {activeTab === "roles" && <RolesTab roles={roles} allPermissions={allPermissions} settings={settings} fetcher={fetcher} />}
       {activeTab === "modules" && <ModulesTab settings={settings} fetcher={fetcher} />}
       {activeTab === "invitations" && <InvitationsTab invitations={invitations} roles={roles} fetcher={fetcher} />}
       {activeTab === "domains" && <DomainsTab domains={domains} fetcher={fetcher} />}
@@ -214,12 +252,12 @@ export default function OrgDetail() {
   );
 }
 
-function MembersTab({ members }: { members: any[] }) {
+function MembersTab({ members, roles, fetcher }: { members: any[]; roles: any[]; fetcher: any }) {
   return (
     <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
       <table className="w-full">
         <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
-          {["Usuario", "Rol", "Desde"].map(h => <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
+          {["Usuario", "Rol", "Nivel", "Desde"].map(h => <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
         </tr></thead>
         <tbody>
           {members.map((m: any) => (
@@ -234,10 +272,11 @@ function MembersTab({ members }: { members: any[] }) {
                 </div>
               </td>
               <td className="px-6 py-4"><span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>{m.roles?.name || "—"}</span></td>
+              <td className="px-6 py-4"><span className="font-mono text-xs tabular-nums" style={{ color: "var(--muted-foreground)" }}>{m.roles?.hierarchy_level ?? "—"}</span></td>
               <td className="px-6 py-4"><span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{new Date(m.joined_at || m.created_at).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" })}</span></td>
             </tr>
           ))}
-          {members.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>Sin miembros</td></tr>}
+          {members.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>Sin miembros</td></tr>}
         </tbody>
       </table>
     </div>

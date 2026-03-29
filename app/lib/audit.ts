@@ -5,6 +5,7 @@ export interface AuditEvent {
   action: string;
   entityType: string;
   entityId?: string;
+  organizationId?: string;
   metadata?: Record<string, unknown>;
   ipAddress?: string;
 }
@@ -22,6 +23,7 @@ export async function logAuditEvent(
     action: event.action,
     entity_type: event.entityType,
     entity_id: event.entityId || null,
+    organization_id: event.organizationId || null,
     metadata: event.metadata || {},
     ip_address: event.ipAddress || null,
   });

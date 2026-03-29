@@ -80,29 +80,76 @@ export async function action({ request, context }: Route.ActionArgs) {
         name,
         slug,
         status: "active",
-        settings: { plan, max_users: plan === "enterprise" ? 100 : plan === "professional" ? 50 : plan === "starter" ? 20 : 5 },
+        settings: {
+          plan,
+          max_users: plan === "enterprise" ? 100 : plan === "professional" ? 50 : plan === "starter" ? 20 : 5,
+          enabled_modules: ["dashboard"],
+        },
       })
       .select()
       .single();
 
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
 
-    await admin.from("roles").insert([
-      { organization_id: org.id, name: "owner", description: "Propietario", is_system: true },
-      { organization_id: org.id, name: "admin", description: "Administrador", is_system: true },
-      { organization_id: org.id, name: "member", description: "Miembro", is_system: true },
-      { organization_id: org.id, name: "viewer", description: "Solo lectura", is_system: true },
-    ]);
+    // Create system roles with hierarchy_level
+    const { data: newRoles } = await admin.from("roles").insert([
+      { organization_id: org.id, name: "owner", description: "Propietario", is_system: true, hierarchy_level: 100, is_default: false },
+      { organization_id: org.id, name: "admin", description: "Administrador", is_system: true, hierarchy_level: 80, is_default: false },
+      { organization_id: org.id, name: "member", description: "Miembro", is_system: true, hierarchy_level: 20, is_default: true },
+      { organization_id: org.id, name: "viewer", description: "Solo lectura", is_system: true, hierarchy_level: 10, is_default: false },
+    ]).select();
 
-    await logAuditEvent(admin, { actorId: user.id, action: "organization.create", entityType: "organization", entityId: org.id, metadata: { name, slug }, ipAddress: ip });
+    // Auto-assign default permissions to each role
+    if (newRoles) {
+      // Get all permissions and their min_plan
+      const { data: allPerms } = await admin.from("permissions").select("id, key, min_plan");
+      if (allPerms) {
+        const planHierarchy: Record<string, number> = { starter: 1, professional: 2, enterprise: 3 };
+        const orgPlanLevel = planHierarchy[plan] || 0;
+
+        // Filter permissions available for this plan
+        const availablePerms = allPerms.filter((p: any) => {
+          const permLevel = planHierarchy[p.min_plan || "starter"] || 0;
+          return permLevel <= orgPlanLevel;
+        });
+
+        // Permission sets by role
+        const viewPerms = availablePerms.filter((p: any) => p.key.endsWith(".view"));
+        const memberPerms = availablePerms.filter((p: any) => ["dashboard.view", "ai.chat", "profile.manage"].includes(p.key));
+
+        const rolePermInserts: { role_id: string; permission_id: string }[] = [];
+        for (const role of newRoles) {
+          let permsForRole: any[] = [];
+          if (role.name === "owner" || role.name === "admin") permsForRole = availablePerms;
+          else if (role.name === "member") permsForRole = memberPerms;
+          else if (role.name === "viewer") permsForRole = viewPerms;
+
+          permsForRole.forEach((p: any) => rolePermInserts.push({ role_id: role.id, permission_id: p.id }));
+        }
+
+        if (rolePermInserts.length > 0) {
+          await admin.from("role_permissions").insert(rolePermInserts);
+        }
+      }
+    }
+
+    await logAuditEvent(admin, { actorId: user.id, action: "organization.create", entityType: "organization", entityId: org.id, metadata: { name, slug, plan }, ipAddress: ip, organizationId: org.id });
     return Response.json({ success: true, org }, { headers });
   }
 
   if (intent === "toggle_status") {
     const orgId = formData.get("org_id") as string;
     const newStatus = formData.get("new_status") as string;
-    await admin.from("organizations").update({ status: newStatus }).eq("id", orgId);
-    await logAuditEvent(admin, { actorId: user.id, action: "organization.toggle_status", entityType: "organization", entityId: orgId, metadata: { newStatus }, ipAddress: ip });
+    const updatePayload: Record<string, any> = { status: newStatus };
+    if (newStatus === "suspended") {
+      updatePayload.suspended_at = new Date().toISOString();
+      updatePayload.suspended_by = user.id;
+    } else {
+      updatePayload.suspended_at = null;
+      updatePayload.suspended_by = null;
+    }
+    await admin.from("organizations").update(updatePayload).eq("id", orgId);
+    await logAuditEvent(admin, { actorId: user.id, action: `organization.${newStatus === "suspended" ? "suspend" : "activate"}`, entityType: "organization", entityId: orgId, metadata: { newStatus }, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
