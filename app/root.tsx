@@ -83,27 +83,35 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
+    message = error.status === 404 ? "404" : `Error ${error.status}`;
     details =
       error.status === 404
         ? "The requested page could not be found."
         : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
+  } else if (error && error instanceof Error) {
+    // Always log full error to Workers console for observability
+    console.error("[GRIXI Error]", error.message, error.stack);
     details = error.message;
-    stack = error.stack;
+    if (import.meta.env.DEV) stack = error.stack;
+  } else {
+    console.error("[GRIXI Error]", String(error));
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--background)]">
-      <div className="text-center space-y-4">
-        <h1 className="text-6xl font-bold text-[var(--primary)]">{message}</h1>
-        <p className="text-[var(--muted-foreground)] text-lg">{details}</p>
+    <main className="flex min-h-screen items-center justify-center" style={{ background: '#0a0a1a', color: '#e2e8f0' }}>
+      <div className="text-center space-y-4 max-w-2xl px-6">
+        <h1 className="text-6xl font-bold" style={{ color: '#7C3AED' }}>{message}</h1>
+        <p className="text-lg opacity-70">{details}</p>
         {stack && (
-          <pre className="mt-4 max-w-2xl overflow-x-auto rounded-lg bg-[var(--muted)] p-4 text-left text-sm">
+          <pre className="mt-4 overflow-x-auto rounded-lg p-4 text-left text-xs" style={{ background: '#1a1a2e', color: '#94a3b8' }}>
             <code>{stack}</code>
           </pre>
         )}
+        <a href="/" className="inline-block mt-6 px-6 py-3 rounded-lg text-sm font-medium" style={{ background: '#7C3AED', color: '#fff' }}>
+          Volver al inicio
+        </a>
       </div>
     </main>
   );
 }
+

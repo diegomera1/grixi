@@ -1,7 +1,17 @@
 import { redirect, useLoaderData, Outlet } from "react-router";
+import { useState, useEffect, type ComponentType } from "react";
 import type { Route } from "./+types/authenticated";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
-import { GrixiOrb } from "~/components/layout/grixi-orb";
+
+// Client-only wrapper to avoid SSR issues with framer-motion + browser APIs  
+function ClientOnlyOrb({ data }: { data: any }) {
+  const [Orb, setOrb] = useState<ComponentType<{ data: any }> | null>(null);
+  useEffect(() => {
+    import("~/components/layout/grixi-orb").then((m) => setOrb(() => m.GrixiOrb));
+  }, []);
+  if (!Orb) return null;
+  return <Orb data={data} />;
+}
 
 export interface TenantContext {
   user: { id: string; email: string; name: string; avatar?: string };
@@ -158,8 +168,8 @@ export default function AuthenticatedLayout() {
         </div>
       </main>
 
-      {/* GRIXI Orb — floating navigation + AI */}
-      <GrixiOrb data={data} />
+      {/* GRIXI Orb — floating navigation + AI (client-only) */}
+      <ClientOnlyOrb data={data} />
     </div>
   );
 }

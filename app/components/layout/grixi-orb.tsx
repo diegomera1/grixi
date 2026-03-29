@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation, useRouteLoaderData } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, X, Send, Plus,
@@ -38,16 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: Settings, label: "Auditoría", href: "/admin/audit", adminOnly: true },
 ];
 
-// ─── Supabase browser client helper ────────────────────
-function getSupabaseBrowser() {
-  const url = typeof window !== "undefined"
-    ? (window as any).__SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || ""
-    : "";
-  const key = typeof window !== "undefined"
-    ? (window as any).__SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || ""
-    : "";
-  return createBrowserClient(url, key);
-}
+// (Supabase browser client is initialized lazily inside GrixiOrb component)
 
 // ─── Main Component ────────────────────────────────────
 export function GrixiOrb({ data }: { data: TenantContext }) {
@@ -80,10 +71,23 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
     if (showAi) loadConversations();
   }, [showAi]);
 
-  const supabase = useMemo(() => getSupabaseBrowser(), []);
+  // Get Supabase credentials from root loader data — lazy init to avoid errors during hydration
+  const rootData = useRouteLoaderData("root") as { env?: { SUPABASE_URL: string; SUPABASE_ANON_KEY: string } } | undefined;
+  const supabaseRef = useRef<ReturnType<typeof createBrowserClient> | null>(null);
+  
+  function getSupabase() {
+    if (supabaseRef.current) return supabaseRef.current;
+    const url = rootData?.env?.SUPABASE_URL;
+    const key = rootData?.env?.SUPABASE_ANON_KEY;
+    if (!url || !key) return null;
+    supabaseRef.current = createBrowserClient(url, key);
+    return supabaseRef.current;
+  }
 
   async function loadConversations() {
-    const { data: convs } = await supabase
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: convs } = await sb
       .from("ai_conversations")
       .select("*")
       .order("last_message_at", { ascending: false })
@@ -94,7 +98,9 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
   async function loadConversation(convId: string) {
     setCurrentConvId(convId);
     setShowHistory(false);
-    const { data: msgs } = await supabase
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: msgs } = await sb
       .from("ai_messages")
       .select("*")
       .eq("conversation_id", convId)
@@ -109,7 +115,9 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
 
   async function startNewConversation() {
     const orgId = data.currentOrg?.id;
-    const { data: conv, error } = await supabase
+    const sb = getSupabase();
+    if (!sb) return null;
+    const { data: conv, error } = await sb
       .from("ai_conversations")
       .insert({
         org_id: orgId,
