@@ -7,6 +7,7 @@ export default [
   route("auth/signout", "routes/auth.signout.tsx"),
   route("select-org", "routes/select-org.tsx"),
   route("unauthorized", "routes/unauthorized.tsx"),
+  route("suspended", "routes/suspended.tsx"),
 
   // API resource routes (no layout)
   route("api/ai/chat", "routes/api.ai.chat.ts"),
