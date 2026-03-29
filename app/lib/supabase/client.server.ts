@@ -4,17 +4,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /**
  * Create a Supabase server client for use in loaders/actions.
  * Handles cookie-based auth automatically via @supabase/ssr.
+ *
+ * SECURITY: Cookies are scoped to the exact hostname (no domain= attribute).
+ * This ensures tenant session isolation: acme.grixi.ai cookies are NOT
+ * visible to empresa-x.grixi.ai or any other subdomain.
  */
 export function createSupabaseServerClient(
   request: Request,
   env: Env
 ): { supabase: SupabaseClient; headers: Headers } {
   const headers = new Headers();
-
-  // Determine cookie domain: use .grixi.ai for production (shared across subdomains)
-  const hostname = new URL(request.url).hostname;
-  const isProduction = hostname.endsWith("grixi.ai") && !hostname.endsWith(".workers.dev");
-  const cookieDomain = isProduction ? ".grixi.ai" : undefined;
 
   const supabase = createServerClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
     cookies: {
@@ -27,8 +26,12 @@ export function createSupabaseServerClient(
           headers.append(
             "Set-Cookie",
             serializeCookieHeader(name, value, {
+              // No domain= → browser scopes cookie to exact hostname only
+              // This is the key multi-tenant security measure
               ...options,
-              domain: cookieDomain,
+              sameSite: "strict",
+              secure: true,
+              httpOnly: true,
             })
           );
         });

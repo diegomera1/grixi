@@ -39,6 +39,38 @@ function getTenantSlug(request: Request, appDomain: string): string | null {
   return null;
 }
 
+/**
+ * SECURITY: Clear stale cookies that were previously set with domain=.grixi.ai.
+ * These cookies could leak sessions across tenants. By setting them to expire
+ * with the old domain, we ensure browsers discard them.
+ */
+function getStaleSessionCleanupHeaders(request: Request, appDomain: string): string[] {
+  const hostname = new URL(request.url).hostname;
+  const isProduction = hostname.endsWith(appDomain) && !hostname.endsWith(".workers.dev");
+  if (!isProduction) return [];
+
+  const cookieHeader = request.headers.get("Cookie") || "";
+  const cleanupHeaders: string[] = [];
+
+  // Find Supabase auth cookies (sb-*-auth-token*)
+  const supabaseCookiePattern = /sb-[a-z0-9]+-auth-token[^=]*/g;
+  const matches = cookieHeader.match(supabaseCookiePattern) || [];
+
+  for (const cookieName of matches) {
+    // Expire the old domain-scoped cookie
+    cleanupHeaders.push(
+      `${cookieName}=; Domain=.${appDomain}; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; Secure; HttpOnly`
+    );
+  }
+
+  // Also clear the old grixi_org cookie from the shared domain
+  cleanupHeaders.push(
+    `grixi_org=; Domain=.${appDomain}; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; Secure; HttpOnly`
+  );
+
+  return cleanupHeaders;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -64,9 +96,22 @@ export default {
       }
     }
 
-    return requestHandler(request, {
+    const response = await requestHandler(request, {
       cloudflare: { env, ctx },
       tenantSlug,
     });
+
+    // SECURITY: Append stale cookie cleanup headers to every response
+    const cleanupHeaders = getStaleSessionCleanupHeaders(request, env.APP_DOMAIN);
+    if (cleanupHeaders.length > 0) {
+      // Clone response to add headers
+      const newResponse = new Response(response.body, response);
+      for (const header of cleanupHeaders) {
+        newResponse.headers.append("Set-Cookie", header);
+      }
+      return newResponse;
+    }
+
+    return response;
   },
 } satisfies ExportedHandler<Env>;

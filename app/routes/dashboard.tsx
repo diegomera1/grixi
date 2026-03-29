@@ -37,14 +37,14 @@ interface DashboardData {
 // ─── Loader ────────────────────────────────────────────
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
+  const tenantSlug = (context as any).tenantSlug as string | null;
   const { supabase, headers } = createSupabaseServerClient(request, env);
   const admin = createSupabaseAdminClient(env);
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return redirect("/", { headers });
 
-  // Get the current org from the parent layout context
-  // We need to resolve it here too for the queries
+  // Get the user's active memberships
   const { data: memberships } = await admin
     .from("memberships")
     .select("organization_id")
@@ -63,14 +63,45 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     } satisfies DashboardData, { headers });
   }
 
-  // Resolve current org (from cookie or first membership)
-  const cookieHeader = request.headers.get("cookie") || "";
-  const cookieOrgId = cookieHeader.match(/grixi_org=([^;]+)/)?.[1];
-  const currentOrgId = cookieOrgId && orgIds.includes(cookieOrgId)
-    ? cookieOrgId
-    : orgIds[0];
+  // ── SECURITY: Resolve current org with tenant enforcement ──
+  let currentOrgId: string;
 
-  // ── Parallel queries (all fast, ~50ms total) ──────────
+  if (tenantSlug) {
+    // Subdomain mode: MUST resolve to the tenant's org
+    const { data: orgBySlug } = await admin
+      .from("organizations")
+      .select("id")
+      .eq("slug", tenantSlug)
+      .maybeSingle();
+
+    if (!orgBySlug) {
+      // Tenant slug doesn't match any org
+      return redirect("/unauthorized", { headers });
+    }
+
+    // Check if user is a platform admin
+    const { data: platformAdmin } = await admin
+      .from("platform_admins")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    // Only allow if user belongs to this org OR is platform admin
+    if (!orgIds.includes(orgBySlug.id) && !platformAdmin) {
+      return redirect("/unauthorized", { headers });
+    }
+
+    currentOrgId = orgBySlug.id;
+  } else {
+    // Root domain or dev: use cookie fallback or first membership
+    const cookieHeader = request.headers.get("cookie") || "";
+    const cookieOrgId = cookieHeader.match(/grixi_org=([^;]+)/)?.[1];
+    currentOrgId = cookieOrgId && orgIds.includes(cookieOrgId)
+      ? cookieOrgId
+      : orgIds[0];
+  }
+
+  // ── Parallel queries scoped to currentOrgId ──────────
   const [membersRes, rolesRes, permsRes, invRes, orgRes, auditRes] = await Promise.all([
     admin.from("memberships").select("id", { count: "exact", head: true })
       .eq("organization_id", currentOrgId)
