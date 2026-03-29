@@ -1,14 +1,18 @@
 import { redirect, useLoaderData, Outlet } from "react-router";
 import type { Route } from "./+types/authenticated";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
-import { Sidebar, SidebarProvider } from "~/components/layout/sidebar";
-import { Topbar } from "~/components/layout/topbar";
+import { GrixiOrb } from "~/components/layout/grixi-orb";
 
 export interface TenantContext {
   user: { id: string; email: string; name: string; avatar?: string };
   isPlatformAdmin: boolean;
-  currentOrg: { id: string; name: string; slug: string; role: string; settings: any } | null;
-  organizations: Array<{ id: string; name: string; slug: string; role: string }>;
+  currentOrg: {
+    id: string; name: string; slug: string; role: string;
+    status: string; settings: any; hierarchyLevel: number;
+  } | null;
+  /** User's permission keys for the current org (e.g. ['dashboard.view', 'finance.manage']) */
+  permissions: string[];
+  organizations: Array<{ id: string; name: string; slug: string; role: string; status: string }>;
   /** Subdomain slug from URL, e.g. "empresa-x" from empresa-x.grixi.ai */
   tenantSlug: string | null;
 }
@@ -33,7 +37,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   // Resolve user's organizations via memberships
   const { data: memberships } = await admin
     .from("memberships")
-    .select("organization_id, roles(name), organizations(id, name, slug, settings)")
+    .select("organization_id, status, roles(name, hierarchy_level), organizations(id, name, slug, status, settings)")
     .eq("user_id", user.id)
     .eq("status", "active");
 
@@ -42,7 +46,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     name: m.organizations?.name,
     slug: m.organizations?.slug,
     role: m.roles?.name || "member",
+    status: m.organizations?.status || "active",
     settings: m.organizations?.settings,
+    hierarchyLevel: m.roles?.hierarchy_level || 0,
   })).filter((o: any) => o.id);
 
   // Resolve current org: subdomain > URL ?org= > cookie > first membership
@@ -51,23 +57,21 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const cookieHeader = request.headers.get("cookie") || "";
   const cookieOrgId = cookieHeader.match(/grixi_org=([^;]+)/)?.[1];
 
-  let currentOrg = null;
+  let currentOrg: TenantContext["currentOrg"] = null;
 
   // 1. Subdomain slug takes highest priority
   if (tenantSlug) {
     currentOrg = organizations.find((o: any) => o.slug === tenantSlug) || null;
-    // If platform admin, allow accessing any org by subdomain even without membership
     if (!currentOrg && platformAdmin) {
       const { data: orgBySlug } = await admin
         .from("organizations")
-        .select("id, name, slug, settings")
+        .select("id, name, slug, status, settings")
         .eq("slug", tenantSlug)
         .maybeSingle();
       if (orgBySlug) {
-        currentOrg = { ...orgBySlug, role: "platform_admin" };
+        currentOrg = { ...orgBySlug, role: "platform_admin", hierarchyLevel: 999 };
       }
     }
-    // MEMBERSHIP GUARD: User must be member of tenant or platform admin
     if (!currentOrg && !platformAdmin) {
       return redirect("/unauthorized", { headers });
     }
@@ -86,6 +90,33 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   // 4. First membership
   if (!currentOrg && organizations.length > 0) {
     currentOrg = organizations[0];
+  }
+
+  // ── RBAC Enforcement: org.status check ──
+  if (currentOrg && currentOrg.status === "suspended" && !platformAdmin) {
+    return redirect("/suspended", { headers });
+  }
+
+  // ── Fetch user permissions for current org ──
+  let permissions: string[] = [];
+  if (currentOrg) {
+    if (platformAdmin) {
+      // Platform admins get ALL permissions
+      const { data: allPerms } = await admin.from("permissions").select("key");
+      permissions = (allPerms || []).map((p: any) => p.key);
+    } else {
+      // Regular users: permissions from their role in this org
+      const { data: userPerms } = await admin
+        .from("memberships")
+        .select("roles(role_permissions(permissions(key)))")
+        .eq("user_id", user.id)
+        .eq("organization_id", currentOrg.id)
+        .eq("status", "active")
+        .maybeSingle();
+      
+      const rolePerms = (userPerms as any)?.roles?.role_permissions || [];
+      permissions = rolePerms.map((rp: any) => rp.permissions?.key).filter(Boolean);
+    }
   }
 
   // Set org cookie for persistence
@@ -107,6 +138,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       },
       isPlatformAdmin: !!platformAdmin,
       currentOrg,
+      permissions,
       organizations,
       tenantSlug,
     } satisfies TenantContext,
@@ -114,28 +146,20 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   );
 }
 
-function AuthenticatedContent() {
+export default function AuthenticatedLayout() {
   const data = useLoaderData<typeof loader>() as TenantContext;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-primary)]">
-      <Sidebar isPlatformAdmin={data.isPlatformAdmin} tenantSlug={data.tenantSlug} />
-      <div className="flex flex-1 flex-col min-w-0">
-        <Topbar user={data.user} currentOrg={data.currentOrg} organizations={data.organizations} />
-        <main className="platform-dot-grid relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-6 md:px-6 lg:px-8">
-          <div className="relative z-10 pt-4">
-            <Outlet context={data} />
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-}
+    <div className="relative h-screen overflow-hidden bg-(--bg-primary)">
+      {/* Main content — full screen */}
+      <main className="platform-dot-grid relative h-full overflow-y-auto overflow-x-hidden px-4 pb-6 md:px-6 lg:px-8">
+        <div className="relative z-10 pt-6">
+          <Outlet context={data} />
+        </div>
+      </main>
 
-export default function AuthenticatedLayout() {
-  return (
-    <SidebarProvider>
-      <AuthenticatedContent />
-    </SidebarProvider>
+      {/* GRIXI Orb — floating navigation + AI */}
+      <GrixiOrb data={data} />
+    </div>
   );
 }

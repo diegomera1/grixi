@@ -8,7 +8,10 @@ export default [
   route("select-org", "routes/select-org.tsx"),
   route("unauthorized", "routes/unauthorized.tsx"),
 
-  // Authenticated routes (sidebar + topbar layout)
+  // API resource routes (no layout)
+  route("api/ai/chat", "routes/api.ai.chat.ts"),
+
+  // Authenticated routes (Orb layout)
   layout("routes/authenticated.tsx", [
     route("dashboard", "routes/dashboard.tsx"),
     route("finanzas", "routes/finanzas.tsx"),

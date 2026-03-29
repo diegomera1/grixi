@@ -290,3 +290,140 @@ body {
     transform: none;
   }
 }
+
+/* ─── Modern CSS 2026 ──────────────────────────────── */
+
+/* color-mix — dynamic brand-aware backgrounds */
+.bg-brand-subtle {
+  background: color-mix(in oklch, var(--brand) 8%, transparent);
+}
+.bg-brand-medium {
+  background: color-mix(in oklch, var(--brand) 15%, transparent);
+}
+.bg-success-subtle {
+  background: color-mix(in oklch, var(--success) 10%, transparent);
+}
+.bg-warning-subtle {
+  background: color-mix(in oklch, var(--warning) 10%, transparent);
+}
+.bg-error-subtle {
+  background: color-mix(in oklch, var(--error) 10%, transparent);
+}
+.bg-info-subtle {
+  background: color-mix(in oklch, var(--info) 10%, transparent);
+}
+
+/* @starting-style — entry animations without JS (0kB) */
+.enter-fade {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s var(--ease-spring), transform 0.5s var(--ease-spring);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.enter-slide-left {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.35s var(--ease-spring), transform 0.35s var(--ease-spring);
+  @starting-style {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+.enter-scale {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-spring);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* Stagger delay helpers (use with .enter-* classes) */
+.stagger-1 { transition-delay: 0.05s; }
+.stagger-2 { transition-delay: 0.10s; }
+.stagger-3 { transition-delay: 0.15s; }
+.stagger-4 { transition-delay: 0.20s; }
+.stagger-5 { transition-delay: 0.25s; }
+.stagger-6 { transition-delay: 0.30s; }
+.stagger-7 { transition-delay: 0.35s; }
+.stagger-8 { transition-delay: 0.40s; }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-muted) 25%,
+    color-mix(in oklch, var(--bg-muted) 50%, var(--bg-surface)) 50%,
+    var(--bg-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ─── View Transition (Theme Toggle) ───────────── */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  clip-path: circle(0% at var(--vt-x, 50%) var(--vt-y, 50%));
+  animation: vt-expand 0.6s var(--ease-spring) forwards;
+}
+
+@keyframes vt-expand {
+  to {
+    clip-path: circle(150% at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) {
+    animation: none;
+    clip-path: none;
+  }
+}
+
+/* Exclude dot-grid from View Transition to prevent flash */
+.platform-dot-grid::before {
+  view-transition-name: dot-grid;
+}
+
+/* ─── Orb Animations ──────────────────────────────────── */
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.3),
+                0 4px 15px rgba(124, 58, 237, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(124, 58, 237, 0.5),
+                0 4px 20px rgba(124, 58, 237, 0.35);
+  }
+}
+
+/* ─── Scrollbar Utilities ─────────────────────────────── */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

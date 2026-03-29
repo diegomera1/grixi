@@ -25,10 +25,15 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const locale = detectLocale({ acceptLanguage });
   const translations = await loadTranslations(locale);
 
+  // Read theme preference from cookie (default: dark)
+  const cookieHeader = request.headers.get("cookie") || "";
+  const theme = cookieHeader.match(/grixi_theme=(light|dark)/)?.[1] ?? "dark";
+
   return Response.json(
     {
       locale,
       translations,
+      theme,
       user: user ? { id: user.id, email: user.email } : null,
       env: {
         SUPABASE_URL: env.SUPABASE_URL,
@@ -40,11 +45,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const data = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>() as any;
   const locale = (data?.locale ?? "es") as Locale;
+  const theme = data?.theme ?? "dark";
 
   return (
-    <html lang={locale} className="dark">
+    <html lang={locale} className={theme === "dark" ? "dark" : ""}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
