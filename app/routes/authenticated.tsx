@@ -132,10 +132,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   // Set org cookie for persistence (scoped to current hostname only)
   const responseCookies: string[] = [];
   if (currentOrg) {
-    // SECURITY: No domain= → cookie isolated to exact hostname
-    // SameSite=Strict → no cross-site requests can read it
-    // HttpOnly → not accessible via JavaScript (XSS protection)
-    responseCookies.push(`grixi_org=${currentOrg.id}; Path=/; SameSite=Strict; Secure; HttpOnly; Max-Age=31536000`);
+    // SECURITY: No domain= → cookie isolated to exact hostname (tenant isolation)
+    // SameSite=Lax → works with OAuth redirects but blocks cross-site subrequests
+    responseCookies.push(`grixi_org=${currentOrg.id}; Path=/; SameSite=Lax; Secure; Max-Age=31536000`);
   }
 
   const responseHeaders = new Headers(headers);

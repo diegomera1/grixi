@@ -26,12 +26,19 @@ export function createSupabaseServerClient(
           headers.append(
             "Set-Cookie",
             serializeCookieHeader(name, value, {
-              // No domain= → browser scopes cookie to exact hostname only
-              // This is the key multi-tenant security measure
               ...options,
-              sameSite: "strict",
-              secure: true,
-              httpOnly: true,
+              // SECURITY: No domain= → cookie scoped to exact hostname only
+              // This is the key multi-tenant isolation measure.
+              // DO NOT set domain here — omitting it means the browser
+              // restricts the cookie to the exact hostname (acme.grixi.ai
+              // cookies are invisible to empresa-x.grixi.ai).
+              //
+              // DO NOT override sameSite to "strict" — OAuth callback 
+              // redirects from Google are cross-site navigations that
+              // need "lax" (Supabase default) to work.
+              //
+              // DO NOT set httpOnly — Supabase SSR needs client-side 
+              // cookie access for token refresh.
             })
           );
         });
