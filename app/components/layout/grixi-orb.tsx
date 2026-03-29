@@ -154,16 +154,22 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
       setShowUserPopover(false);
     }, [navigate]);
 
-  const handleSignOut = useCallback(async () => {
-    setShowUserPopover(false);
-    setState("orb");
+  const handleSignOut = useCallback(() => {
+    // 1. Clear ALL supabase auth cookies manually (bulletproof)
+    document.cookie.split(";").forEach((c) => {
+      const name = c.trim().split("=")[0];
+      if (name.startsWith("sb-") || name === "grixi_org") {
+        document.cookie = `${name}=; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      }
+    });
+
+    // 2. Try supabase signOut in background (best-effort, don't block)
     try {
       const sb = getSupabase();
-      if (sb) await sb.auth.signOut();
-    } catch (e) {
-      console.error("Error during sign out:", e);
-    }
-    // Hard redirect to clear all session state — do NOT use SPA navigate
+      if (sb) sb.auth.signOut().catch(() => {});
+    } catch { /* ignore */ }
+
+    // 3. Hard redirect immediately — no SPA navigate, no awaiting
     window.location.href = "/";
   }, []);
 
