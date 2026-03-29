@@ -8,7 +8,7 @@ declare module "react-router" {
     };
     /** Subdomain tenant slug, e.g. "empresa-x" from "empresa-x.grixi.ai". Null on root domain. */
     tenantSlug: string | null;
-  };
+  }
 }
 
 const requestHandler = createRequestHandler(

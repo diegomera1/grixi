@@ -1,35 +1,59 @@
-import { Outlet, useOutletContext } from "react-router";
+import { useLoaderData, useOutletContext } from "react-router";
+import { createSupabaseServerClient } from "~/lib/supabase/client.server";
+import type { Route } from "./+types/finanzas";
 import type { TenantContext } from "./authenticated";
+import type { FinanceTransaction, FinanceCostCenter } from "~/features/finance/types";
+
+// Lazy client-side import to avoid SSR bundling framer-motion into Workers
+import { lazy, Suspense } from "react";
+const FinanceContent = lazy(() =>
+  import("~/features/finance/components/finance-content").then((m) => ({
+    default: m.FinanceContent,
+  }))
+);
+
+export async function loader({ request, context }: Route.LoaderArgs) {
+  const env = context.cloudflare.env;
+  const { supabase } = createSupabaseServerClient(request, env);
+
+  // Fetch transactions (last 500) and cost centers in parallel
+  const [txResult, ccResult] = await Promise.all([
+    supabase
+      .from("finance_transactions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase
+      .from("finance_cost_centers")
+      .select("*")
+      .order("code", { ascending: true }),
+  ]);
+
+  return {
+    transactions: (txResult.data || []) as FinanceTransaction[],
+    costCenters: (ccResult.data || []) as FinanceCostCenter[],
+  };
+}
 
 export default function Finanzas() {
   const ctx = useOutletContext<TenantContext>();
+  const { transactions, costCenters } = useLoaderData<typeof loader>();
 
   return (
-    <div className="w-full space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-lg font-bold text-text-primary">Finanzas</h1>
-        <p className="mt-0.5 text-[11px] text-text-muted">
-          Módulo de finanzas · {ctx.currentOrg?.name || "Sin organización"}
-        </p>
-      </div>
-
-      {/* Empty state */}
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-20" style={{ minHeight: 400 }}>
-        <div
-          className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
-          style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.15), rgba(139,92,246,0.05))" }}
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23" />
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
-        </div>
-        <h2 className="text-sm font-semibold text-text-primary">Módulo en construcción</h2>
-        <p className="mt-1 text-[11px] text-text-muted max-w-xs text-center">
-          El módulo de finanzas estará disponible próximamente. Incluirá libro mayor, cuentas por cobrar, cuentas por pagar y presupuestos.
-        </p>
-      </div>
+    <div className="w-full">
+      <Suspense
+        fallback={
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-20" style={{ minHeight: 400 }}>
+            <div className="w-8 h-8 border-3 border-brand border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-sm text-muted-foreground">Cargando módulo de finanzas...</p>
+          </div>
+        }
+      >
+        <FinanceContent
+          initialTransactions={transactions}
+          costCenters={costCenters}
+        />
+      </Suspense>
     </div>
   );
 }
