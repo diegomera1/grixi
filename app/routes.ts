@@ -11,11 +11,16 @@ export default [
 
   // API resource routes (no layout)
   route("api/ai/chat", "routes/api.ai.chat.ts"),
+  route("api/ai/conversations", "routes/api.ai.conversations.ts"),
+  route("api/ai/upload", "routes/api.ai.upload.ts"),
+  route("api/finance-analyze", "routes/api.finance-analyze.ts"),
+  route("api/finance-notes", "routes/api.finance-notes.ts"),
 
   // Authenticated routes (Orb layout)
   layout("routes/authenticated.tsx", [
     route("dashboard", "routes/dashboard.tsx"),
     route("finanzas", "routes/finanzas.tsx"),
+    route("ai", "routes/ai.tsx"),
 
     // Admin (platform_admin only)
     route("admin", "routes/admin/index.tsx"),

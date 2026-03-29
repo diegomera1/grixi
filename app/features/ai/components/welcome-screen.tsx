@@ -60,6 +60,12 @@ const MODULE_PROMPTS: Record<AiModule, QuickPrompt[]> = {
     { label: "Permisos del sistema", prompt: "¿Cómo están distribuidos los permisos entre los roles?", icon: Users },
     { label: "Actividad sospechosa", prompt: "¿Hay actividad inusual en los registros de auditoría?", icon: AlertTriangle },
   ],
+  flota: [
+    { label: "Estado de flota", prompt: "Dame un resumen del estado actual de la flota de vehículos.", icon: Truck },
+    { label: "Mantenimientos", prompt: "¿Qué vehículos tienen mantenimientos pendientes o vencidos?", icon: AlertTriangle },
+    { label: "Consumo de combustible", prompt: "Analiza el consumo de combustible de la flota en el último mes.", icon: BarChart3 },
+    { label: "Rutas activas", prompt: "¿Cuáles son las rutas activas y su estado actual?", icon: TrendingUp },
+  ],
 };
 
 const MODULE_DESCRIPTIONS: Record<AiModule, string> = {
@@ -70,6 +76,7 @@ const MODULE_DESCRIPTIONS: Record<AiModule, string> = {
   usuarios: "Asistente especializado en gestión de usuarios y roles.",
   dashboard: "Asistente especializado en métricas y KPIs.",
   administracion: "Asistente especializado en auditoría y configuración.",
+  flota: "Asistente especializado en gestión de flota y vehículos.",
 };
 
 export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeScreenProps) {

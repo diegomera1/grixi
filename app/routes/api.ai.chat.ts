@@ -154,7 +154,7 @@ async function generateTitle(apiKey: string, firstMessage: string): Promise<stri
   try {
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-3.1-flash-lite-preview",
       contents: `Generate a very short title (4-6 words max) in Spanish for a conversation that starts with this message. Return ONLY the title text, nothing else:\n\n"${firstMessage}"`,
     });
     return response.text?.trim().replace(/^["']|["']$/g, "") || "Nueva conversación";
@@ -249,7 +249,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     async start(controller) {
       try {
         const result = await ai.models.generateContentStream({
-          model: "gemini-2.0-flash-lite",
+          model: "gemini-3.1-flash-lite-preview",
           contents: fullPrompt,
         });
 
@@ -270,7 +270,7 @@ export async function action({ request, context }: Route.ActionArgs) {
           role: "assistant",
           content: fullResponse,
           attachments: "[]",
-          model_used: "gemini-2.0-flash-lite",
+          model_used: "gemini-3.1-flash-lite-preview",
           tokens_used: 0,
         });
 

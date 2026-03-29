@@ -30,6 +30,13 @@
 				"period": 60
 			}
 		}
+	],
+	// R2 Object Storage: archivos de AI attachments, exports, assets
+	"r2_buckets": [
+		{
+			"binding": "ASSETS_BUCKET",
+			"bucket_name": "grixi-assets"
+		}
 	]
 	// Secrets are configured via `wrangler secret put`:
 	// SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY
