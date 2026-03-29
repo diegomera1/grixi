@@ -26,8 +26,8 @@ export function OrgInfoCard({ name, slug, plan, color, language, logoUrl, t }: O
   const badge = planBadgeColors[plan] ?? planBadgeColors.starter;
 
   return (
-    <div className="enter-fade stagger-6 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
-      <h3 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">
+    <div className="enter-fade stagger-6 rounded-xl border border-border bg-surface p-5">
+      <h3 className="mb-4 text-sm font-semibold text-text-primary">
         {t("dash.org.title")}
       </h3>
 
@@ -44,15 +44,15 @@ export function OrgInfoCard({ name, slug, plan, color, language, logoUrl, t }: O
           </div>
         )}
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{name}</p>
-          <p className="text-[11px] text-[var(--text-muted)] truncate">{slug}.grixi.ai</p>
+          <p className="text-sm font-semibold text-text-primary truncate">{name}</p>
+          <p className="text-[11px] text-text-muted truncate">{slug}.grixi.ai</p>
         </div>
       </div>
 
       {/* Details */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center gap-2 text-xs text-text-secondary">
             <Crown size={14} strokeWidth={1.5} />
             <span>{t("dash.org.plan")}</span>
           </div>
@@ -62,30 +62,30 @@ export function OrgInfoCard({ name, slug, plan, color, language, logoUrl, t }: O
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center gap-2 text-xs text-text-secondary">
             <Palette size={14} strokeWidth={1.5} />
             <span>{t("dash.org.color")}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded-full border border-[var(--border)]" style={{ backgroundColor: color }} />
-            <span className="text-[11px] text-[var(--text-muted)] font-mono">{color}</span>
+            <div className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: color }} />
+            <span className="text-[11px] text-text-muted font-mono">{color}</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center gap-2 text-xs text-text-secondary">
             <Languages size={14} strokeWidth={1.5} />
             <span>{t("dash.org.language")}</span>
           </div>
-          <span className="text-xs text-[var(--text-primary)]">{langName[language] ?? language}</span>
+          <span className="text-xs text-text-primary">{langName[language] ?? language}</span>
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+          <div className="flex items-center gap-2 text-xs text-text-secondary">
             <Globe size={14} strokeWidth={1.5} />
             <span>{t("dash.org.subdomain")}</span>
           </div>
-          <span className="text-[11px] text-[var(--text-muted)] font-mono">{slug}.grixi.ai</span>
+          <span className="text-[11px] text-text-muted font-mono">{slug}.grixi.ai</span>
         </div>
       </div>
     </div>

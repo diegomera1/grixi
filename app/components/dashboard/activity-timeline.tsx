@@ -51,8 +51,8 @@ function formatRelativeTime(dateStr: string, t: (key: string, params?: Record<st
 export function ActivityTimeline({ logs, t }: ActivityTimelineProps) {
   if (!logs.length) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
-        <h3 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">
+      <div className="rounded-xl border border-border bg-surface p-5">
+        <h3 className="mb-4 text-sm font-semibold text-text-primary">
           {t("dash.timeline.title")}
         </h3>
         <EmptyState icon={History} title={t("dash.timeline.empty")} />
@@ -61,8 +61,8 @@ export function ActivityTimeline({ logs, t }: ActivityTimelineProps) {
   }
 
   return (
-    <div className="enter-fade stagger-7 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
-      <h3 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">
+    <div className="enter-fade stagger-7 rounded-xl border border-border bg-surface p-5">
+      <h3 className="mb-4 text-sm font-semibold text-text-primary">
         {t("dash.timeline.title")}
       </h3>
       <div className="space-y-3">
@@ -82,18 +82,18 @@ export function ActivityTimeline({ logs, t }: ActivityTimelineProps) {
 
             {/* Content */}
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-[var(--text-primary)] truncate">
+              <p className="text-xs text-text-primary truncate">
                 <span className="font-medium">{formatAction(log.action)}</span>
               </p>
               {log.metadata?.email && (
-                <p className="text-[11px] text-[var(--text-muted)] truncate">
+                <p className="text-[11px] text-text-muted truncate">
                   {log.metadata.email}
                 </p>
               )}
             </div>
 
             {/* Time */}
-            <span className="shrink-0 text-[11px] text-[var(--text-muted)]">
+            <span className="shrink-0 text-[11px] text-text-muted">
               {formatRelativeTime(log.created_at, t)}
             </span>
           </div>

@@ -160,7 +160,7 @@ export default function AuthenticatedLayout() {
   const data = useLoaderData<typeof loader>() as TenantContext;
 
   return (
-    <div className="relative h-screen overflow-hidden bg-(--bg-primary)">
+    <div className="relative h-screen overflow-hidden bg-bg-primary">
       {/* Main content — full screen */}
       <main className="platform-dot-grid relative h-full overflow-y-auto overflow-x-hidden px-4 pb-6 md:px-6 lg:px-8">
         <div className="relative z-10 pt-6">

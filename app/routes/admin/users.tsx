@@ -128,24 +128,24 @@ export default function AdminUsers() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-[var(--text-primary)]">Usuarios</h1>
-          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Gestión global de usuarios · {filtered.length} de {users.length}</p>
+          <h1 className="text-lg font-bold text-text-primary">Usuarios</h1>
+          <p className="mt-0.5 text-[11px] text-text-muted">Gestión global de usuarios · {filtered.length} de {users.length}</p>
         </div>
       </div>
 
       {/* Search + Filter */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nombre o email…"
-            className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] py-2 pl-9 pr-3 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition-all focus:border-[var(--brand)]"
+            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-xs text-text-primary placeholder:text-text-muted outline-none transition-all focus:border-brand"
           />
         </div>
-        <select value={filterAdmin} onChange={(e) => setFilterAdmin(e.target.value)} className="appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] outline-none transition-all focus:border-[var(--brand)]">
+        <select value={filterAdmin} onChange={(e) => setFilterAdmin(e.target.value)} className="appearance-none rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text-secondary outline-none transition-all focus:border-brand">
           <option value="">Todos</option>
           <option value="admin">Platform Admins</option>
           <option value="user">Usuarios</option>
@@ -158,37 +158,37 @@ export default function AdminUsers() {
             ]);
             exportCSV("usuarios", headers, rows);
           }}
-          className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-[11px] font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--brand)] hover:text-[var(--brand)]"
+          className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-[11px] font-medium text-text-secondary transition-all hover:border-brand hover:text-brand"
         >
           <Download size={12} /> CSV
         </button>
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[var(--border)]">
+            <tr className="border-b border-border">
               {["Usuario", "Organizaciones", "Último acceso", "Platform Admin", "Acciones"].map((h) => (
-                <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">{h}</th>
+                <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((u: any) => (
-              <tr key={u.id} className="border-b border-[var(--border)] last:border-b-0 transition-colors hover:bg-[var(--bg-muted)]/50">
+              <tr key={u.id} className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/50">
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     {u.avatar ? (
                       <img src={u.avatar} alt={u.name} className="h-8 w-8 rounded-full ring-2 ring-white/10" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[10px] font-bold text-[var(--text-secondary)]">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-text-secondary">
                         {u.name?.charAt(0)?.toUpperCase() || "U"}
                       </div>
                     )}
                     <div>
-                      <p className="text-[12px] font-medium text-[var(--text-primary)]">{u.name}</p>
-                      <p className="text-[10px] text-[var(--text-muted)]">{u.email}</p>
+                      <p className="text-[12px] font-medium text-text-primary">{u.name}</p>
+                      <p className="text-[10px] text-text-muted">{u.email}</p>
                     </div>
                   </div>
                 </td>
@@ -199,12 +199,12 @@ export default function AdminUsers() {
                         {m.orgName} ({m.roleName})
                       </span>
                     )) : (
-                      <span className="text-[10px] text-[var(--text-muted)]">Sin organización</span>
+                      <span className="text-[10px] text-text-muted">Sin organización</span>
                     )}
                   </div>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="text-[11px] tabular-nums text-[var(--text-muted)]">
+                  <span className="text-[11px] tabular-nums text-text-muted">
                     {u.lastSignIn ? new Date(u.lastSignIn).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                   </span>
                 </td>
@@ -213,12 +213,12 @@ export default function AdminUsers() {
                     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium" style={{ backgroundColor: "#F59E0B20", color: "#F59E0B" }}>
                       <Shield size={11} /> Admin
                     </span>
-                  ) : <span className="text-[10px] text-[var(--text-muted)]">—</span>}
+                  ) : <span className="text-[10px] text-text-muted">—</span>}
                 </td>
                 <td className="px-5 py-3.5">
                   <button
                     onClick={() => handleToggleAdmin(u.id, u.isPlatformAdmin)}
-                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[10px] font-medium transition-colors hover:bg-[var(--bg-muted)]"
+                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[10px] font-medium transition-colors hover:bg-muted"
                     style={{ color: u.isPlatformAdmin ? "#EF4444" : "#16A34A" }}
                   >
                     {u.isPlatformAdmin ? <><ShieldOff size={13} /> Revocar</> : <><Shield size={13} /> Promover</>}

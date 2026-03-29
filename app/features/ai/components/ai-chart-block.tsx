@@ -157,20 +157,20 @@ export function AiChartBlock({ config }: { config: ChartConfig }) {
 
   return (
     <>
-      <div className="my-3 rounded-xl border border-(--border) bg-(--bg-primary) p-4">
+      <div className="my-3 rounded-xl border border-border bg-bg-primary p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-(--brand)/10">
-              <BarChart3 size={14} className="text-(--brand)" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand/10">
+              <BarChart3 size={14} className="text-brand" />
             </div>
             <div>
-              <h4 className="text-xs font-semibold text-(--text-primary)">{title}</h4>
-              {description && <p className="text-[10px] text-(--text-muted)">{description}</p>}
+              <h4 className="text-xs font-semibold text-text-primary">{title}</h4>
+              {description && <p className="text-[10px] text-text-muted">{description}</p>}
             </div>
           </div>
           <button
             onClick={() => setIsFullscreen(true)}
-            className="rounded-lg p-1.5 text-(--text-muted) transition-colors hover:bg-(--bg-muted) hover:text-(--text-primary)"
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-muted hover:text-text-primary"
             title="Pantalla completa"
           >
             <Maximize2 size={14} />
@@ -183,20 +183,20 @@ export function AiChartBlock({ config }: { config: ChartConfig }) {
 
       {isFullscreen && typeof document !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-9999 flex flex-col bg-(--bg-primary)">
-            <div className="flex items-center justify-between border-b border-(--border) px-6 py-4">
+          <div className="fixed inset-0 z-9999 flex flex-col bg-bg-primary">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-(--brand)/10">
-                  <BarChart3 size={18} className="text-(--brand)" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10">
+                  <BarChart3 size={18} className="text-brand" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-(--text-primary)">{title}</h3>
-                  {description && <p className="text-xs text-(--text-muted)">{description}</p>}
+                  <h3 className="text-sm font-bold text-text-primary">{title}</h3>
+                  {description && <p className="text-xs text-text-muted">{description}</p>}
                 </div>
               </div>
               <button
                 onClick={() => setIsFullscreen(false)}
-                className="flex items-center gap-2 rounded-xl border border-(--border) bg-(--bg-surface) px-3 py-2 text-xs font-medium text-(--text-secondary) transition-colors hover:bg-(--bg-muted) hover:text-(--text-primary)"
+                className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-muted hover:text-text-primary"
               >
                 <Minimize2 size={14} />
                 Salir

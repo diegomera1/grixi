@@ -58,7 +58,7 @@ export default function SelectOrgPage() {
           <h1 className="text-2xl font-bold text-white mb-2">
             Selecciona una organización
           </h1>
-          <p className="text-[var(--muted-foreground)] text-sm">
+          <p className="text-(--muted-foreground) text-sm">
             Tienes acceso a múltiples organizaciones
           </p>
         </div>
@@ -69,19 +69,19 @@ export default function SelectOrgPage() {
               <input type="hidden" name="orgId" value={org.id} />
               <button
                 type="submit"
-                className="group w-full glass-strong rounded-xl p-5 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-[var(--shadow-glow-purple)] active:scale-[0.98]"
+                className="group w-full glass-strong rounded-xl p-5 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-(--shadow-glow-purple) active:scale-[0.98]"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-white group-hover:text-[var(--primary)]">
+                    <h3 className="text-lg font-semibold text-white group-hover:text-(--primary)">
                       {org.name}
                     </h3>
-                    <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                    <p className="text-xs text-(--muted-foreground) mt-0.5">
                       {org.slug}.grixi.io · Rol: {org.role}
                     </p>
                   </div>
                   <svg
-                    className="h-5 w-5 text-[var(--muted-foreground)] group-hover:text-[var(--primary)] transition-transform duration-200 group-hover:translate-x-1"
+                    className="h-5 w-5 text-(--muted-foreground) group-hover:text-(--primary) transition-transform duration-200 group-hover:translate-x-1"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

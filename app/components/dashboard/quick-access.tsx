@@ -51,8 +51,8 @@ export function QuickAccess({ enabledModules, t }: QuickAccessProps) {
   const modules = ALL_MODULES.filter((m) => enabledModules.includes(m.key));
 
   return (
-    <div className="enter-fade stagger-8 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
-      <h3 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">
+    <div className="enter-fade stagger-8 rounded-xl border border-border bg-surface p-5">
+      <h3 className="mb-4 text-sm font-semibold text-text-primary">
         {t("dash.quick.title")}
       </h3>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -65,33 +65,33 @@ export function QuickAccess({ enabledModules, t }: QuickAccessProps) {
             <div
               className={`group relative flex items-center gap-3 rounded-lg border p-3 transition-all ${
                 isActive
-                  ? "border-[var(--border)] cursor-pointer hover:border-[var(--border-hover)] hover:-translate-y-0.5 hover:shadow-md"
+                  ? "card-interactive border-border cursor-pointer"
                   : "border-transparent opacity-50 cursor-default"
               }`}
               style={isActive ? { background: `color-mix(in oklch, ${mod.color} 5%, var(--bg-surface))` } : undefined}
             >
               <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110"
                 style={{ background: `color-mix(in oklch, ${mod.color} 12%, transparent)` }}
               >
                 <Icon size={18} style={{ color: mod.color }} strokeWidth={1.8} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-[var(--text-primary)] truncate capitalize">
+                <p className="text-xs font-medium text-text-primary truncate capitalize">
                   {label}
                 </p>
-                <p className="text-[10px] text-[var(--text-muted)]">
+                <p className="text-[10px] text-text-muted">
                   {isActive ? t("dash.modules.active") : t("dash.modules.coming")}
                 </p>
               </div>
               {isActive && (
                 <ArrowRight
                   size={14}
-                  className="shrink-0 text-[var(--text-muted)] transition-transform group-hover:translate-x-0.5"
+                  className="shrink-0 text-text-muted transition-transform duration-200 group-hover:translate-x-0.5"
                 />
               )}
               {!isActive && (
-                <span className="absolute right-2 top-2 rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--text-muted)]">
+                <span className="absolute right-2 top-2 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium text-text-muted">
                   {t("dash.modules.coming")}
                 </span>
               )}

@@ -67,16 +67,16 @@ export default function AuditLog() {
             <History size={16} style={{ color: "#8B5CF6" }} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-[var(--text-primary)]">Audit Log</h1>
-            <p className="text-[11px] text-[var(--text-muted)]">Historial de acciones administrativas · {logs.length} eventos</p>
+            <h1 className="text-lg font-bold text-text-primary">Audit Log</h1>
+            <p className="text-[11px] text-text-muted">Historial de acciones administrativas · {logs.length} eventos</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Filter size={13} className="text-[var(--text-muted)]" />
+          <Filter size={13} className="text-text-muted" />
           <select
             value={filter}
             onChange={e => { setFilter(e.target.value); window.location.href = e.target.value ? `/admin/audit?action=${e.target.value}` : "/admin/audit"; }}
-            className="appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] outline-none transition-all focus:border-[var(--brand)]"
+            className="appearance-none rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text-secondary outline-none transition-all focus:border-brand"
           >
             <option value="">Todas las acciones</option>
             {uniqueActions.map(a => <option key={a} value={a}>{ACTION_LABELS[a]?.label || a}</option>)}
@@ -85,26 +85,26 @@ export default function AuditLog() {
       </div>
 
       {/* Events List */}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
         {logs.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <History size={28} className="mx-auto mb-3 text-[var(--text-muted)] opacity-50" />
-            <p className="text-[12px] text-[var(--text-muted)]">No hay eventos registrados</p>
+            <History size={28} className="mx-auto mb-3 text-text-muted opacity-50" />
+            <p className="text-[12px] text-text-muted">No hay eventos registrados</p>
           </div>
         ) : (
-          <div className="divide-y divide-[var(--border)]">
+          <div className="divide-y divide-border">
             {logs.map((log: any) => {
               const actor = actorMap[log.actor_id] || {};
               const actionMeta = ACTION_LABELS[log.action] || { label: log.action, color: "#71717A" };
               const time = new Date(log.created_at);
 
               return (
-                <div key={log.id} className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-[var(--bg-muted)]/50">
+                <div key={log.id} className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-muted/50">
                   {/* Actor Avatar */}
                   {actor.avatar ? (
                     <img src={actor.avatar} className="h-8 w-8 rounded-full ring-2 ring-white/10 shrink-0" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[10px] font-bold text-[var(--text-secondary)] shrink-0">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-text-secondary shrink-0">
                       {(actor.name || "?").charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -112,20 +112,20 @@ export default function AuditLog() {
                   {/* Event Details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-medium text-[var(--text-primary)]">{actor.name || "Sistema"}</span>
+                      <span className="text-[12px] font-medium text-text-primary">{actor.name || "Sistema"}</span>
                       <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{ backgroundColor: `${actionMeta.color}20`, color: actionMeta.color }}>{actionMeta.label}</span>
                     </div>
-                    <p className="text-[10px] truncate text-[var(--text-muted)]">
+                    <p className="text-[10px] truncate text-text-muted">
                       {log.entity_type}{log.metadata?.email ? ` → ${log.metadata.email}` : ""}{log.metadata?.domain ? ` → @${log.metadata.domain}` : ""}{log.metadata?.name ? ` → ${log.metadata.name}` : ""}
                     </p>
                   </div>
 
                   {/* Time + IP */}
                   <div className="text-right shrink-0">
-                    <p className="text-[10px] tabular-nums text-[var(--text-muted)]">
+                    <p className="text-[10px] tabular-nums text-text-muted">
                       {time.toLocaleDateString("es", { day: "2-digit", month: "short" })} {time.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
                     </p>
-                    {log.ip_address && <p className="text-[9px] font-mono text-[var(--text-muted)] opacity-60">{log.ip_address}</p>}
+                    {log.ip_address && <p className="text-[9px] font-mono text-text-muted opacity-60">{log.ip_address}</p>}
                   </div>
                 </div>
               );

@@ -141,13 +141,13 @@ export function GrixiAiLogo({
           transition={{ delay: 0.2, duration: 0.4 }}
           className="flex flex-col"
         >
-          <span className="text-lg font-bold tracking-tight text-(--text-primary)">
+          <span className="text-lg font-bold tracking-tight text-text-primary">
             GRIXI{" "}
             <span className="bg-linear-to-r from-[#7C3AED] to-[#A78BFA] bg-clip-text text-transparent">
               AI
             </span>
           </span>
-          <span className="text-[10px] font-medium text-(--text-muted)">
+          <span className="text-[10px] font-medium text-text-muted">
             Asistente Inteligente
           </span>
         </motion.div>

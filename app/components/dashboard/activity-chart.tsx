@@ -35,12 +35,12 @@ export function ActivityChart({ logs, brandColor, t }: ActivityChartProps) {
   const hasData = data.some((d) => d.count > 0);
 
   return (
-    <div className="enter-fade stagger-5 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
+    <div className="enter-fade stagger-5 rounded-xl border border-border bg-surface p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+        <h3 className="text-sm font-semibold text-text-primary">
           {t("dash.activity.title")}
         </h3>
-        <span className="text-[11px] text-[var(--text-muted)]">
+        <span className="text-[11px] text-text-muted">
           {t("dash.activity.last7")}
         </span>
       </div>

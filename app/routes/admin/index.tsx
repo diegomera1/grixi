@@ -123,7 +123,7 @@ export default function AdminDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--bg-surface)] via-[var(--bg-surface)] to-[var(--brand-surface)]"
+        className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-surface via-surface to-brand-surface"
       >
         {/* Decorative dot grid */}
         <div
@@ -133,18 +133,18 @@ export default function AdminDashboard() {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-[var(--brand)] opacity-[0.06] blur-[100px]" />
+        <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-brand opacity-[0.06] blur-[100px]" />
 
         <div className="relative px-5 py-5">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--brand)] shadow-md" style={{ boxShadow: "0 4px 14px rgba(124,58,237,0.3)" }}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand shadow-md" style={{ boxShadow: "0 4px 14px rgba(124,58,237,0.3)" }}>
               <Shield size={16} className="text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[var(--text-primary)]">
+              <h2 className="text-sm font-bold text-text-primary">
                 Panel de Administración
               </h2>
-              <p className="text-[11px] text-[var(--text-secondary)]">
+              <p className="text-[11px] text-text-secondary">
                 Vista global de la plataforma GRIXI
               </p>
             </div>
@@ -160,31 +160,31 @@ export default function AdminDashboard() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + i * 0.08 }}
-                  className="card-elevated rounded-xl border border-[var(--border)] bg-[var(--bg-primary)]/60 p-3 backdrop-blur-sm"
+                  className="card-elevated rounded-xl border border-border bg-bg-primary/60 p-3 backdrop-blur-sm"
                 >
                   {kpi.href ? (
                     <Link to={kpi.href} className="block">
                       <div className="flex items-center justify-between">
                         <Icon size={13} style={{ color: kpi.color }} />
-                        <span className="flex items-center gap-0.5 text-[9px] font-semibold text-[var(--success)]">
+                        <span className="flex items-center gap-0.5 text-[9px] font-semibold text-success">
                           <TrendingUp size={9} />
                           {kpi.trend}
                         </span>
                       </div>
-                      <p className="mt-2 text-lg font-bold tabular-nums text-[var(--text-primary)]">{kpi.value}</p>
-                      <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{kpi.label}</p>
+                      <p className="mt-2 text-lg font-bold tabular-nums text-text-primary">{kpi.value}</p>
+                      <p className="mt-0.5 text-[10px] text-text-muted">{kpi.label}</p>
                     </Link>
                   ) : (
                     <>
                       <div className="flex items-center justify-between">
                         <Icon size={13} style={{ color: kpi.color }} />
-                        <span className="flex items-center gap-0.5 text-[9px] font-semibold text-[var(--success)]">
+                        <span className="flex items-center gap-0.5 text-[9px] font-semibold text-success">
                           <TrendingUp size={9} />
                           {kpi.trend}
                         </span>
                       </div>
-                      <p className="mt-2 text-lg font-bold tabular-nums text-[var(--text-primary)]">{kpi.value}</p>
-                      <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{kpi.label}</p>
+                      <p className="mt-2 text-lg font-bold tabular-nums text-text-primary">{kpi.value}</p>
+                      <p className="mt-0.5 text-[10px] text-text-muted">{kpi.label}</p>
                     </>
                   )}
                 </motion.div>
@@ -197,16 +197,16 @@ export default function AdminDashboard() {
       {/* ── Charts Row 1: Growth + Plan Distribution ─── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Membership Growth — Area */}
-        <div className="col-span-1 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 lg:col-span-2">
+        <div className="col-span-1 rounded-xl border border-border bg-surface p-4 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Crecimiento de Membresías</h3>
-              <p className="text-[10px] text-[var(--text-muted)]">Nuevas membresías — últimos 7 días</p>
+              <h3 className="text-[13px] font-semibold text-text-primary">Crecimiento de Membresías</h3>
+              <p className="text-[10px] text-text-muted">Nuevas membresías — últimos 7 días</p>
             </div>
-            <div className="flex items-center gap-1.5 rounded-lg bg-[var(--bg-muted)] px-2 py-1 text-[10px] font-medium text-[var(--text-secondary)]">
+            <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2 py-1 text-[10px] font-medium text-text-secondary">
               <Activity size={10} />
               En vivo
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--success)]" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
             </div>
           </div>
           <div className="h-[180px]">
@@ -229,8 +229,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Plan Distribution — Donut */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-          <h3 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">Distribución de Planes</h3>
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <h3 className="mb-3 text-[13px] font-semibold text-text-primary">Distribución de Planes</h3>
           <div className="h-[160px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -243,7 +243,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex flex-wrap gap-3 justify-center mt-1">
             {planData.map((p: any) => (
-              <div key={p.name} className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+              <div key={p.name} className="flex items-center gap-1.5 text-[10px] text-text-muted">
                 <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: PLAN_COLORS[p.name] || "#6366F1" }} />
                 {p.name} ({p.value})
               </div>
@@ -255,10 +255,10 @@ export default function AdminDashboard() {
       {/* ── Charts Row 2: Members Bar + Invitations ─── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Members per Org — Bar */}
-        <div className="col-span-1 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4 lg:col-span-2">
+        <div className="col-span-1 rounded-xl border border-border bg-surface p-4 lg:col-span-2">
           <div className="mb-3">
-            <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Miembros por Organización</h3>
-            <p className="text-[10px] text-[var(--text-muted)]">Distribución de miembros activos</p>
+            <h3 className="text-[13px] font-semibold text-text-primary">Miembros por Organización</h3>
+            <p className="text-[10px] text-text-muted">Distribución de miembros activos</p>
           </div>
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -274,8 +274,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Invitation Stats */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
-          <h3 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">Estado de Invitaciones</h3>
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <h3 className="mb-3 text-[13px] font-semibold text-text-primary">Estado de Invitaciones</h3>
           <div className="space-y-4 py-2">
             {[
               { label: "Pendientes", value: invStats.pending, color: "var(--warning)" },
@@ -284,10 +284,10 @@ export default function AdminDashboard() {
             ].map((s) => (
               <div key={s.label}>
                 <div className="flex items-center justify-between text-[12px] mb-1.5">
-                  <span className="text-[var(--text-secondary)]">{s.label}</span>
+                  <span className="text-text-secondary">{s.label}</span>
                   <span className="font-mono font-bold" style={{ color: s.color }}>{s.value}</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden bg-[var(--bg-muted)]">
+                <div className="h-1.5 rounded-full overflow-hidden bg-muted">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, (s.value / Math.max(stats.invitations, 1)) * 100)}%` }}
@@ -305,45 +305,45 @@ export default function AdminDashboard() {
       {/* ── Bottom: Recent Audit + Recent Orgs ─────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Recent Audit */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
-          <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
-            <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Actividad Reciente</h3>
-            <Link to="/admin/audit" className="flex items-center gap-1 text-[11px] font-medium text-[var(--brand)] hover:underline">
+        <div className="rounded-xl border border-border bg-surface">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+            <h3 className="text-[13px] font-semibold text-text-primary">Actividad Reciente</h3>
+            <Link to="/admin/audit" className="flex items-center gap-1 text-[11px] font-medium text-brand hover:underline">
               <History size={12} /> Ver todo
             </Link>
           </div>
-          <div className="divide-y divide-[var(--border)]">
+          <div className="divide-y divide-border">
             {recentAudit.slice(0, 5).map((log: any) => (
-              <div key={log.id} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--bg-muted)]/50">
-                <div className="h-2.5 w-2.5 rounded-full shrink-0 bg-[var(--brand)]" />
+              <div key={log.id} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/50">
+                <div className="h-2.5 w-2.5 rounded-full shrink-0 bg-brand" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-medium truncate text-[var(--text-primary)]">{log.action}</p>
-                  <p className="text-[10px] text-[var(--text-muted)]">
+                  <p className="text-[12px] font-medium truncate text-text-primary">{log.action}</p>
+                  <p className="text-[10px] text-text-muted">
                     {new Date(log.created_at).toLocaleString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
               </div>
             ))}
             {recentAudit.length === 0 && (
-              <div className="px-5 py-8 text-center text-[12px] text-[var(--text-muted)]">Sin actividad registrada</div>
+              <div className="px-5 py-8 text-center text-[12px] text-text-muted">Sin actividad registrada</div>
             )}
           </div>
         </div>
 
         {/* Recent Orgs */}
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]">
-          <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
-            <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Organizaciones</h3>
-            <Link to="/admin/organizations" className="flex items-center gap-1 text-[11px] font-medium text-[var(--brand)] hover:underline">
+        <div className="rounded-xl border border-border bg-surface">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+            <h3 className="text-[13px] font-semibold text-text-primary">Organizaciones</h3>
+            <Link to="/admin/organizations" className="flex items-center gap-1 text-[11px] font-medium text-brand hover:underline">
               <ArrowUpRight size={12} /> Todas
             </Link>
           </div>
-          <div className="divide-y divide-[var(--border)]">
+          <div className="divide-y divide-border">
             {recentOrgs.map((org: any) => (
               <Link
                 key={org.id}
                 to={`/admin/organizations/${org.id}`}
-                className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-[var(--bg-muted)]/50"
+                className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
                   <div
@@ -356,8 +356,8 @@ export default function AdminDashboard() {
                     {org.name.charAt(0)}
                   </div>
                   <div>
-                    <p className="text-[12px] font-medium text-[var(--text-primary)]">{org.name}</p>
-                    <p className="text-[10px] text-[var(--text-muted)]">{org.slug}.grixi.ai</p>
+                    <p className="text-[12px] font-medium text-text-primary">{org.name}</p>
+                    <p className="text-[10px] text-text-muted">{org.slug}.grixi.ai</p>
                   </div>
                 </div>
                 <span

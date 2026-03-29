@@ -196,12 +196,12 @@ export default function AdminOrganizations() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-[var(--text-primary)]">Organizaciones</h1>
-          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Gestionar tenants de la plataforma · {filtered.length} de {organizations.length}</p>
+          <h1 className="text-lg font-bold text-text-primary">Organizaciones</h1>
+          <p className="mt-0.5 text-[11px] text-text-muted">Gestionar tenants de la plataforma · {filtered.length} de {organizations.length}</p>
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-[12px] font-medium text-white transition-all hover:opacity-90 active:scale-[0.97]"
+          className="flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-[12px] font-medium text-white transition-all hover:opacity-90 active:scale-[0.97]"
           style={{ boxShadow: "0 4px 14px rgba(124,58,237,0.3)" }}
         >
           <Plus size={14} />
@@ -212,23 +212,23 @@ export default function AdminOrganizations() {
       {/* Search + Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nombre o slug…"
-            className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] py-2 pl-9 pr-3 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition-all focus:border-[var(--brand)]"
+            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-xs text-text-primary placeholder:text-text-muted outline-none transition-all focus:border-brand"
           />
         </div>
-        <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)} className="appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] outline-none transition-all focus:border-[var(--brand)]">
+        <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)} className="appearance-none rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text-secondary outline-none transition-all focus:border-brand">
           <option value="">Todos los planes</option>
           <option value="demo">Demo</option>
           <option value="starter">Starter</option>
           <option value="professional">Professional</option>
           <option value="enterprise">Enterprise</option>
         </select>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] outline-none transition-all focus:border-[var(--brand)]">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="appearance-none rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text-secondary outline-none transition-all focus:border-brand">
           <option value="">Todos los estados</option>
           <option value="active">Activo</option>
           <option value="suspended">Suspendido</option>
@@ -241,7 +241,7 @@ export default function AdminOrganizations() {
             ]);
             exportCSV("organizaciones", headers, rows);
           }}
-          className="flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-3 py-2 text-[11px] font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--brand)] hover:text-[var(--brand)]"
+          className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-[11px] font-medium text-text-secondary transition-all hover:border-brand hover:text-brand"
         >
           <Download size={12} /> CSV
         </button>
@@ -249,35 +249,35 @@ export default function AdminOrganizations() {
 
       {/* Create Form */}
       {showCreate && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
-          <h3 className="mb-4 text-[13px] font-semibold text-[var(--text-primary)]">Nueva Organización</h3>
+        <div className="rounded-xl border border-border bg-surface p-5">
+          <h3 className="mb-4 text-[13px] font-semibold text-text-primary">Nueva Organización</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1.5 block text-[10px] font-medium text-[var(--text-muted)]">Nombre</label>
+              <label className="mb-1.5 block text-[10px] font-medium text-text-muted">Nombre</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => { setNewName(e.target.value); setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")); }}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--brand)]"
+                className="w-full rounded-xl border border-border bg-bg-primary px-3 py-2 text-xs text-text-primary outline-none focus:border-brand"
                 placeholder="Empresa X"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[10px] font-medium text-[var(--text-muted)]">Slug</label>
+              <label className="mb-1.5 block text-[10px] font-medium text-text-muted">Slug</label>
               <input
                 type="text"
                 value={newSlug}
                 onChange={(e) => setNewSlug(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--brand)]"
+                className="w-full rounded-xl border border-border bg-bg-primary px-3 py-2 text-xs text-text-primary outline-none focus:border-brand"
                 placeholder="empresa-x"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[10px] font-medium text-[var(--text-muted)]">Plan</label>
+              <label className="mb-1.5 block text-[10px] font-medium text-text-muted">Plan</label>
               <select
                 value={newPlan}
                 onChange={(e) => setNewPlan(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--brand)]"
+                className="w-full rounded-xl border border-border bg-bg-primary px-3 py-2 text-xs text-text-primary outline-none focus:border-brand"
               >
                 <option value="demo">Demo</option>
                 <option value="starter">Starter</option>
@@ -287,35 +287,35 @@ export default function AdminOrganizations() {
             </div>
           </div>
           <div className="mt-4 flex gap-3">
-            <button onClick={handleCreate} className="rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-medium text-white">Crear</button>
-            <button onClick={() => setShowCreate(false)} className="rounded-xl px-4 py-2 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-muted)]">Cancelar</button>
+            <button onClick={handleCreate} className="rounded-xl bg-brand px-4 py-2 text-xs font-medium text-white">Crear</button>
+            <button onClick={() => setShowCreate(false)} className="rounded-xl px-4 py-2 text-xs font-medium text-text-muted hover:bg-muted">Cancelar</button>
           </div>
         </div>
       )}
 
       {/* Table */}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] overflow-hidden">
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[var(--border)]">
+            <tr className="border-b border-border">
               {["Organización", "Slug", "Plan", "Estado", "Usuarios", "Acciones"].map((h) => (
-                <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">{h}</th>
+                <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((org: any) => (
-              <tr key={org.id} className="border-b border-[var(--border)] last:border-b-0 transition-colors hover:bg-[var(--bg-muted)]/50">
+              <tr key={org.id} className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/50">
                 <td className="px-5 py-3.5">
                   <Link to={`/admin/organizations/${org.id}`} className="flex items-center gap-3 group">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-bold" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>
                       {org.name.charAt(0)}
                     </div>
-                    <span className="text-[12px] font-medium text-[var(--text-primary)] group-hover:underline">{org.name}</span>
+                    <span className="text-[12px] font-medium text-text-primary group-hover:underline">{org.name}</span>
                   </Link>
                 </td>
                 <td className="px-5 py-3.5">
-                  <code className="font-mono text-[11px] text-[var(--text-muted)]">{org.slug}</code>
+                  <code className="font-mono text-[11px] text-text-muted">{org.slug}</code>
                 </td>
                 <td className="px-5 py-3.5">
                   <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{
@@ -330,10 +330,10 @@ export default function AdminOrganizations() {
                   }}>{org.status}</span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="font-mono text-[12px] font-bold text-[var(--text-primary)] tabular-nums">{orgMemberMap[org.id] || 0}</span>
+                  <span className="font-mono text-[12px] font-bold text-text-primary tabular-nums">{orgMemberMap[org.id] || 0}</span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <button onClick={() => handleToggle(org.id, org.status)} className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]">
+                  <button onClick={() => handleToggle(org.id, org.status)} className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-text-muted transition-colors hover:bg-muted hover:text-text-primary">
                     {org.status === "active" ? "Suspender" : "Activar"}
                   </button>
                 </td>
