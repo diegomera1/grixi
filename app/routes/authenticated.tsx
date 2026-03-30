@@ -16,6 +16,8 @@ function ClientOnlyOrb({ data }: { data: any }) {
 export interface TenantContext {
   user: { id: string; email: string; name: string; avatar?: string };
   isPlatformAdmin: boolean;
+  /** True when accessed from admin.grixi.ai */
+  isPlatformAdminPortal?: boolean;
   currentOrg: {
     id: string; name: string; slug: string; role: string;
     status: string; settings: any; hierarchyLevel: number;
@@ -30,6 +32,7 @@ export interface TenantContext {
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
   const tenantSlug = (context as any).tenantSlug as string | null;
+  const isPlatformAdminPortal = (context as any).isPlatformAdminPortal === true;
   const { supabase, headers } = createSupabaseServerClient(request, env);
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -43,6 +46,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     .select("user_id")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  // NOTE: Admin portal (admin.grixi.ai) now uses its own dedicated layout
+  // (admin-layout.tsx) and is no longer handled here.
 
   // Resolve user's organizations via memberships
   const { data: memberships } = await admin

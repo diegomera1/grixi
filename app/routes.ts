@@ -16,17 +16,31 @@ export default [
   route("api/finance-analyze", "routes/api.finance-analyze.ts"),
   route("api/finance-notes", "routes/api.finance-notes.ts"),
 
-  // Authenticated routes (Orb layout)
-  layout("routes/authenticated.tsx", [
-    route("dashboard", "routes/dashboard.tsx"),
-    route("finanzas", "routes/finanzas.tsx"),
-    route("ai", "routes/ai.tsx"),
-
-    // Admin (platform_admin only)
+  // ── Admin Portal (admin.grixi.ai) — layout independiente ──
+  layout("routes/admin-layout.tsx", [
     route("admin", "routes/admin/index.tsx"),
     route("admin/organizations", "routes/admin/organizations.tsx"),
     route("admin/organizations/:id", "routes/admin/organizations.$id.tsx"),
     route("admin/users", "routes/admin/users.tsx"),
     route("admin/audit", "routes/admin/audit.tsx"),
+    route("admin/plans", "routes/admin/plans.tsx"),
+    route("admin/notifications", "routes/admin/notifications.tsx"),
+    route("admin/settings", "routes/admin/settings.tsx"),
+  ]),
+
+  // ── Tenant Portal — authenticated routes (Orb layout) ──
+  layout("routes/authenticated.tsx", [
+    route("dashboard", "routes/dashboard.tsx"),
+    route("finanzas", "routes/finanzas.tsx"),
+    route("ai", "routes/ai.tsx"),
+
+    // Tenant Configuration (owner/admin only)
+    route("configuracion", "routes/configuracion.tsx", [
+      index("routes/configuracion/equipo.tsx"),
+      route("invitaciones", "routes/configuracion/invitaciones.tsx"),
+      route("roles", "routes/configuracion/roles.tsx"),
+      route("auditoria", "routes/configuracion/auditoria.tsx"),
+      route("organizacion", "routes/configuracion/organizacion.tsx"),
+    ]),
   ]),
 ] satisfies RouteConfig;

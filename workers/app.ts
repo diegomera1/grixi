@@ -6,8 +6,10 @@ declare module "react-router" {
       env: Env;
       ctx: ExecutionContext;
     };
-    /** Subdomain tenant slug, e.g. "empresa-x" from "empresa-x.grixi.ai". Null on root domain. */
+    /** Subdomain tenant slug, e.g. "empresa-x" from "empresa-x.grixi.ai". Null on root domain or admin portal. */
     tenantSlug: string | null;
+    /** True when accessed from admin.grixi.ai — the dedicated platform admin portal */
+    isPlatformAdminPortal: boolean;
   }
 }
 
@@ -74,10 +76,18 @@ function getStaleSessionCleanupHeaders(request: Request, appDomain: string): str
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const hostname = url.hostname;
     const tenantSlug = getTenantSlug(request, env.APP_DOMAIN);
 
-    // Rate limit admin routes: 30 req/min per IP
-    if (url.pathname.startsWith("/admin") && env.ADMIN_RATE_LIMITER) {
+    // Detect admin.grixi.ai → platform admin portal
+    const isPlatformAdminPortal = tenantSlug === "admin";
+
+    // Rate limit admin routes AND admin portal: 30 req/min per IP
+    const shouldRateLimit = (
+      url.pathname.startsWith("/admin") || isPlatformAdminPortal
+    ) && env.ADMIN_RATE_LIMITER;
+
+    if (shouldRateLimit) {
       const ip = request.headers.get("CF-Connecting-IP") || "unknown";
       const { success } = await env.ADMIN_RATE_LIMITER.limit({
         key: `admin_${ip}`,
@@ -98,8 +108,11 @@ export default {
 
     const response = await requestHandler(request, {
       cloudflare: { env, ctx },
-      tenantSlug,
-    });
+      // admin.grixi.ai → tenantSlug stays "admin" for routing,
+      // but isPlatformAdminPortal signals dedicated admin portal
+      tenantSlug: isPlatformAdminPortal ? null : tenantSlug,
+      isPlatformAdminPortal,
+    } as any);
 
     // SECURITY: Append stale cookie cleanup headers to every response
     const cleanupHeaders = getStaleSessionCleanupHeaders(request, env.APP_DOMAIN);
@@ -115,3 +128,4 @@ export default {
     return response;
   },
 } satisfies ExportedHandler<Env>;
+

@@ -3,6 +3,7 @@ import type { Route } from "./+types/admin.organizations.$id";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { isPlatformTenant } from "~/lib/platform-guard";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
+import { sendInvitationEmail } from "~/lib/email.server";
 import { ArrowLeft, Users, Puzzle, Mail, Globe, Settings, Save, Shield, Trash2, Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -37,21 +38,29 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const [orgRes, membersRes, invitationsRes, domainsRes, rolesRes, permsRes] = await Promise.all([
     admin.from("organizations").select("*").eq("id", orgId).single(),
-    admin.from("memberships").select("*, profiles(id, full_name, avatar_url), roles(name, hierarchy_level)")
+    admin.from("memberships").select("*, roles(name, hierarchy_level)")
       .eq("organization_id", orgId).eq("status", "active"),
     admin.from("invitations").select("*, roles(name)").eq("organization_id", orgId).order("created_at", { ascending: false }),
     admin.from("domain_whitelists").select("*").eq("organization_id", orgId),
-    admin.from("roles").select("id, name, hierarchy_level, is_system, is_default, description, role_permissions(permission_id, permissions(id, key, description, category, min_plan))").eq("organization_id", orgId).order("hierarchy_level", { ascending: false }),
-    admin.from("permissions").select("id, key, description, category, min_plan").order("category").order("key"),
+    admin.from("roles").select("id, name, hierarchy_level, is_system, is_default, description, role_permissions(permission_id, permissions(id, key, description, module))").eq("organization_id", orgId).order("hierarchy_level", { ascending: false }),
+    admin.from("permissions").select("id, key, description, module").order("module").order("key"),
   ]);
 
   if (!orgRes.data) return redirect("/admin/organizations", { headers });
 
-  // Get auth user data for members
+  // Get auth user data for members (paginated)
   const memberUsers: Record<string, any> = {};
   if (membersRes.data) {
-    const { data: authData } = await admin.auth.admin.listUsers({ page: 1, perPage: 100 });
-    authData?.users?.forEach((u: any) => {
+    const allUsers: any[] = [];
+    let page = 1;
+    while (true) {
+      const { data: authData } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+      if (!authData?.users?.length) break;
+      allUsers.push(...authData.users);
+      if (authData.users.length < 1000) break;
+      page++;
+    }
+    allUsers.forEach((u: any) => {
       memberUsers[u.id] = { email: u.email, name: u.user_metadata?.full_name || u.email, avatar: u.user_metadata?.avatar_url };
     });
   }
@@ -92,23 +101,104 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const roleId = formData.get("role_id") as string;
     if (!email || !roleId) return Response.json({ error: "Email y rol requeridos" }, { status: 400, headers });
 
-    const { error } = await admin.from("invitations").insert({
-      organization_id: orgId,
-      email,
-      role_id: roleId,
-      invited_by: user.id,
-      status: "pending",
-    });
+    // Check if already a member
+    const { data: authUsers } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const targetUser = authUsers?.users?.find((u: any) => u.email === email);
+    if (targetUser) {
+      const { data: existing } = await admin.from("memberships").select("id").eq("organization_id", orgId).eq("user_id", targetUser.id).eq("status", "active").maybeSingle();
+      if (existing) return Response.json({ error: "Este usuario ya es miembro de la organización" }, { status: 400, headers });
+    }
+    // Check pending invitation
+    const { data: pendingInv } = await admin.from("invitations").select("id").eq("organization_id", orgId).eq("email", email).eq("status", "pending").maybeSingle();
+    if (pendingInv) return Response.json({ error: "Ya existe una invitación pendiente para este email" }, { status: 400, headers });
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: invitation, error } = await admin.from("invitations").insert({
+      organization_id: orgId, email, role_id: roleId, invited_by: user.id,
+      status: "pending", expires_at: expiresAt,
+    }).select().single();
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
 
-    await logAuditEvent(admin, { actorId: user.id, action: "invitation.create", entityType: "invitation", metadata: { email, orgId }, ipAddress: ip });
+    // Send invitation email
+    const resendKey = (env as any).RESEND_API_KEY;
+    if (resendKey) {
+      const { data: orgData } = await admin.from("organizations").select("name, slug").eq("id", orgId).maybeSingle();
+      const { data: roleData } = await admin.from("roles").select("name").eq("id", roleId).maybeSingle();
+      const inviterName = user.user_metadata?.full_name || user.email || "Un administrador";
+      const slug = orgData?.slug || "app";
+      const result = await sendInvitationEmail(resendKey, {
+        to: email,
+        inviterName,
+        orgName: orgData?.name || "GRIXI",
+        roleName: roleData?.name || "miembro",
+        invitationLink: `https://${slug}.grixi.ai/?invitation=${invitation?.id}`,
+        expiresAt,
+      });
+      if (!result.success) console.error("[ADMIN-INVITE] Email failed:", result.error);
+    } else {
+      console.warn("[ADMIN-INVITE] RESEND_API_KEY not configured");
+    }
+
+    await logAuditEvent(admin, { actorId: user.id, action: "invitation.create", entityType: "invitation", entityId: invitation?.id, metadata: { email, orgId, emailSent: !!resendKey }, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
   if (intent === "cancel_invitation") {
     const invId = formData.get("invitation_id") as string;
-    await admin.from("invitations").update({ status: "cancelled" }).eq("id", invId);
+    await admin.from("invitations").update({ status: "revoked" }).eq("id", invId);
     await logAuditEvent(admin, { actorId: user.id, action: "invitation.cancel", entityType: "invitation", entityId: invId, ipAddress: ip });
+    return Response.json({ success: true }, { headers });
+  }
+
+  if (intent === "resend_invitation") {
+    const invId = formData.get("invitation_id") as string;
+    const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    await admin.from("invitations").update({ expires_at: newExpiry, updated_at: new Date().toISOString() }).eq("id", invId);
+
+    // Re-send the email
+    const resendKey = (env as any).RESEND_API_KEY;
+    if (resendKey) {
+      const { data: inv } = await admin.from("invitations").select("email, role_id, roles(name)").eq("id", invId).maybeSingle();
+      const { data: orgData } = await admin.from("organizations").select("name, slug").eq("id", orgId).maybeSingle();
+      if (inv) {
+        const inviterName = user.user_metadata?.full_name || user.email || "Un administrador";
+        const slug = orgData?.slug || "app";
+        await sendInvitationEmail(resendKey, {
+          to: inv.email,
+          inviterName,
+          orgName: orgData?.name || "GRIXI",
+          roleName: (inv as any).roles?.name || "miembro",
+          invitationLink: `https://${slug}.grixi.ai/?invitation=${invId}`,
+          expiresAt: newExpiry,
+        });
+      }
+    }
+
+    await logAuditEvent(admin, { actorId: user.id, action: "invitation.resend", entityType: "invitation", entityId: invId, ipAddress: ip });
+    return Response.json({ success: true }, { headers });
+  }
+
+  if (intent === "change_member_role") {
+    const memberId = formData.get("membership_id") as string;
+    const newRoleId = formData.get("role_id") as string;
+    await admin.from("memberships").update({ role_id: newRoleId }).eq("id", memberId);
+    await logAuditEvent(admin, { actorId: user.id, action: "member.change_role", entityType: "membership", entityId: memberId, metadata: { newRoleId, orgId }, ipAddress: ip, organizationId: orgId });
+    return Response.json({ success: true }, { headers });
+  }
+
+  if (intent === "suspend_member") {
+    const memberId = formData.get("membership_id") as string;
+    const currentStatus = formData.get("current_status") as string;
+    const newStatus = currentStatus === "active" ? "suspended" : "active";
+    await admin.from("memberships").update({ status: newStatus, deactivated_at: newStatus === "suspended" ? new Date().toISOString() : null, deactivated_by: newStatus === "suspended" ? user.id : null }).eq("id", memberId);
+    await logAuditEvent(admin, { actorId: user.id, action: `member.${newStatus === "suspended" ? "suspend" : "reactivate"}`, entityType: "membership", entityId: memberId, metadata: { newStatus, orgId }, ipAddress: ip, organizationId: orgId });
+    return Response.json({ success: true }, { headers });
+  }
+
+  if (intent === "remove_member") {
+    const memberId = formData.get("membership_id") as string;
+    await admin.from("memberships").delete().eq("id", memberId);
+    await logAuditEvent(admin, { actorId: user.id, action: "member.remove", entityType: "membership", entityId: memberId, metadata: { orgId }, ipAddress: ip, organizationId: orgId });
     return Response.json({ success: true }, { headers });
   }
 
@@ -253,37 +343,56 @@ export default function OrgDetail() {
 }
 
 function MembersTab({ members, roles, fetcher }: { members: any[]; roles: any[]; fetcher: any }) {
+  const [search, setSearch] = useState("");
+  const filtered = members.filter((m: any) => !search || m.user.name?.toLowerCase().includes(search.toLowerCase()) || m.user.email?.toLowerCase().includes(search.toLowerCase()));
+
   return (
-    <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-      <table className="w-full">
-        <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
-          {["Usuario", "Rol", "Nivel", "Desde"].map(h => <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
-        </tr></thead>
-        <tbody>
-          {members.map((m: any) => (
-            <tr key={m.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
-              <td className="px-6 py-4">
-                <div className="flex items-center gap-3">
-                  {m.user.avatar ? <img src={m.user.avatar} className="h-8 w-8 rounded-full ring-2 ring-white/10" referrerPolicy="no-referrer" /> : <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: "var(--muted)", color: "var(--foreground)" }}>{m.user.name?.charAt(0)?.toUpperCase()}</div>}
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{m.user.name}</p>
-                    <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{m.user.email}</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{members.length} miembros activos</p>
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar miembro…" className="rounded-lg border px-3 py-1.5 text-xs outline-none w-64" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+      </div>
+      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+        <table className="w-full">
+          <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
+            {["Usuario", "Rol", "Nivel", "Desde", "Acciones"].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {filtered.map((m: any) => (
+              <tr key={m.id} className="border-b last:border-b-0 transition-colors hover:bg-white/[0.02]" style={{ borderColor: "var(--border)" }}>
+                <td className="px-5 py-3.5">
+                  <div className="flex items-center gap-3">
+                    {m.user.avatar ? <img src={m.user.avatar} className="h-8 w-8 rounded-full ring-2 ring-white/10" referrerPolicy="no-referrer" /> : <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: "var(--muted)", color: "var(--foreground)" }}>{m.user.name?.charAt(0)?.toUpperCase()}</div>}
+                    <div>
+                      <p className="text-[12px] font-medium" style={{ color: "var(--foreground)" }}>{m.user.name}</p>
+                      <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{m.user.email}</p>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td className="px-6 py-4"><span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>{m.roles?.name || "—"}</span></td>
-              <td className="px-6 py-4"><span className="font-mono text-xs tabular-nums" style={{ color: "var(--muted-foreground)" }}>{m.roles?.hierarchy_level ?? "—"}</span></td>
-              <td className="px-6 py-4"><span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{new Date(m.joined_at || m.created_at).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" })}</span></td>
-            </tr>
-          ))}
-          {members.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>Sin miembros</td></tr>}
-        </tbody>
-      </table>
+                </td>
+                <td className="px-5 py-3.5">
+                  <select value={m.role_id} onChange={e => fetcher.submit({ intent: "change_member_role", membership_id: m.id, role_id: e.target.value }, { method: "post" })} className="rounded-lg border px-2 py-1 text-[11px] font-medium outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "#6366F1" }}>
+                    {roles.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                </td>
+                <td className="px-5 py-3.5"><span className="font-mono text-[11px] tabular-nums" style={{ color: "var(--muted-foreground)" }}>{m.roles?.hierarchy_level ?? "—"}</span></td>
+                <td className="px-5 py-3.5"><span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{new Date(m.joined_at || m.created_at).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" })}</span></td>
+                <td className="px-5 py-3.5">
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => fetcher.submit({ intent: "suspend_member", membership_id: m.id, current_status: m.status || "active" }, { method: "post" })} className="rounded-lg px-2 py-1 text-[10px] font-medium transition-colors hover:bg-white/5" style={{ color: "#F59E0B" }}>Suspender</button>
+                    <button onClick={() => { if (confirm("¿Eliminar este miembro de la organización?")) fetcher.submit({ intent: "remove_member", membership_id: m.id }, { method: "post" }); }} className="rounded-lg px-2 py-1 text-[10px] font-medium transition-colors hover:bg-white/5" style={{ color: "#EF4444" }}>Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && <tr><td colSpan={5} className="px-5 py-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>{search ? "Sin resultados" : "Sin miembros"}</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-const PLAN_COLORS: Record<string, string> = { starter: "#3B82F6", professional: "#8B5CF6", enterprise: "#F59E0B" };
+
 
 function RolesTab({ roles, allPermissions, settings, fetcher }: { roles: any[]; allPermissions: any[]; settings: any; fetcher: any }) {
   const [expandedRole, setExpandedRole] = useState<string | null>(null);
@@ -296,14 +405,12 @@ function RolesTab({ roles, allPermissions, settings, fetcher }: { roles: any[]; 
   const [editedPerms, setEditedPerms] = useState<Record<string, string[]>>({});
 
   const orgPlan = settings.plan || "demo";
-  const planHierarchy: Record<string, number> = { starter: 1, professional: 2, enterprise: 3 };
-  const orgPlanLevel = planHierarchy[orgPlan] || 0;
 
-  // Group permissions by category
-  const permsByCategory = allPermissions.reduce((acc: Record<string, any[]>, p: any) => {
-    const cat = p.category || "general";
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(p);
+  // Group permissions by module
+  const permsByModule = allPermissions.reduce((acc: Record<string, any[]>, p: any) => {
+    const mod = p.module || "general";
+    if (!acc[mod]) acc[mod] = [];
+    acc[mod].push(p);
     return acc;
   }, {} as Record<string, any[]>);
 
@@ -402,22 +509,18 @@ function RolesTab({ roles, allPermissions, settings, fetcher }: { roles: any[]; 
               {/* Expanded: permission matrix */}
               {isExpanded && (
                 <div className="border-t px-5 pb-5 pt-4" style={{ borderColor: "var(--border)" }}>
-                  {Object.entries(permsByCategory).map(([category, perms]) => (
-                    <div key={category} className="mb-4">
-                      <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{category}</h4>
+                  {Object.entries(permsByModule).map(([mod, perms]) => (
+                    <div key={mod} className="mb-4">
+                      <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{mod}</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                         {(perms as any[]).map((perm: any) => {
-                          const permPlanLevel = planHierarchy[perm.min_plan || "starter"] || 0;
-                          const isAvailable = permPlanLevel <= orgPlanLevel;
                           const isChecked = currentPerms.includes(perm.id);
                           return (
-                            <label key={perm.id} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors cursor-pointer ${!isAvailable ? "opacity-30 cursor-not-allowed" : "hover:bg-white/[0.03]"}`}>
-                              <input type="checkbox" checked={isChecked} disabled={!isAvailable} onChange={() => togglePerm(role.id, perm.id, currentPerms)}
+                            <label key={perm.id} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors cursor-pointer hover:bg-white/[0.03]">
+                              <input type="checkbox" checked={isChecked} onChange={() => togglePerm(role.id, perm.id, currentPerms)}
                                 className="h-3.5 w-3.5 rounded border accent-purple-500" />
                               <span style={{ color: "var(--foreground)" }}>{perm.key}</span>
-                              {perm.min_plan && perm.min_plan !== "starter" && (
-                                <span className="rounded-full px-1.5 py-0 text-[8px] font-bold uppercase" style={{ backgroundColor: (PLAN_COLORS[perm.min_plan] || "#999") + "20", color: PLAN_COLORS[perm.min_plan] || "#999" }}>{perm.min_plan}</span>
-                              )}
+                              <span className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>{perm.description}</span>
                             </label>
                           );
                         })}
@@ -492,50 +595,89 @@ function InvitationsTab({ invitations, roles, fetcher }: { invitations: any[]; r
     setEmail("");
   };
 
+  const pending = invitations.filter((i: any) => i.status === "pending");
+  const others = invitations.filter((i: any) => i.status !== "pending");
+
   return (
-    <div>
-      <div className="mb-6 flex gap-3 items-end">
-        <div className="flex-1">
-          <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="usuario@empresa.com"
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+    <div className="space-y-4">
+      {/* Invite form */}
+      <div className="rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+        <h3 className="mb-3 text-[13px] font-semibold" style={{ color: "var(--foreground)" }}>Enviar Invitación</h3>
+        {fetcher.data?.error && <div className="mb-3 rounded-lg px-3 py-2 text-xs font-medium" style={{ backgroundColor: "#EF444415", color: "#EF4444" }}>{fetcher.data.error}</div>}
+        <div className="flex gap-3 items-end">
+          <div className="flex-1">
+            <label className="mb-1 block text-[10px] font-medium" style={{ color: "var(--muted-foreground)" }}>Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="usuario@empresa.com" className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[10px] font-medium" style={{ color: "var(--muted-foreground)" }}>Rol</label>
+            <select value={roleId} onChange={e => setRoleId(e.target.value)} className="rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+              {roles.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+          </div>
+          <button onClick={invite} disabled={!email} className="rounded-lg px-4 py-2 text-sm font-medium text-white whitespace-nowrap disabled:opacity-40" style={{ backgroundColor: "#7c3aed" }}>
+            <Mail size={14} className="inline mr-1.5" />Invitar
+          </button>
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Rol</label>
-          <select value={roleId} onChange={e => setRoleId(e.target.value)}
-            className="rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
-            {roles.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
-        </div>
-        <button onClick={invite} className="rounded-lg px-4 py-2 text-sm font-medium text-white whitespace-nowrap" style={{ backgroundColor: "#7c3aed" }}>
-          <Mail size={16} className="inline mr-1.5" />Invitar
-        </button>
       </div>
 
-      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-        <table className="w-full">
-          <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
-            {["Email", "Rol", "Estado", "Fecha", ""].map(h => <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
-          </tr></thead>
-          <tbody>
-            {invitations.map((inv: any) => (
-              <tr key={inv.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
-                <td className="px-6 py-4 text-sm" style={{ color: "var(--foreground)" }}>{inv.email}</td>
-                <td className="px-6 py-4"><span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>{inv.roles?.name || "—"}</span></td>
-                <td className="px-6 py-4"><span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{
-                  backgroundColor: inv.status === "pending" ? "#F59E0B20" : inv.status === "accepted" ? "#16A34A20" : "#EF444420",
-                  color: inv.status === "pending" ? "#F59E0B" : inv.status === "accepted" ? "#16A34A" : "#EF4444",
-                }}>{inv.status}</span></td>
-                <td className="px-6 py-4 text-xs" style={{ color: "var(--muted-foreground)" }}>{new Date(inv.created_at).toLocaleDateString("es", { day: "2-digit", month: "short" })}</td>
-                <td className="px-6 py-4">{inv.status === "pending" && (
-                  <button onClick={() => fetcher.submit({ intent: "cancel_invitation", invitation_id: inv.id }, { method: "post" })} className="text-xs hover:bg-white/5 rounded px-2 py-1" style={{ color: "#EF4444" }}>Cancelar</button>
-                )}</td>
-              </tr>
-            ))}
-            {invitations.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>Sin invitaciones</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      {/* Pending */}
+      {pending.length > 0 && (
+        <div>
+          <h4 className="mb-2 text-[11px] font-bold uppercase tracking-wider" style={{ color: "#F59E0B" }}>Pendientes ({pending.length})</h4>
+          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <table className="w-full">
+              <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
+                {["Email", "Rol", "Expira", "Acciones"].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {pending.map((inv: any) => {
+                  const isExpired = new Date(inv.expires_at) < new Date();
+                  return (
+                    <tr key={inv.id} className="border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
+                      <td className="px-5 py-3.5 text-[12px] font-medium" style={{ color: "var(--foreground)" }}>{inv.email}</td>
+                      <td className="px-5 py-3.5"><span className="rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>{inv.roles?.name || "—"}</span></td>
+                      <td className="px-5 py-3.5"><span className="text-[11px]" style={{ color: isExpired ? "#EF4444" : "var(--muted-foreground)" }}>{isExpired ? "Expirada" : new Date(inv.expires_at).toLocaleDateString("es", { day: "2-digit", month: "short" })}</span></td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex gap-1">
+                          <button onClick={() => fetcher.submit({ intent: "resend_invitation", invitation_id: inv.id }, { method: "post" })} className="rounded-lg px-2 py-1 text-[10px] font-medium hover:bg-white/5" style={{ color: "#3B82F6" }}>Reenviar</button>
+                          <button onClick={() => fetcher.submit({ intent: "cancel_invitation", invitation_id: inv.id }, { method: "post" })} className="rounded-lg px-2 py-1 text-[10px] font-medium hover:bg-white/5" style={{ color: "#EF4444" }}>Cancelar</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* History */}
+      {others.length > 0 && (
+        <div>
+          <h4 className="mb-2 text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Historial ({others.length})</h4>
+          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <table className="w-full">
+              <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
+                {["Email", "Rol", "Estado", "Fecha"].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {others.map((inv: any) => (
+                  <tr key={inv.id} className="border-b last:border-b-0 opacity-60" style={{ borderColor: "var(--border)" }}>
+                    <td className="px-5 py-3 text-[12px]" style={{ color: "var(--foreground)" }}>{inv.email}</td>
+                    <td className="px-5 py-3"><span className="rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>{inv.roles?.name || "—"}</span></td>
+                    <td className="px-5 py-3"><span className="rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ backgroundColor: inv.status === "accepted" ? "#16A34A20" : "#EF444420", color: inv.status === "accepted" ? "#16A34A" : "#EF4444" }}>{inv.status}</span></td>
+                    <td className="px-5 py-3 text-[11px]" style={{ color: "var(--muted-foreground)" }}>{new Date(inv.created_at).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {invitations.length === 0 && <p className="text-center text-sm py-8" style={{ color: "var(--muted-foreground)" }}>Sin invitaciones enviadas</p>}
     </div>
   );
 }

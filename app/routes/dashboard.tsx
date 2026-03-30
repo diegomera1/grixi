@@ -38,7 +38,12 @@ interface DashboardData {
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
   const tenantSlug = (context as any).tenantSlug as string | null;
+  const isPlatformAdminPortal = (context as any).isPlatformAdminPortal === true;
   const { supabase, headers } = createSupabaseServerClient(request, env);
+
+  // admin.grixi.ai has no tenant dashboard — redirect to admin panel
+  if (isPlatformAdminPortal) return redirect("/admin", { headers });
+
   const admin = createSupabaseAdminClient(env);
 
   const { data: { user } } = await supabase.auth.getUser();

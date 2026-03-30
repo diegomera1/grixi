@@ -35,12 +35,21 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   const { data: platformAdmins } = await admin.from("platform_admins").select("user_id");
 
-  const { data: authData } = await admin.auth.admin.listUsers({ page: 1, perPage: 100 });
+  // Fetch ALL auth users with pagination loop
+  const allAuthUsers: any[] = [];
+  let page = 1;
+  while (true) {
+    const { data: authData } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (!authData?.users?.length) break;
+    allAuthUsers.push(...authData.users);
+    if (authData.users.length < 1000) break;
+    page++;
+  }
 
   const platformAdminIds = new Set(platformAdmins?.map((pa: any) => pa.user_id) || []);
 
   const usersMap = new Map<string, any>();
-  authData?.users?.forEach((u: any) => {
+  allAuthUsers.forEach((u: any) => {
     usersMap.set(u.id, {
       id: u.id,
       email: u.email,

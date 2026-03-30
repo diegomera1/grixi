@@ -27,13 +27,18 @@ type NavModule = {
   category: string;
   aiModule: AiModule;
   adminOnly?: boolean;
+  /** Permission key required to see this module. If omitted, always visible. */
+  requiredPermission?: string;
+  /** If true, user needs ANY of these permissions */
+  requiredPermissionAny?: string[];
 };
 
 const MODULES: NavModule[] = [
-  { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "#06B6D4", glowColor: "rgba(6,182,212,0.3)", category: "PRINCIPAL", aiModule: "dashboard" },
-  { id: "finanzas", label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.3)", category: "OPERACIONES", aiModule: "finanzas" },
+  { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, color: "#06B6D4", glowColor: "rgba(6,182,212,0.3)", category: "PRINCIPAL", aiModule: "dashboard", requiredPermission: "dashboard.view" },
+  { id: "finanzas", label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6", glowColor: "rgba(139,92,246,0.3)", category: "OPERACIONES", aiModule: "finanzas", requiredPermission: "finance.view" },
   { id: "admin", label: "Administrativo", href: "/admin", icon: Shield, color: "#F43F5E", glowColor: "rgba(244,63,94,0.3)", category: "GESTIÓN", aiModule: "administracion", adminOnly: true },
-  { id: "ai", label: "GRIXI AI", href: "/ai", icon: Sparkles, color: "#A855F7", glowColor: "rgba(168,85,247,0.3)", category: "INTELIGENCIA", aiModule: "general" },
+  { id: "configuracion", label: "Configuración", href: "/configuracion", icon: Settings, color: "#F59E0B", glowColor: "rgba(245,158,11,0.3)", category: "GESTIÓN", aiModule: "general", requiredPermissionAny: ["org.configure", "members.manage", "roles.manage"] },
+  { id: "ai", label: "GRIXI AI", href: "/ai", icon: Sparkles, color: "#A855F7", glowColor: "rgba(168,85,247,0.3)", category: "INTELIGENCIA", aiModule: "general", requiredPermission: "ai.chat" },
 ];
 
 const CATEGORIES = [...new Set(MODULES.map((m) => m.category))];
@@ -173,10 +178,22 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
     window.location.href = "/";
   }, []);
 
-  // Filtered modules based on admin status
-  const visibleModules = useMemo(() =>
-    MODULES.filter((m) => !m.adminOnly || data.isPlatformAdmin),
-    [data.isPlatformAdmin]);
+  // Filtered modules based on permissions + admin status
+  const visibleModules = useMemo(() => {
+    const perms = data.permissions || [];
+    const isPA = data.isPlatformAdmin;
+    return MODULES.filter((m) => {
+      // adminOnly modules: only platform admins
+      if (m.adminOnly && !isPA) return false;
+      // Platform admins see everything
+      if (isPA) return true;
+      // Check required single permission
+      if (m.requiredPermission && !perms.includes(m.requiredPermission)) return false;
+      // Check required any permission
+      if (m.requiredPermissionAny && !m.requiredPermissionAny.some((k) => perms.includes(k))) return false;
+      return true;
+    });
+  }, [data.isPlatformAdmin, data.permissions]);
 
   // ─── Supabase Helpers ───────────────────────────────
   async function loadConversations() {
