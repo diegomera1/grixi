@@ -15,6 +15,9 @@ export default [
   route("api/ai/upload", "routes/api.ai.upload.ts"),
   route("api/finance-analyze", "routes/api.finance-analyze.ts"),
   route("api/finance-notes", "routes/api.finance-notes.ts"),
+  route("api/notifications", "routes/api.notifications.ts"),
+  route("api/push/subscribe", "routes/api.push.subscribe.ts"),
+  route("api/push/send", "routes/api.push.send.ts"),
 
   // ── Admin Portal (admin.grixi.ai) — layout independiente ──
   layout("routes/admin-layout.tsx", [
@@ -33,6 +36,7 @@ export default [
     route("dashboard", "routes/dashboard.tsx"),
     route("finanzas", "routes/finanzas.tsx"),
     route("ai", "routes/ai.tsx"),
+    route("notificaciones", "routes/notificaciones.tsx"),
 
     // Tenant Configuration (owner/admin only)
     route("configuracion", "routes/configuracion.tsx", [

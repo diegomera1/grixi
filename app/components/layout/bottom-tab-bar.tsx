@@ -1,11 +1,12 @@
 import { useLocation, Link } from "react-router";
-import { LayoutDashboard, DollarSign, Sparkles, Settings, User } from "lucide-react";
+import { LayoutDashboard, DollarSign, Bell, Settings } from "lucide-react";
 
 interface TabItem {
   path: string;
   label: string;
   icon: typeof LayoutDashboard;
   match: (pathname: string) => boolean;
+  hasBadge?: boolean;
 }
 
 const TABS: TabItem[] = [
@@ -22,10 +23,11 @@ const TABS: TabItem[] = [
     match: (p) => p.startsWith("/finanzas"),
   },
   {
-    path: "/ai",
-    label: "GRIXI AI",
-    icon: Sparkles,
-    match: (p) => p === "/ai",
+    path: "/notificaciones",
+    label: "Alertas",
+    icon: Bell,
+    match: (p) => p === "/notificaciones",
+    hasBadge: true,
   },
   {
     path: "/configuracion",
@@ -35,7 +37,11 @@ const TABS: TabItem[] = [
   },
 ];
 
-export function BottomTabBar() {
+interface BottomTabBarProps {
+  unreadCount?: number;
+}
+
+export function BottomTabBar({ unreadCount = 0 }: BottomTabBarProps) {
   const location = useLocation();
 
   return (
@@ -53,6 +59,7 @@ export function BottomTabBar() {
         {TABS.map((tab) => {
           const isActive = tab.match(location.pathname);
           const Icon = tab.icon;
+          const showBadge = tab.hasBadge && unreadCount > 0;
 
           return (
             <Link
@@ -64,7 +71,6 @@ export function BottomTabBar() {
                 color: isActive ? "var(--brand)" : "var(--text-muted)",
               }}
               onClick={() => {
-                // Haptic feedback
                 try { navigator.vibrate?.(10); } catch { /* noop */ }
               }}
             >
@@ -77,14 +83,23 @@ export function BottomTabBar() {
                 }}
               />
 
-              <Icon
-                size={20}
-                strokeWidth={isActive ? 2.5 : 1.8}
-                className="transition-all duration-200"
-                style={{
-                  transform: isActive ? "scale(1.1)" : "scale(1)",
-                }}
-              />
+              {/* Icon with optional badge */}
+              <div className="relative">
+                <Icon
+                  size={20}
+                  strokeWidth={isActive ? 2.5 : 1.8}
+                  className="transition-all duration-200"
+                  style={{
+                    transform: isActive ? "scale(1.1)" : "scale(1)",
+                  }}
+                />
+                {showBadge && (
+                  <span className="absolute -right-2 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+
               <span
                 className="text-[10px] font-medium leading-none transition-all duration-200"
                 style={{

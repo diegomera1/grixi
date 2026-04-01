@@ -6,6 +6,8 @@ import { BottomTabBar } from "~/components/layout/bottom-tab-bar";
 import { PWASplash } from "~/components/pwa/pwa-splash";
 import { InstallPrompt } from "~/components/pwa/install-prompt";
 import { useLastRoute, getLastRoute } from "~/lib/hooks/use-last-route";
+import { useNotifications } from "~/lib/hooks/use-notifications";
+import { NotificationBell } from "~/components/notifications/notification-bell";
 
 // Client-only wrapper to avoid SSR issues with framer-motion + browser APIs  
 function ClientOnlyOrb({ data }: { data: any }) {
@@ -50,9 +52,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     .select("user_id")
     .eq("user_id", user.id)
     .maybeSingle();
-
-  // NOTE: Admin portal (admin.grixi.ai) now uses its own dedicated layout
-  // (admin-layout.tsx) and is no longer handled here.
 
   // Resolve user's organizations via memberships
   const { data: memberships } = await admin
@@ -121,11 +120,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   let permissions: string[] = [];
   if (currentOrg) {
     if (platformAdmin) {
-      // Platform admins get ALL permissions
       const { data: allPerms } = await admin.from("permissions").select("key");
       permissions = (allPerms || []).map((p: any) => p.key);
     } else {
-      // Regular users: permissions from their role in this org
       const { data: userPerms } = await admin
         .from("memberships")
         .select("roles(role_permissions(permissions(key)))")
@@ -139,11 +136,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     }
   }
 
-  // Set org cookie for persistence (scoped to current hostname only)
+  // Set org cookie for persistence
   const responseCookies: string[] = [];
   if (currentOrg) {
-    // SECURITY: No domain= → cookie isolated to exact hostname (tenant isolation)
-    // SameSite=Lax → works with OAuth redirects but blocks cross-site subrequests
     responseCookies.push(`grixi_org=${currentOrg.id}; Path=/; SameSite=Lax; Secure; Max-Age=31536000`);
   }
 
@@ -175,6 +170,9 @@ export default function AuthenticatedLayout() {
   // Track last visited route for PWA
   useLastRoute();
 
+  // Notifications — per-tenant, realtime
+  const notifs = useNotifications(data.currentOrg?.id);
+
   // PWA Smart Start: redirect to last page if opened from home screen
   useEffect(() => {
     const isStandalone =
@@ -194,15 +192,27 @@ export default function AuthenticatedLayout() {
       {/* PWA Splash (standalone only) */}
       <PWASplash />
 
+      {/* Top Header Bar — notification bell + user info */}
+      <header className="relative z-20 flex h-12 items-center justify-end gap-2 px-4 md:px-6 lg:px-8">
+        <NotificationBell
+          notifications={notifs.notifications}
+          unreadCount={notifs.unreadCount}
+          onMarkRead={notifs.markAsRead}
+          onMarkAllRead={notifs.markAllRead}
+          onDelete={notifs.deleteNotification}
+          loading={notifs.loading}
+        />
+      </header>
+
       {/* Main content — full screen with bottom nav spacing on mobile */}
-      <main className="platform-dot-grid relative h-full overflow-y-auto overflow-x-hidden px-4 pb-6 has-bottom-nav md:px-6 md:pb-6 lg:px-8">
-        <div className="relative z-10 pt-6">
+      <main className="platform-dot-grid relative h-[calc(100vh-3rem)] overflow-y-auto overflow-x-hidden px-4 pb-6 has-bottom-nav md:px-6 md:pb-6 lg:px-8">
+        <div className="relative z-10">
           <Outlet context={data} />
         </div>
       </main>
 
       {/* Bottom Tab Bar — mobile only */}
-      <BottomTabBar />
+      <BottomTabBar unreadCount={notifs.unreadCount} />
 
       {/* GRIXI Orb — desktop floating navigation + AI (client-only) */}
       <div className="hidden md:block">

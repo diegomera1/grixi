@@ -32,7 +32,7 @@ const ALL_MODULES: ModuleDef[] = [
   { key: "flota", icon: Truck, color: "#06B6D4", route: null },
   { key: "ai", icon: Sparkles, color: "#8B5CF6", route: null },
   { key: "reportes", icon: BarChart3, color: "#3B82F6", route: null },
-  { key: "notificaciones", icon: Bell, color: "#EF4444", route: null },
+  { key: "notificaciones", icon: Bell, color: "#EF4444", route: "/notificaciones" },
 ];
 
 const NAV_KEYS: Record<string, string> = {
