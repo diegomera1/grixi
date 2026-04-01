@@ -53,9 +53,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang={locale} className={theme === "dark" ? "dark" : ""}>
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
         <meta name="description" content="GRIXI — Plataforma empresarial inteligente" />
-        <meta name="theme-color" content="#7c5cfc" />
+        <meta name="theme-color" content="#0a0a0f" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <title>GRIXI</title>
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -68,6 +71,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').catch(function() {});
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
@@ -78,38 +92,120 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
+  let code = "500";
+  let title = "Algo salió mal";
+  let details = "Ocurrió un error inesperado. Estamos trabajando para resolverlo.";
   let stack: string | undefined;
+  let isOffline = false;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : `Error ${error.status}`;
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
+    code = String(error.status);
+    if (error.status === 404) {
+      title = "Página no encontrada";
+      details = "La página que buscas no existe o fue movida.";
+    } else if (error.status === 403) {
+      title = "Sin acceso";
+      details = "No tienes permisos para ver esta página.";
+    } else {
+      title = `Error ${error.status}`;
+      details = error.statusText || details;
+    }
   } else if (error && error instanceof Error) {
-    // Always log full error to Workers console for observability
     console.error("[GRIXI Error]", error.message, error.stack);
-    details = error.message;
+    if (error.message.includes("fetch") || error.message.includes("network")) {
+      isOffline = true;
+      code = "⚡";
+      title = "Sin conexión";
+      details = "Revisa tu conexión a internet e intenta de nuevo.";
+    } else {
+      details = error.message;
+    }
     if (import.meta.env.DEV) stack = error.stack;
   } else {
     console.error("[GRIXI Error]", String(error));
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center" style={{ background: '#0a0a1a', color: '#e2e8f0' }}>
-      <div className="text-center space-y-4 max-w-2xl px-6">
-        <h1 className="text-6xl font-bold" style={{ color: '#7C3AED' }}>{message}</h1>
-        <p className="text-lg opacity-70">{details}</p>
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden"
+      style={{ background: '#09090B', color: '#FAFAFA' }}
+    >
+      {/* Background pattern */}
+      <div
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #27272A 0.5px, transparent 0.5px)',
+          backgroundSize: '24px 24px',
+          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 40%, black 20%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 40%, black 20%, transparent 80%)',
+        }}
+      />
+
+      {/* Glow */}
+      <div
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full blur-[100px]"
+        style={{ backgroundColor: 'rgba(124, 58, 237, 0.15)' }}
+      />
+
+      <div className="relative z-10 flex flex-col items-center gap-6 px-6 text-center">
+        {/* Logo */}
+        <div className="relative">
+          <div className="absolute inset-0 scale-150 rounded-2xl blur-2xl" style={{ backgroundColor: 'rgba(124, 58, 237, 0.2)' }} />
+          <img src="/icon-192.png" alt="GRIXI" width={56} height={56} className="relative rounded-2xl" />
+        </div>
+
+        {/* Error code */}
+        <p className="text-7xl font-bold tracking-tight" style={{ color: '#7C3AED' }}>
+          {code}
+        </p>
+
+        {/* Title + details */}
+        <div className="space-y-2">
+          <h1 className="text-xl font-semibold">{title}</h1>
+          <p className="max-w-sm text-sm leading-relaxed" style={{ color: '#A1A1AA' }}>
+            {details}
+          </p>
+        </div>
+
+        {/* Stack trace (dev only) */}
         {stack && (
-          <pre className="mt-4 overflow-x-auto rounded-lg p-4 text-left text-xs" style={{ background: '#1a1a2e', color: '#94a3b8' }}>
-            <code>{stack}</code>
-          </pre>
+          <details className="w-full max-w-lg text-left">
+            <summary className="cursor-pointer text-xs font-medium" style={{ color: '#71717A' }}>
+              Ver detalles técnicos
+            </summary>
+            <pre
+              className="mt-2 max-h-48 overflow-auto rounded-lg p-3 text-[10px] leading-relaxed"
+              style={{ background: '#111113', color: '#71717A', border: '1px solid #27272A' }}
+            >
+              <code>{stack}</code>
+            </pre>
+          </details>
         )}
-        <a href="/" className="inline-block mt-6 px-6 py-3 rounded-lg text-sm font-medium" style={{ background: '#7C3AED', color: '#fff' }}>
-          Volver al inicio
-        </a>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          <a
+            href="/dashboard"
+            className="rounded-xl px-5 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 active:scale-95"
+            style={{ backgroundColor: '#7C3AED', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.3)' }}
+          >
+            Volver al Dashboard
+          </a>
+          {isOffline && (
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-xl px-5 py-2.5 text-sm font-medium transition-all hover:opacity-80"
+              style={{ border: '1px solid #27272A', color: '#A1A1AA' }}
+            >
+              Reintentar
+            </button>
+          )}
+        </div>
+
+        {/* Brand */}
+        <p className="mt-8 text-[10px]" style={{ color: '#3F3F46' }}>
+          GRIXI — La interconexión inteligente
+        </p>
       </div>
     </main>
   );

@@ -14,40 +14,29 @@ async function buildSystemPrompt(
   supabase: ReturnType<typeof createSupabaseServerClient>["supabase"],
   modules: string[]
 ): Promise<string> {
+  // ── Only query tables that EXIST in the database ──
   const [
     { count: userCount },
-    { count: warehouseCount },
-    { count: productCount },
-    { data: warehouses },
     { count: transactionCount },
-    { count: vendorCount },
-    { count: poCount },
-    { count: prCount },
+    { count: membershipCount },
+    { count: roleCount },
+    { count: permissionCount },
+    { count: invitationCount },
+    { count: auditCount },
+    { count: orgCount },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("warehouses").select("*", { count: "exact", head: true }),
-    supabase.from("products").select("*", { count: "exact", head: true }),
-    supabase.from("warehouses").select("name, type, location"),
     supabase.from("finance_transactions").select("*", { count: "exact", head: true }),
-    supabase.from("vendors").select("*", { count: "exact", head: true }),
-    supabase.from("purchase_orders").select("*", { count: "exact", head: true }),
-    supabase.from("purchase_requisitions").select("*", { count: "exact", head: true }),
+    supabase.from("memberships").select("*", { count: "exact", head: true }),
+    supabase.from("roles").select("*", { count: "exact", head: true }),
+    supabase.from("permissions").select("*", { count: "exact", head: true }),
+    supabase.from("invitations").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("audit_logs").select("*", { count: "exact", head: true }),
+    supabase.from("organizations").select("*", { count: "exact", head: true }),
   ]);
 
   let moduleContext = "";
   const isGeneral = modules.includes("general");
-
-  if (modules.includes("almacenes") || isGeneral) {
-    const { data: products } = await supabase.from("products").select("name, category, sku, min_stock").limit(10);
-    const { data: lowStock } = await supabase.from("products").select("name, min_stock").gt("min_stock", 0).limit(5);
-    moduleContext += `
-## Datos de Almacenes
-- Almacenes: ${warehouses?.map((w) => `${w.name} (${w.type}, ${w.location})`).join(", ") || "N/A"}
-- Productos catalogados: ${productCount || 0}
-- Productos ejemplo: ${products?.map((p) => `${p.name} [${p.sku}]`).join(", ") || "N/A"}
-- Productos con stock mínimo configurado: ${lowStock?.length || 0}
-`;
-  }
 
   if (modules.includes("finanzas") || isGeneral) {
     const { data: recentTx } = await supabase
@@ -59,63 +48,65 @@ async function buildSystemPrompt(
     moduleContext += `
 ## Datos de Finanzas
 - Total transacciones: ${transactionCount || 0}
-- Centros de costo: ${costCenters?.map((c) => `${c.name} (${c.code})`).join(", ") || "N/A"}
-- Últimas transacciones: ${recentTx?.map((t) => `${t.transaction_type} ${t.amount_usd} USD - ${t.counterparty}`).join("; ") || "N/A"}
+- Centros de costo: ${costCenters?.map((c) => `${c.name} (${c.code})`).join(", ") || "Ninguno configurado"}
+- Últimas transacciones: ${recentTx?.length ? recentTx.map((t) => `${t.transaction_type} ${t.amount_usd} USD - ${t.counterparty}`).join("; ") : "Sin transacciones registradas aún"}
 `;
   }
 
   if (modules.includes("usuarios") || isGeneral) {
-    const { data: roles } = await supabase.from("roles").select("name, description");
+    const { data: roles } = await supabase.from("roles").select("name, description, hierarchy_level").order("hierarchy_level");
+    const { data: recentAudit } = await supabase
+      .from("audit_logs")
+      .select("action, entity_type, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5);
     moduleContext += `
-## Datos de Usuarios
+## Datos de Usuarios y RBAC
 - Total usuarios: ${userCount || 0}
-- Roles del sistema: ${roles?.map((r) => r.name).join(", ") || "N/A"}
+- Memberships activas: ${membershipCount || 0}
+- Roles del sistema: ${roles?.map((r) => `${r.name} (nivel ${r.hierarchy_level})`).join(", ") || "N/A"}
+- Permisos configurados: ${permissionCount || 0}
+- Invitaciones pendientes: ${invitationCount || 0}
+- Eventos de auditoría: ${auditCount || 0}
+- Actividad reciente: ${recentAudit?.map((a) => `${a.action} → ${a.entity_type}`).join("; ") || "N/A"}
+`;
+  }
+
+  if (modules.includes("almacenes") || isGeneral) {
+    moduleContext += `
+## Almacenes
+- Este módulo está en desarrollo. Las tablas de almacenes, productos e inventario aún no han sido creadas.
+- Puedes ayudar al usuario a planificar la estructura de su almacén o responder preguntas generales sobre gestión de inventario.
 `;
   }
 
   if (modules.includes("compras") || isGeneral) {
-    const { data: topVendors } = await supabase
-      .from("vendors")
-      .select("name, code, category, compliance_score, quality_score")
-      .eq("is_active", true)
-      .order("compliance_score", { ascending: false })
-      .limit(5);
-    const { data: recentPOs } = await supabase
-      .from("purchase_orders")
-      .select("po_number, status, total")
-      .order("created_at", { ascending: false })
-      .limit(5);
-    const { count: openPOCount } = await supabase
-      .from("purchase_orders")
-      .select("*", { count: "exact", head: true })
-      .in("status", ["draft", "pending_approval", "approved", "sent"]);
     moduleContext += `
-## Datos de Compras & Aprovisionamiento
-- Total proveedores activos: ${vendorCount || 0}
-- Total órdenes de compra: ${poCount || 0}
-- OC abiertas: ${openPOCount || 0}
-- Solicitudes de pedido: ${prCount || 0}
-- Top proveedores: ${topVendors?.map((v) => `${v.name} (${v.category}, cumplimiento: ${v.compliance_score}%)`).join("; ") || "N/A"}
-- Últimas OC: ${recentPOs?.map((p) => `${p.po_number} [${p.status}] $${p.total}`).join("; ") || "N/A"}
+## Compras & Aprovisionamiento
+- Este módulo está en desarrollo. Las tablas de proveedores, órdenes de compra y solicitudes aún no han sido creadas.
+- Puedes ayudar al usuario a planificar procesos de compras o responder preguntas generales sobre procurement.
 `;
   }
 
   return `Eres GRIXI AI, el asistente inteligente de la plataforma GRIXI — una plataforma enterprise SaaS multi-tenant.
 
 Tu rol:
-- Ayudar a los usuarios con TODOS los modulos de la empresa: almacenes, finanzas, compras, usuarios, administracion, dashboard
+- Ayudar a los usuarios con los módulos de la empresa: finanzas, usuarios/RBAC, administración, dashboard
+- Informar que almacenes y compras están en desarrollo cuando pregunten
 - Responder en español de manera profesional pero amigable
 - Proporcionar insights sobre datos del sistema con la información real proporcionada
 - Sugerir optimizaciones y mejoras basadas en los datos
 - Asistir con consultas sobre cualquier aspecto de la empresa
 
 Datos del sistema en tiempo real:
-- ${userCount || 0} usuarios en el sistema
-- ${warehouseCount || 0} almacenes activos
-- ${productCount || 0} productos catalogados
-- ${transactionCount || 0} transacciones financieras registradas
-- ${vendorCount || 0} proveedores
-- ${poCount || 0} órdenes de compra
+- ${userCount || 0} usuarios registrados
+- ${orgCount || 0} organizaciones (tenants)
+- ${membershipCount || 0} memberships activas
+- ${roleCount || 0} roles configurados
+- ${permissionCount || 0} permisos granulares
+- ${transactionCount || 0} transacciones financieras
+- ${invitationCount || 0} invitaciones pendientes
+- ${auditCount || 0} eventos de auditoría
 ${moduleContext}
 
 Módulo(s) activo(s): ${isGeneral ? "Vista general (todos los módulos)" : modules.join(", ")}
@@ -143,6 +134,7 @@ Reglas:
 - Si el usuario pregunta sobre datos específicos que tienes, responde con precisión
 - Si no tienes información suficiente, sugiere dónde encontrarla en la plataforma
 - No inventes datos que no se te hayan proporcionado (excepto para gráficos de ejemplo)
+- Si preguntan por módulos en desarrollo (almacenes, compras, flota, RRHH), explica que están planificados y ofrece ayuda con planificación
 - Al final de cada respuesta, genera EXACTAMENTE 3 sugerencias de seguimiento relevantes en un bloque JSON especial con este formato:
 <!--SUGGESTIONS-->
 ["sugerencia 1", "sugerencia 2", "sugerencia 3"]

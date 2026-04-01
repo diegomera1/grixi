@@ -1,6 +1,6 @@
 # Estado Actual — GRIXI-APP
 
-**Última actualización:** 2026-03-28
+**Última actualización:** 2026-04-01
 
 ---
 
@@ -9,38 +9,73 @@
 | Componente | Estado | Notas |
 |------------|--------|-------|
 | Supabase (prod) | ✅ Activo | `zhursgmxnztyepxobvnz` — Auth + PostgreSQL + RLS + Realtime |
-| Supabase (branch) | ✅ Activo | `wgdgmnmzixrwiphwepyn` — feat/finanzas |
 | Cloudflare Workers | ✅ Activo | `grixi-app` en `grixi.ai` + `*.grixi.ai` |
 | Rate Limiting | ✅ Configurado | `ADMIN_RATE_LIMITER` — 30 req/min rutas `/admin` |
-| CI/CD (GitHub Actions) | ⬜ Pendiente | Deploy manual via `pnpm run deploy` |
+| CI/CD (GitHub Actions) | ⬜ Pendiente | Deploy manual via `npx pnpm run deploy` |
 | Dominio grixi.ai | ✅ Activo | Custom domain + wildcard `*.grixi.ai` |
 | Google Workspace CLI | ✅ Configurado | `dmera@grixi.ai` via `gws` |
 | Observability | ✅ Habilitado | `wrangler.jsonc` → `observability.enabled: true` |
+| Resend (Email) | ✅ Configurado | `RESEND_API_KEY` en Cloudflare secrets |
+| Gemini AI | ✅ Configurado | `GEMINI_API_KEY` en Cloudflare secrets |
+| PWA / Service Worker | ✅ Completo | Manifest + SW + Offline + A2HS + Splash |
+| Push Notifications | ✅ Configurado | VAPID keys en CF secrets + Supabase tables |
+| Supabase Realtime | ✅ Habilitado | 7 tablas en publication |
 
 ## Base de Datos — Producción
 
 | Métrica | Valor |
 |---------|-------|
-| Tablas | 10 (todas con RLS) |
-| RLS Policies | 29 |
-| Funciones | 10 |
-| Triggers | 5 |
-| Índices | 39 |
-| Migraciones registradas | 5 |
+| Tablas | 19 (todas con RLS ✅) |
+| Migraciones | 17 |
+| RLS Policies | 31+ |
+| Funciones PostgreSQL | 10 |
+| Triggers | 5+ |
+| Tablas con Realtime | 7 |
 
 ### Datos en Producción
 
 | Entidad | Cantidad |
 |---------|----------|
 | auth.users | 2 |
-| organizations | 4 |
+| organizations | 5 |
 | platform_admins | 2 |
 | memberships | 2 |
 | profiles | 2 |
-| roles | 16 (4 por org × 4 orgs) |
-| permissions | 18 |
-| invitations | 1 |
-| audit_logs | 2 |
+| roles | 20 (4 system roles × 5 orgs) |
+| permissions | 43 (catálogo granular) |
+| role_permissions | 425 (asignaciones) |
+| invitations | 6 |
+| audit_logs | 120 |
+| platform_settings | 25 |
+| platform_notifications | 0 |
+| ai_conversations | 2 |
+| ai_messages | 2 |
+| finance_transactions | 0 (schema completo, sin seed) |
+| finance_cost_centers | 0 (schema completo, sin seed) |
+| user_preferences | 0 |
+| domain_whitelists | 1 |
+
+### 17 Tablas
+
+| Tabla | RLS | Descripción |
+|-------|-----|-------------|
+| `organizations` | ✅ | Tenants del sistema (status: active/suspended/archived) |
+| `memberships` | ✅ | Usuario ↔ Org con rol (status: active/invited/suspended) |
+| `profiles` | ✅ | Perfil personal (PK = auth.users.id) |
+| `roles` | ✅ | Roles RBAC por tenant (is_system, hierarchy_level, is_default) |
+| `permissions` | ✅ | Catálogo global de permisos (key: "module.action", min_plan) |
+| `role_permissions` | ✅ | Asignaciones rol → permiso |
+| `invitations` | ✅ | Invitaciones con token, expires_at, status |
+| `audit_logs` | ✅ | Eventos de auditoría con IP tracking |
+| `platform_admins` | ✅ | Superadmins (God Mode) |
+| `platform_notifications` | ✅ | Broadcast notifications |
+| `platform_settings` | ✅ | Key-value config global |
+| `ai_conversations` | ✅ | Conversaciones AI (org_id, user_id, module) |
+| `ai_messages` | ✅ | Mensajes AI (role, content, attachments, model_used) |
+| `finance_transactions` | ✅ | Transacciones financieras (30 columnas SAP-style) |
+| `finance_cost_centers` | ✅ | Centros de costo jerárquicos |
+| `user_preferences` | ✅ | Preferencias key-value por usuario |
+| `domain_whitelists` | ✅ | Dominios auto-join por organización |
 
 ### Funciones PostgreSQL
 
@@ -57,85 +92,119 @@
 | `update_updated_at` | TRIGGER | Auto-actualiza timestamp |
 | `verify_whitelist_access` | SECURITY DEFINER | Verifica acceso por dominio/invitación |
 
-### Migraciones
+### 16 Migraciones
 
-| # | Versión | Nombre | Estado |
-|---|---------|--------|--------|
-| 1 | `20260325054720` | `core_multitenant_tables` | ✅ Aplicada |
-| 2 | `20260325054809` | `core_multitenant_functions_rls` | ✅ Aplicada |
-| 3 | `20260326052520` | `add_domain_whitelists_and_i18n` | ✅ Aplicada |
-| 4 | `20260326052534` | `add_verify_whitelist_function` | ✅ Aplicada |
-| 5 | `20260327201400` | `enterprise_rls_policies` | ✅ Aplicada |
+| # | Versión | Nombre |
+|---|---------|--------|
+| 1 | `20260325054720` | `core_multitenant_tables` |
+| 2 | `20260325054809` | `core_multitenant_functions_rls` |
+| 3 | `20260326052520` | `add_domain_whitelists_and_i18n` |
+| 4 | `20260326052534` | `add_verify_whitelist_function` |
+| 5 | `20260327201400` | `enterprise_rls_policies` |
+| 6 | `20260328215853` | `add_org_id_to_audit_logs` |
+| 7 | `20260329015541` | `create_ai_tables` |
+| 8 | `20260329022558` | `rbac_schema_enhancements` |
+| 9 | `20260329022621` | `rbac_expand_permissions_catalog` |
+| 10 | `20260329022634` | `rbac_assign_system_role_permissions` |
+| 11 | `20260329022654` | `rbac_new_sql_functions` |
+| 12 | `20260329022707` | `rbac_rls_org_status_enforcement` |
+| 13 | `20260329041450` | `create_finance_tables` |
+| 14 | `20260329215243` | `audit_triggers_system` |
+| 15 | `20260329215625` | `harden_platform_admins` |
+| 16 | `20260329221157` | `admin_portal_tables_and_realtime` |
 
 ## Módulos
 
 | Módulo | Estado | Progreso | Notas |
 |--------|--------|----------|-------|
-| Auth | ✅ Implementado | 100% | Google OAuth + PKCE + session cookie `.grixi.ai` |
-| Admin Panel | ✅ Implementado | 100% | 5 páginas, Recharts, audit timeline |
+| Auth | ✅ Implementado | 100% | Google OAuth + PKCE + session cookie |
+| Admin Panel | ✅ Implementado | 100% | 7 páginas, Recharts, audit timeline, org CRUD |
 | Multi-Tenant | ✅ Implementado | 100% | Subdomain routing + branding + membership guard |
-| Dashboard | 🚧 Parcial | 15% | Módule cards con progress bars (placeholder) |
-| Finanzas | 🚧 Scaffold | 5% | Ruta + empty state (branch `feat/finanzas` lista) |
-| Almacenes | ⬜ Pendiente | 0% | — |
-| Compras | ⬜ Pendiente | 0% | — |
+| RBAC | ✅ Implementado | 100% | 43 permisos, 20 roles, hierarchy_level, min_plan |
+| Email Transaccional | ✅ Implementado | 100% | Resend API, template premium, invitaciones |
+| Configuración Tenant | ✅ Implementado | 100% | 5 secciones: Org, Equipo, Roles, Invitaciones, Auditoría |
+| Dashboard | ✅ Implementado | 85% | SSR loader, KPIs reales, Recharts, audit timeline |
+| Finanzas | ✅ Implementado | 90% | 5 tabs, Recharts, multi-moneda, AI analysis, realtime |
+| GRIXI AI | ✅ Implementado | 80% | SSE streaming Gemini, Canvas, 3-panel, conversations CRUD |
+| i18n | ✅ Implementado | 100% | es/en/pt, org-level default language |
+| Almacenes | ⬜ Pendiente | 0% | Tablas no creadas |
+| Compras | ⬜ Pendiente | 0% | Tablas no creadas |
 | Flota | ⬜ Pendiente | 0% | — |
 | RRHH | ⬜ Pendiente | 0% | — |
 | Mantenimiento | ⬜ Pendiente | 0% | — |
-| Calidad | ⬜ Pendiente | 0% | — |
-| Reportes | ⬜ Pendiente | 0% | — |
-| GRIXI AI | ⬜ Pendiente | 0% | — |
 
-## Frontend — Archivos (28 archivos, ~3,110 LOC)
+## Frontend — ~80 archivos, ~14,927 LOC
 
-### Rutas (10)
+### Rutas (19)
 
 | Ruta | Archivo | Tipo |
 |------|---------|------|
-| `/` (index) | `routes/login.tsx` | Pública — Login con Google OAuth |
+| `/` (login) | `routes/login.tsx` | Pública — Login con Google OAuth |
 | `/auth/callback` | `routes/auth.callback.tsx` | Pública — PKCE code exchange |
 | `/auth/signout` | `routes/auth.signout.tsx` | Pública — Logout |
 | `/select-org` | `routes/select-org.tsx` | Pública — Selector de organización |
 | `/unauthorized` | `routes/unauthorized.tsx` | Pública — Acceso denegado |
-| `/dashboard` | `routes/dashboard.tsx` | Protegida — Welcome + module cards |
-| `/finanzas` | `routes/finanzas.tsx` | Protegida — Empty state scaffold |
-| `/admin` | `routes/admin/index.tsx` | Protegida + Platform Admin — Recharts dashboard |
-| `/admin/organizations` | `routes/admin/organizations.tsx` | Protegida + Platform Admin — CRUD orgs |
-| `/admin/organizations/:id` | `routes/admin/organizations.$id.tsx` | Protegida + Platform Admin — 5 tabs detalle |
-| `/admin/users` | `routes/admin/users.tsx` | Protegida + Platform Admin — Gestión usuarios |
-| `/admin/audit` | `routes/admin/audit.tsx` | Protegida + Platform Admin — Log auditoría |
+| `/suspended` | `routes/suspended.tsx` | Pública — Org suspendida |
+| `/dashboard` | `routes/dashboard.tsx` | Protegida — SSR KPIs + Recharts + timeline |
+| `/finanzas` | `routes/finanzas.tsx` | Protegida — 5 tabs financieros SAP-style |
+| `/ai` | `routes/ai.tsx` | Protegida — Chat AI con Gemini SSE |
+| `/configuracion` | `routes/configuracion.tsx` | Protegida — Layout configuración |
+| `/configuracion/organizacion` | `routes/configuracion/organizacion.tsx` | Protegida — Settings de org |
+| `/configuracion/equipo` | `routes/configuracion/equipo.tsx` | Protegida — Gestión de equipo |
+| `/configuracion/roles` | `routes/configuracion/roles.tsx` | Protegida — RBAC roles/permisos |
+| `/configuracion/invitaciones` | `routes/configuracion/invitaciones.tsx` | Protegida — Invitaciones + Resend |
+| `/configuracion/auditoria` | `routes/configuracion/auditoria.tsx` | Protegida — Audit log |
+| `/admin` | `routes/admin/index.tsx` | Platform Admin — Recharts dashboard |
+| `/admin/organizations` | `routes/admin/organizations.tsx` | Platform Admin — CRUD orgs |
+| `/admin/organizations/:id` | `routes/admin/organizations.$id.tsx` | Platform Admin — 5 tabs detalle |
+| `/admin/users` | `routes/admin/users.tsx` | Platform Admin — Gestión usuarios |
+| `/admin/audit` | `routes/admin/audit.tsx` | Platform Admin — Log auditoría |
+| `/admin/settings` | `routes/admin/settings.tsx` | Platform Admin — Config plataforma |
+| `/admin/notifications` | `routes/admin/notifications.tsx` | Platform Admin — Notificaciones |
+| `/admin/plans` | `routes/admin/plans.tsx` | Platform Admin — Planes |
 
-### Componentes
+### APIs (5)
 
-| Componente | Descripción |
-|-----------|-------------|
-| `components/layout/sidebar.tsx` | Sidebar colapsable con framer-motion, nav groups, orb glow |
-| `components/layout/topbar.tsx` | Topbar con org switcher, avatar, user menu |
-| `components/login/animated-nodes.tsx` | Background animado de partículas para login |
+| Endpoint | Método | Función |
+|----------|--------|---------|
+| `/api/ai/chat` | POST | SSE streaming Gemini con system prompt enrichment |
+| `/api/ai/conversations` | GET/POST/PATCH/DELETE | CRUD conversaciones AI |
+| `/api/ai/upload` | POST | Upload archivos para AI context |
+| `/api/finance-analyze` | POST | Análisis AI de transacciones individuales |
+| `/api/finance-notes` | POST | Guardar notas en transacciones |
+
+### Componentes por Feature
+
+| Feature | Componentes | LOC aprox |
+|---------|-------------|-----------|
+| Dashboard | hero, activity-chart, activity-timeline, org-info-card, quick-access | ~500 |
+| Finanzas | finance-content, general-ledger-tab, accounts-receivable-tab, accounts-payable-tab, budgets-tab, use-finance-realtime, currency utils, types | ~2,500 |
+| AI | ai-chat-content, chat-input, chat-message, conversation-sidebar, ai-canvas-panel, ai-chart-block, welcome-screen, grixi-ai-logo, widget-message-content, types | ~2,000 |
+| Admin | admin-sidebar, audit-realtime | ~400 |
+| Shared | kpi-card, empty-state, permission-gate, permission-guard | ~300 |
+| Layout | grixi-orb | ~100 |
+| Login | animated-nodes | ~200 |
 
 ### Librerías Internas
 
 | Archivo | Función |
 |---------|---------|
 | `lib/supabase/client.browser.ts` | Cliente Supabase browser-side |
-| `lib/supabase/client.server.ts` | Cliente Supabase server-side + admin |
+| `lib/supabase/client.server.ts` | Cliente server-side + admin (scoped cookies) |
 | `lib/platform-guard.ts` | Guard: `isPlatformTenant()` |
-| `lib/audit.ts` | Helper: `logAudit()` |
+| `lib/permission-guard.server.ts` | Guard: verificación de permisos server-side |
+| `lib/rbac/index.ts` | Core RBAC utilities |
+| `lib/rbac/hooks.ts` | `usePermissions()` hook |
+| `lib/hooks/use-permissions.ts` | Permission hooks adicionales |
+| `lib/audit.ts` | Helper: `logAudit()` (admin client bypass RLS) |
+| `lib/email.server.ts` | Resend API + template premium HTML |
 | `lib/export.ts` | Helper: exportar CSV |
+| `lib/storage/r2-client.server.ts` | R2 client con 7-layer security |
 | `lib/utils.ts` | Utilidades (cn, format, etc.) |
 | `lib/i18n/index.ts` | Sistema i18n con 3 idiomas |
 | `lib/i18n/es.ts` | Traducciones español |
 | `lib/i18n/en.ts` | Traducciones inglés |
 | `lib/i18n/pt.ts` | Traducciones portugués |
-
-## Admin Panel — Detalle
-
-| Página | Ruta | Features |
-|--------|------|----------|
-| Dashboard | `/admin` | 4 KPIs, AreaChart (growth 7d), PieChart (plans), BarChart (members/org), invitation stats, audit timeline, org list |
-| Organizaciones | `/admin/organizations` | CRUD, search, filters, CSV export |
-| Detalle Org | `/admin/organizations/:id` | 5 tabs (Miembros, Módulos, Invitaciones, Dominios, Config) |
-| Usuarios | `/admin/users` | Promote/demote admin, search, CSV export |
-| Audit Log | `/admin/audit` | Filtro por acción, actor avatar, IP tracking |
 
 ## Arquitectura Multi-Tenant
 
@@ -147,12 +216,13 @@
 
 ### Tenants en Producción
 
-| Tenant | Subdomain | Plan | Logo | Color |
-|--------|-----------|------|------|-------|
-| GRIXI | `grixi.grixi.ai` | Enterprise | `/grixi-logo.png` | `#7c3aed` |
-| Acme Corp | `acme.grixi.ai` | Professional | `/logos/acme.png` | `#3B82F6` |
-| Nexus Technologies | `nexus.grixi.ai` | Starter | `/logos/nexus.png` | `#F59E0B` |
-| prueba | `prueba.grixi.ai` | Starter | — (sin logo) | — (sin color) |
+| Tenant | Subdomain | Plan | Color |
+|--------|-----------|------|-------|
+| GRIXI | `grixi.grixi.ai` | Enterprise | `#7c3aed` |
+| Acme Corp | `acme.grixi.ai` | Professional | `#3B82F6` |
+| Nexus Technologies | `nexus.grixi.ai` | Starter | `#F59E0B` |
+| prueba | `prueba.grixi.ai` | Starter | — |
+| (5ta org) | — | — | — |
 
 ### Platform Admins
 
@@ -161,39 +231,40 @@
 | Diego Mera | `dmera@grixi.ai` |
 | Calixto Saldarriaga | `csaldarriaga@grixi.ai` |
 
-### Seguridad Multi-Tenant (7 Capas)
+### Seguridad Multi-Tenant (9 Capas)
 
-| # | Capa | Protección | Verificado |
-|---|------|-----------|------------|
-| 1 | DNS/Cloudflare | Solo `*.grixi.ai` llega al Worker | ✅ |
-| 2 | Worker Edge | `tenantSlug` extraído del hostname real (no manipulable) | ✅ |
-| 3 | Rate Limiting | 30 req/min por IP en rutas `/admin` (429 auto) | ✅ |
-| 4 | Membership Guard | Usuario DEBE ser miembro del tenant o platform_admin | ✅ |
-| 5 | Loaders (GET) | `isPlatformTenant()` en 5 admin loaders → redirect `/dashboard` | ✅ |
-| 6 | Actions (POST) | `isPlatformTenant()` en admin actions → 403 Forbidden | ✅ |
-| 7 | DB `platform_admins` | Solo admins registrados acceden a panel admin | ✅ |
-| 8 | Sidebar (UI) | Links admin ocultos si `tenantSlug !== 'grixi'` | ✅ |
-| 9 | RLS (29 policies) | Aislamiento a nivel de datos por org_id | ✅ |
+| # | Capa | Protección |
+|---|------|-----------|
+| 1 | DNS/Cloudflare | Solo `*.grixi.ai` llega al Worker |
+| 2 | Worker Edge | `tenantSlug` extraído del hostname real |
+| 3 | Rate Limiting | 30 req/min por IP en `/admin` |
+| 4 | Membership Guard | Usuario DEBE ser miembro o platform_admin |
+| 5 | Loaders (GET) | `isPlatformTenant()` → redirect |
+| 6 | Actions (POST) | `isPlatformTenant()` → 403 |
+| 7 | DB `platform_admins` | Solo admins acceden a panel admin |
+| 8 | Sidebar (UI) | Links admin ocultos si no es admin |
+| 9 | RLS (29+ policies) | Aislamiento por org_id |
 
 ## Dependencias
 
 ### Producción
 
-| Paquete | Versión | Uso real |
-|---------|---------|----------|
+| Paquete | Versión | Uso |
+|---------|---------|-----|
 | react | ^19.1.1 | Core |
 | react-dom | ^19.1.1 | Core |
 | react-router | ^7.10.0 | SSR + routing |
 | @supabase/supabase-js | ^2.50.0 | Backend client |
 | @supabase/ssr | ^0.7.0 | Server-side auth (cookies) |
-| recharts | ^3.8.1 | Charts admin dashboard |
+| @google/genai | ^1.47.0 | Gemini AI SDK |
+| recharts | ^3.8.1 | Charts (dashboard + finanzas) |
 | lucide-react | ^1.7.0 | Iconos |
-| framer-motion | ^12.0.0 | Animaciones sidebar |
+| framer-motion | ^12.0.0 | Animaciones (client-only) |
+| react-markdown | ^10.1.0 | Markdown rendering AI |
+| remark-gfm | ^4.0.1 | GitHub Flavored Markdown |
 | clsx | ^2.1.1 | Class merging |
 | tailwind-merge | ^3.0.0 | Tailwind class merging |
 | isbot | ^5.1.31 | Bot detection |
-| sonner | ^2.0.0 | ⚠️ Instalado pero NO importado en ningún archivo |
-| zustand | ^5.0.0 | ⚠️ Instalado pero NO importado en ningún archivo |
 
 ### Dev
 
@@ -207,35 +278,45 @@
 | @cloudflare/vite-plugin | ^1.13.5 |
 | @react-router/dev | ^7.10.0 |
 
+## Secretos en Cloudflare Workers
+
+| Variable | Tipo | Uso |
+|----------|------|-----|
+| `SUPABASE_URL` | Secret | URL del proyecto Supabase |
+| `SUPABASE_ANON_KEY` | Secret | Clave pública Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Secret | Clave admin (bypass RLS) |
+| `RESEND_API_KEY` | Secret | API key para emails transaccionales |
+| `GEMINI_API_KEY` | Secret | API key para Google Gemini AI |
+
+## Workflows Documentados
+
+| Workflow | Archivo | Descripción |
+|----------|---------|-------------|
+| `/deploy` | `.agents/workflows/deploy.md` | Build + deploy a Cloudflare |
+| `/email-transaccional` | `.agents/workflows/email-transaccional.md` | Enviar emails con Resend |
+| `/supabase-rls` | `.agents/workflows/supabase-rls.md` | Implementar RLS |
+| `/permisos-rbac` | `.agents/workflows/permisos-rbac.md` | Sistema de permisos RBAC |
+| `/r2-storage` | `.agents/workflows/r2-storage.md` | Cloudflare R2 Storage |
+| `/multi-tenant` | `.agents/workflows/multi-tenant.md` | Arquitectura multi-tenant |
+| `/audit-logs` | `.agents/workflows/audit-logs.md` | Eventos de auditoría |
+| `/nuevo-modulo` | `.agents/workflows/nuevo-modulo.md` | Checklist nuevo módulo |
+
 ## Git
 
 | Métrica | Valor |
 |---------|-------|
 | Rama principal | `main` |
-| Rama activa | `feat/finanzas` |
 | Remoto | `https://github.com/GRIXI/grixi-app.git` |
 | Package manager | pnpm 10.24.0 |
 
-## Documentación
-
-| Documento | Estado |
-|-----------|--------|
-| Arquitectura (15 docs) | ✅ Completa |
-| Sistema de registro | ✅ Implementado |
-| `docs/database.types.ts` | ✅ Generado |
-| Docs de módulos | ⬜ `/docs/modulos/` vacío (solo `.gitkeep`) |
-
 ## Próximos Pasos
 
-1. ~~Configurar Supabase Redirect URLs~~ ✅ Configurado en `config.toml`
-2. ~~Implementar RLS policies (29 policies)~~ ✅ Aplicadas
-3. ~~Sincronizar migraciones para Supabase Branching~~ ✅ 5 migraciones registradas
-4. Limpiar dependencias no usadas (`sonner`, `zustand`)
-5. Implementar módulo Finanzas (branch `feat/finanzas` lista)
-6. Documentar módulos implementados (`docs/modulos/auth.md`, etc.)
-7. Implementar Supabase Realtime subscriptions para dashboard
-8. Configurar CI/CD (GitHub Actions → Cloudflare Workers)
-9. R2 para almacenamiento de archivos
-10. Hyperdrive para conexiones PostgreSQL optimizadas
-11. Error boundaries globales
-12. Dark/Light mode toggle
+1. Seed data para Finanzas (transacciones + centros de costo de demo)
+2. Dashboard Realtime (Supabase subscriptions auto-refresh)
+3. Módulo Almacenes (tablas + UI + 3D warehouse)
+4. Módulo Compras (vendors, POs, PRs)
+5. Command Center (Cmd+K) — modal global de búsqueda
+6. CI/CD GitHub Actions → Cloudflare Workers
+7. Error boundaries globales
+8. Dark/Light mode toggle
+9. Documentar módulos en `docs/modulos/`

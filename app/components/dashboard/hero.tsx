@@ -11,10 +11,11 @@ interface HeroProps {
     permissions: number;
     pendingInvites: number;
   };
+  isLive?: boolean;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-export function DashboardHero({ userName, orgName, orgColor, kpis, t }: HeroProps) {
+export function DashboardHero({ userName, orgName, orgColor, kpis, isLive, t }: HeroProps) {
   const welcome = t("dash.welcome", { name: userName });
 
   return (

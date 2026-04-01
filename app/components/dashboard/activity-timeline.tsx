@@ -12,6 +12,7 @@ interface AuditLog {
 
 interface ActivityTimelineProps {
   logs: AuditLog[];
+  isLive?: boolean;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
@@ -48,7 +49,7 @@ function formatRelativeTime(dateStr: string, t: (key: string, params?: Record<st
   return t("time.weeks", { n: weeks });
 }
 
-export function ActivityTimeline({ logs, t }: ActivityTimelineProps) {
+export function ActivityTimeline({ logs, isLive, t }: ActivityTimelineProps) {
   if (!logs.length) {
     return (
       <div className="rounded-xl border border-border bg-surface p-5">
@@ -62,9 +63,17 @@ export function ActivityTimeline({ logs, t }: ActivityTimelineProps) {
 
   return (
     <div className="enter-fade stagger-7 rounded-xl border border-border bg-surface p-5">
-      <h3 className="mb-4 text-sm font-semibold text-text-primary">
-        {t("dash.timeline.title")}
-      </h3>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text-primary">
+          {t("dash.timeline.title")}
+        </h3>
+        {isLive && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold text-green-600">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+            LIVE
+          </span>
+        )}
+      </div>
       <div className="space-y-3">
         {logs.slice(0, 8).map((log, i) => (
           <div

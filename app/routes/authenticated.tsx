@@ -1,7 +1,11 @@
-import { redirect, useLoaderData, Outlet } from "react-router";
+import { redirect, useLoaderData, useNavigate, Outlet } from "react-router";
 import { useState, useEffect, type ComponentType } from "react";
 import type { Route } from "./+types/authenticated";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { BottomTabBar } from "~/components/layout/bottom-tab-bar";
+import { PWASplash } from "~/components/pwa/pwa-splash";
+import { InstallPrompt } from "~/components/pwa/install-prompt";
+import { useLastRoute, getLastRoute } from "~/lib/hooks/use-last-route";
 
 // Client-only wrapper to avoid SSR issues with framer-motion + browser APIs  
 function ClientOnlyOrb({ data }: { data: any }) {
@@ -166,18 +170,47 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 export default function AuthenticatedLayout() {
   const data = useLoaderData<typeof loader>() as TenantContext;
+  const navigate = useNavigate();
+
+  // Track last visited route for PWA
+  useLastRoute();
+
+  // PWA Smart Start: redirect to last page if opened from home screen
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+
+    if (isStandalone) {
+      const lastRoute = getLastRoute();
+      if (lastRoute && lastRoute !== window.location.pathname) {
+        navigate(lastRoute, { replace: true });
+      }
+    }
+  }, []);
 
   return (
     <div className="relative h-screen overflow-hidden bg-bg-primary">
-      {/* Main content — full screen */}
-      <main className="platform-dot-grid relative h-full overflow-y-auto overflow-x-hidden px-4 pb-6 md:px-6 lg:px-8">
+      {/* PWA Splash (standalone only) */}
+      <PWASplash />
+
+      {/* Main content — full screen with bottom nav spacing on mobile */}
+      <main className="platform-dot-grid relative h-full overflow-y-auto overflow-x-hidden px-4 pb-6 has-bottom-nav md:px-6 md:pb-6 lg:px-8">
         <div className="relative z-10 pt-6">
           <Outlet context={data} />
         </div>
       </main>
 
-      {/* GRIXI Orb — floating navigation + AI (client-only) */}
-      <ClientOnlyOrb data={data} />
+      {/* Bottom Tab Bar — mobile only */}
+      <BottomTabBar />
+
+      {/* GRIXI Orb — desktop floating navigation + AI (client-only) */}
+      <div className="hidden md:block">
+        <ClientOnlyOrb data={data} />
+      </div>
+
+      {/* A2HS Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 }
