@@ -3,8 +3,8 @@ import type { Route } from "./+types/configuracion.organizacion";
 import type { ConfigContext } from "../configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
-import { Save, Building2, Globe, Palette, Mail, Calendar, Shield } from "lucide-react";
-import { useState } from "react";
+import { Save, Building2, Globe, Palette, Mail, Calendar, Shield, Image, Upload } from "lucide-react";
+import { useState, useRef } from "react";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
@@ -42,6 +42,21 @@ export async function action({ request, context }: Route.ActionArgs) {
   const { data: org } = await admin.from("organizations")
     .select("id, settings").eq("slug", tenantSlug).maybeSingle();
   if (!org) return Response.json({ error: "Org not found" }, { status: 404, headers });
+
+  // ── RBAC: Verify actor has org management permission ──
+  const { data: pa } = await admin.from("platform_admins")
+    .select("user_id").eq("user_id", user.id).maybeSingle();
+  if (!pa) {
+    const { data: actorMembership } = await admin.from("memberships")
+      .select("roles(role_permissions(permissions(key)))")
+      .eq("user_id", user.id).eq("organization_id", org.id).eq("status", "active")
+      .maybeSingle();
+    const perms = ((actorMembership as any)?.roles?.role_permissions || [])
+      .map((rp: any) => rp.permissions?.key).filter(Boolean);
+    if (!perms.includes("org.manage") && !perms.includes("org.settings.update")) {
+      return Response.json({ error: "Sin permisos para modificar la organización" }, { status: 403, headers });
+    }
+  }
 
   if (intent === "update_org") {
     const name = formData.get("name") as string;
@@ -100,6 +115,37 @@ export async function action({ request, context }: Route.ActionArgs) {
     return Response.json({ success: true }, { headers });
   }
 
+  if (intent === "upload_logo") {
+    // Need to re-parse as multipart — but since we already consumed formData, we use the same
+    const file = formData.get("logo") as File;
+    if (!file || file.size === 0) return Response.json({ error: "No file" }, { status: 400, headers });
+    if (file.size > 2 * 1024 * 1024) {
+      return Response.json({ error: "Archivo muy grande (máx 2MB)" }, { status: 400, headers });
+    }
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      return Response.json({ error: "Formato no soportado (jpg/png/webp/svg)" }, { status: 400, headers });
+    }
+    const ext = file.type.split("/")[1] === "jpeg" ? "jpg" : file.type.split("/")[1] === "svg+xml" ? "svg" : file.type.split("/")[1];
+    const key = `org/${org.id}/logo.${ext}`;
+    try {
+      const bucket = (context.cloudflare.env as any).ASSETS_BUCKET;
+      await bucket.put(key, await file.arrayBuffer(), {
+        httpMetadata: { contentType: file.type },
+        customMetadata: { orgId: org.id, uploadedAt: new Date().toISOString() },
+      });
+      const logoUrl = `https://assets.grixi.ai/${key}`;
+      await admin.from("organizations").update({ logo_url: logoUrl }).eq("id", org.id);
+      await logAuditEvent(admin, {
+        actorId: user.id, action: "org.logo.upload", entityType: "organization",
+        entityId: org.id, organizationId: org.id, metadata: { key, ext }, ipAddress: ip,
+      });
+      return Response.json({ success: true, logoUrl }, { headers });
+    } catch (e: any) {
+      return Response.json({ error: e.message }, { status: 500, headers });
+    }
+  }
+
   return Response.json({ error: "Unknown intent" }, { status: 400, headers });
 }
 
@@ -131,6 +177,8 @@ export default function OrganizacionTab() {
   const [currency, setCurrency] = useState(settings.currency || "USD");
   const [primaryColor, setPrimaryColor] = useState(settings.primary_color || "#7c3aed");
   const [billingEmail, setBillingEmail] = useState(settings.billing_email || "");
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Domain form
   const [newDomain, setNewDomain] = useState("");
@@ -151,6 +199,59 @@ export default function OrganizacionTab() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
+      {/* ── Logo Upload ── */}
+      <div className="rounded-xl border p-5" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+        <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+          <Image size={16} /> Logo de la Organización
+        </h3>
+        <div className="flex items-center gap-6">
+          <div className="relative group">
+            <div className="h-20 w-20 rounded-xl overflow-hidden border-2 flex items-center justify-center"
+              style={{ borderColor: primaryColor }}>
+              {(logoPreview || org.logo_url) ? (
+                <img src={logoPreview || org.logo_url} alt="Logo" className="h-full w-full object-contain p-1" />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-xl font-bold"
+                  style={{ backgroundColor: primaryColor + "15", color: primaryColor }}>
+                  {(org.name || "G").charAt(0)}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => logoInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white dark:bg-gray-800 shadow-lg transition-transform hover:scale-110"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <Upload size={12} style={{ color: "var(--foreground)" }} />
+            </button>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/svg+xml"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) { alert("Máximo 2MB"); return; }
+                const reader = new FileReader();
+                reader.onload = () => setLogoPreview(reader.result as string);
+                reader.readAsDataURL(file);
+                const form = new FormData();
+                form.append("intent", "upload_logo");
+                form.append("logo", file);
+                fetcher.submit(form, { method: "post", encType: "multipart/form-data" });
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>Logo visible en toda la plataforma</p>
+            <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>JPG, PNG, WebP o SVG · Máximo 2MB</p>
+            {fetcher.data?.logoUrl && (
+              <p className="text-xs font-medium" style={{ color: "#16A34A" }}>✓ Logo actualizado</p>
+            )}
+          </div>
+        </div>
+      </div>
       {/* Organization Info (readonly) */}
       <div className="rounded-xl border p-5" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
         <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--foreground)" }}>

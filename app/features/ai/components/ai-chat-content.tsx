@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router";
+import { apiFetch } from "~/lib/api-fetch";
 import { ConversationSidebar } from "./conversation-sidebar";
 import { ChatInput } from "./chat-input";
 import { ChatMessage, TypingIndicator } from "./chat-message";
@@ -54,7 +55,7 @@ export default function AiChatContent({ conversations: initialConversations, use
 
     (async () => {
       try {
-        const res = await fetch(`/api/ai/conversations?id=${activeConvId}&messages=true`);
+        const res = await apiFetch(`/api/ai/conversations?id=${activeConvId}&messages=true`);
         if (res.ok) {
           const data = await res.json() as { messages: ChatMessageType[] };
           setMessages(data.messages || []);
@@ -99,7 +100,7 @@ export default function AiChatContent({ conversations: initialConversations, use
   // ── Conversation CRUD ──
   const handleNewConversation = useCallback(async () => {
     try {
-      const res = await fetch("/api/ai/conversations", {
+      const res = await apiFetch("/api/ai/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ module: selectedModules[0] || "general" }),
@@ -120,7 +121,7 @@ export default function AiChatContent({ conversations: initialConversations, use
 
   const handleDeleteConversation = useCallback(async (id: string) => {
     try {
-      await fetch("/api/ai/conversations", {
+      await apiFetch("/api/ai/conversations", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -135,7 +136,7 @@ export default function AiChatContent({ conversations: initialConversations, use
 
   const handleRenameConversation = useCallback(async (id: string, title: string) => {
     try {
-      await fetch("/api/ai/conversations", {
+      await apiFetch("/api/ai/conversations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, title }),
@@ -148,7 +149,7 @@ export default function AiChatContent({ conversations: initialConversations, use
 
   const handleTogglePin = useCallback(async (id: string) => {
     try {
-      await fetch("/api/ai/conversations", {
+      await apiFetch("/api/ai/conversations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, togglePin: true }),
@@ -175,7 +176,7 @@ export default function AiChatContent({ conversations: initialConversations, use
     // Auto-create conversation if none active
     if (!convId) {
       try {
-        const res = await fetch("/api/ai/conversations", {
+        const res = await apiFetch("/api/ai/conversations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ module: selectedModules[0] || "general" }),
@@ -225,7 +226,7 @@ export default function AiChatContent({ conversations: initialConversations, use
     abortRef.current = abortController;
 
     try {
-      const res = await fetch("/api/ai/chat", {
+      const res = await apiFetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -319,7 +320,7 @@ export default function AiChatContent({ conversations: initialConversations, use
 
       // Refresh conversations to get updated title
       try {
-        const res = await fetch("/api/ai/conversations");
+        const res = await apiFetch("/api/ai/conversations");
         if (res.ok) {
           const data = await res.json() as { conversations: Conversation[] };
           setConversations(data.conversations || []);

@@ -18,6 +18,8 @@ export default [
   route("api/notifications", "routes/api.notifications.ts"),
   route("api/push/subscribe", "routes/api.push.subscribe.ts"),
   route("api/push/send", "routes/api.push.send.ts"),
+  route("api/push/cleanup", "routes/api.push.cleanup.ts"),
+  route("api/health", "routes/api.health.ts"),
 
   // ── Admin Portal (admin.grixi.ai) — layout independiente ──
   layout("routes/admin-layout.tsx", [
@@ -45,6 +47,13 @@ export default [
       route("roles", "routes/configuracion/roles.tsx"),
       route("auditoria", "routes/configuracion/auditoria.tsx"),
       route("organizacion", "routes/configuracion/organizacion.tsx"),
+      route("perfil", "routes/configuracion/perfil.tsx"),
     ]),
   ]),
+
+  // PWA Offline fallback
+  route("offline", "routes/offline.tsx"),
+
+  // 404 catch-all — must be last
+  route("*", "routes/not-found.tsx"),
 ] satisfies RouteConfig;

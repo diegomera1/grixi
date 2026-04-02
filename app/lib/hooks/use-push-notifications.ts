@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "~/lib/api-fetch";
 
 // The VAPID public key — must match the one in Cloudflare Workers secrets
 const VAPID_PUBLIC_KEY = "BKmdyYzqhH96VTCZsvs_8Q4E0ayKCQcx_VvGSBNQBMcg80T4GfaZ01VNbtYk-SLpr8-P_4dmsx38q8dJMD2HyTs";
@@ -69,7 +70,7 @@ export function usePushNotifications() {
 
       // Send subscription to server
       const keys = subscription.toJSON().keys;
-      const response = await fetch("/api/push/subscribe", {
+      const response = await apiFetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -108,7 +109,7 @@ export function usePushNotifications() {
 
       if (subscription) {
         // Notify server
-        await fetch("/api/push/subscribe", {
+        await apiFetch("/api/push/subscribe", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ endpoint: subscription.endpoint }),

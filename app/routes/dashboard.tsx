@@ -9,6 +9,11 @@ import { OrgInfoCard } from "~/components/dashboard/org-info-card";
 import { ActivityTimeline } from "~/components/dashboard/activity-timeline";
 import { QuickAccess } from "~/components/dashboard/quick-access";
 import { useRealtimeSubscription, initRealtimeClient } from "~/lib/hooks/use-realtime";
+import { PageSkeleton } from "~/components/shared/page-skeleton";
+
+export const meta = () => [{ title: "Dashboard — GRIXI" }];
+export const handle = { breadcrumb: "Dashboard" };
+export function HydrateFallback() { return <PageSkeleton variant="dashboard" />; }
 
 // ─── Types ─────────────────────────────────────────────
 interface DashboardData {
@@ -17,6 +22,9 @@ interface DashboardData {
     roles: number;
     permissions: number;
     pendingInvites: number;
+    unreadNotifications: number;
+    auditEventsToday: number;
+    aiConversations: number;
   };
   orgSettings: {
     plan?: string;
@@ -25,6 +33,7 @@ interface DashboardData {
     max_users?: number;
     billing_email?: string;
   };
+  orgLogoUrl: string | null;
   orgLanguage: string;
   auditLogs: Array<{
     id: string;
@@ -66,8 +75,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   // If user has no orgs, return empty state
   if (orgIds.length === 0) {
     return Response.json({
-      kpis: { members: 0, roles: 0, permissions: 0, pendingInvites: 0 },
+      kpis: { members: 0, roles: 0, permissions: 0, pendingInvites: 0, unreadNotifications: 0, auditEventsToday: 0, aiConversations: 0 },
       orgSettings: {},
+      orgLogoUrl: null,
       orgLanguage: "es",
       auditLogs: [],
       currentOrgId: "",
@@ -115,7 +125,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   }
 
   // ── Parallel queries scoped to currentOrgId ──────────
-  const [membersRes, rolesRes, permsRes, invRes, orgRes, auditRes] = await Promise.all([
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const results = await Promise.allSettled([
     admin.from("memberships").select("id", { count: "exact", head: true })
       .eq("organization_id", currentOrgId)
       .eq("status", "active"),
@@ -130,7 +143,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       .eq("organization_id", currentOrgId)
       .eq("status", "pending"),
 
-    admin.from("organizations").select("settings, default_language")
+    admin.from("organizations").select("settings, default_language, logo_url")
       .eq("id", currentOrgId)
       .maybeSingle(),
 
@@ -138,18 +151,53 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       .eq("organization_id", currentOrgId)
       .order("created_at", { ascending: false })
       .limit(15),
+
+    // Unread notifications for current user
+    admin.from("notifications").select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("organization_id", currentOrgId)
+      .is("read_at", null),
+
+    // Audit events today
+    admin.from("audit_logs").select("id", { count: "exact", head: true })
+      .eq("organization_id", currentOrgId)
+      .gte("created_at", todayStart.toISOString()),
+
+    // AI conversations count
+    admin.from("ai_conversations").select("id", { count: "exact", head: true })
+      .eq("org_id", currentOrgId)
+      .eq("user_id", user.id),
   ]);
+
+  // Safe extraction — fulfilled results or defaults
+  const val = (i: number): any => {
+    const r = results[i];
+    return r.status === "fulfilled" ? r.value : null;
+  };
+  const membersRes = val(0);
+  const rolesRes = val(1);
+  const permsRes = val(2);
+  const invRes = val(3);
+  const orgRes = val(4);
+  const auditRes = val(5);
+  const notifsRes = val(6);
+  const auditTodayRes = val(7);
+  const aiRes = val(8);
 
   return Response.json({
     kpis: {
-      members: membersRes.count ?? 0,
-      roles: rolesRes.count ?? 0,
-      permissions: permsRes.count ?? 0,
-      pendingInvites: invRes.count ?? 0,
+      members: membersRes?.count ?? 0,
+      roles: rolesRes?.count ?? 0,
+      permissions: permsRes?.count ?? 0,
+      pendingInvites: invRes?.count ?? 0,
+      unreadNotifications: notifsRes?.count ?? 0,
+      auditEventsToday: auditTodayRes?.count ?? 0,
+      aiConversations: aiRes?.count ?? 0,
     },
-    orgSettings: (orgRes.data?.settings as DashboardData["orgSettings"]) ?? {},
-    orgLanguage: orgRes.data?.default_language ?? "es",
-    auditLogs: auditRes.data ?? [],
+    orgSettings: (orgRes?.data?.settings as DashboardData["orgSettings"]) ?? {},
+    orgLogoUrl: orgRes?.data?.logo_url || null,
+    orgLanguage: orgRes?.data?.default_language ?? "es",
+    auditLogs: auditRes?.data ?? [],
     currentOrgId,
     supabaseUrl: env.SUPABASE_URL,
     supabaseAnonKey: env.SUPABASE_ANON_KEY,
@@ -282,7 +330,7 @@ export default function DashboardPage() {
             plan={data.orgSettings.plan ?? "starter"}
             color={brandColor}
             language={data.orgLanguage}
-            logoUrl={undefined}
+            logoUrl={(data as any).orgLogoUrl || undefined}
             t={t}
           />
         </div>

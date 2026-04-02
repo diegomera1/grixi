@@ -3,6 +3,11 @@ import { createSupabaseServerClient } from "~/lib/supabase/client.server";
 import type { Route } from "./+types/finanzas";
 import type { TenantContext } from "./authenticated";
 import type { FinanceTransaction, FinanceCostCenter } from "~/features/finance/types";
+import { PageSkeleton } from "~/components/shared/page-skeleton";
+
+export const meta = () => [{ title: "Finanzas — GRIXI" }];
+export const handle = { breadcrumb: "Finanzas" };
+export function HydrateFallback() { return <PageSkeleton variant="table" />; }
 
 // Lazy client-side import to avoid SSR bundling framer-motion into Workers
 import { lazy, Suspense } from "react";

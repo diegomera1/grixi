@@ -2,9 +2,12 @@ import { redirect, useLoaderData, Outlet, NavLink } from "react-router";
 import type { Route } from "./+types/configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { requirePermissionAny } from "~/lib/permission-guard.server";
-import { Users, Mail, Shield, ScrollText, Building2, ArrowLeft } from "lucide-react";
+import { Users, Mail, Shield, ScrollText, Building2, ArrowLeft, UserCircle } from "lucide-react";
 import type { TenantContext } from "./authenticated";
 import { useOutletContext } from "react-router";
+
+export const meta = () => [{ title: "Configuración — GRIXI" }];
+export const handle = { breadcrumb: "Configuración" };
 
 const TABS = [
   { id: "equipo", label: "Equipo", href: "/configuracion", icon: Users, end: true },
@@ -12,6 +15,7 @@ const TABS = [
   { id: "roles", label: "Roles y Permisos", href: "/configuracion/roles", icon: Shield },
   { id: "auditoria", label: "Auditoría", href: "/configuracion/auditoria", icon: ScrollText },
   { id: "organizacion", label: "Organización", href: "/configuracion/organizacion", icon: Building2 },
+  { id: "perfil", label: "Mi Perfil", href: "/configuracion/perfil", icon: UserCircle },
 ];
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -114,15 +118,16 @@ export default function ConfiguracionLayout() {
       <div className="mb-8 flex gap-1 overflow-x-auto border-b" style={{ borderColor: "var(--border)" }}>
         {TABS.map((tab) => {
           // Check permission for each tab
-          const tabPerms: Record<string, string | string[]> = {
+          const tabPerms: Record<string, string | string[] | null> = {
             equipo: "members.manage",
             invitaciones: "members.manage",
             roles: "roles.manage",
             auditoria: "admin.audit",
             organizacion: "org.configure",
+            perfil: null, // accessible to all users
           };
           const requiredPerm = tabPerms[tab.id];
-          const hasAccess = isPlatformAdmin || (
+          const hasAccess = requiredPerm === null || isPlatformAdmin || (
             Array.isArray(requiredPerm)
               ? requiredPerm.some(p => permissions.includes(p))
               : permissions.includes(requiredPerm as string)

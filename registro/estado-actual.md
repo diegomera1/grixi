@@ -1,6 +1,6 @@
 # Estado Actual — GRIXI-APP
 
-**Última actualización:** 2026-04-01
+**Última actualización:** 2026-04-02 (Sesión 3 — Hardening)
 
 ---
 
@@ -11,14 +11,15 @@
 | Supabase (prod) | ✅ Activo | `zhursgmxnztyepxobvnz` — Auth + PostgreSQL + RLS + Realtime |
 | Cloudflare Workers | ✅ Activo | `grixi-app` en `grixi.ai` + `*.grixi.ai` |
 | Rate Limiting | ✅ Configurado | `ADMIN_RATE_LIMITER` — 30 req/min rutas `/admin` |
-| CI/CD (GitHub Actions) | ⬜ Pendiente | Deploy manual via `npx pnpm run deploy` |
+| CI/CD (GitHub Actions) | ✅ Configurado | `.github/workflows/deploy.yml` — push a main |
 | Dominio grixi.ai | ✅ Activo | Custom domain + wildcard `*.grixi.ai` |
 | Google Workspace CLI | ✅ Configurado | `dmera@grixi.ai` via `gws` |
 | Observability | ✅ Habilitado | `wrangler.jsonc` → `observability.enabled: true` |
 | Resend (Email) | ✅ Configurado | `RESEND_API_KEY` en Cloudflare secrets |
 | Gemini AI | ✅ Configurado | `GEMINI_API_KEY` en Cloudflare secrets |
-| PWA / Service Worker | ✅ Completo | Manifest + SW + Offline + A2HS + Splash |
+| PWA / Service Worker | ✅ Completo | Manifest + SW + Offline + A2HS + Splash (cache v2026-04-02) |
 | Push Notifications | ✅ Configurado | VAPID keys en CF secrets + Supabase tables |
+| CSRF Protection | ✅ Activo | X-GRIXI-Client header en mutation APIs |
 | Supabase Realtime | ✅ Habilitado | 7 tablas en publication |
 
 ## Base de Datos — Producción
@@ -52,8 +53,11 @@
 | ai_messages | 2 |
 | finance_transactions | 0 (schema completo, sin seed) |
 | finance_cost_centers | 0 (schema completo, sin seed) |
-| user_preferences | 0 |
+| user_preferences | 1+ |
 | domain_whitelists | 1 |
+| login_history | 1+ |
+| push_subscriptions | 1+ |
+| notifications | 10+ |
 
 ### 17 Tablas
 
@@ -76,6 +80,9 @@
 | `finance_cost_centers` | ✅ | Centros de costo jerárquicos |
 | `user_preferences` | ✅ | Preferencias key-value por usuario |
 | `domain_whitelists` | ✅ | Dominios auto-join por organización |
+| `login_history` | ✅ | Historial de inicios de sesión (IP, browser, device) |
+| `push_subscriptions` | ✅ | Subscriptions para Web Push |
+| `notifications` | ✅ | Notificaciones in-app con Realtime |
 
 ### Funciones PostgreSQL
 
@@ -123,9 +130,11 @@
 | RBAC | ✅ Implementado | 100% | 43 permisos, 20 roles, hierarchy_level, min_plan |
 | Email Transaccional | ✅ Implementado | 100% | Resend API, template premium, invitaciones |
 | Configuración Tenant | ✅ Implementado | 100% | 5 secciones: Org, Equipo, Roles, Invitaciones, Auditoría |
-| Dashboard | ✅ Implementado | 85% | SSR loader, KPIs reales, Recharts, audit timeline |
+| Dashboard | ✅ Implementado | 95% | SSR loader, KPIs reales, Recharts, audit timeline, skeletons |
 | Finanzas | ✅ Implementado | 90% | 5 tabs, Recharts, multi-moneda, AI analysis, realtime |
 | GRIXI AI | ✅ Implementado | 80% | SSE streaming Gemini, Canvas, 3-panel, conversations CRUD |
+| Notificaciones | ✅ Implementado | 100% | Push + In-app, centro de notificaciones, badge en bell |
+| User Profile | ✅ Implementado | 100% | Avatar R2, tema, login history, preferencias |
 | i18n | ✅ Implementado | 100% | es/en/pt, org-level default language |
 | Almacenes | ⬜ Pendiente | 0% | Tablas no creadas |
 | Compras | ⬜ Pendiente | 0% | Tablas no creadas |
@@ -162,6 +171,7 @@
 | `/admin/settings` | `routes/admin/settings.tsx` | Platform Admin — Config plataforma |
 | `/admin/notifications` | `routes/admin/notifications.tsx` | Platform Admin — Notificaciones |
 | `/admin/plans` | `routes/admin/plans.tsx` | Platform Admin — Planes |
+| `/*` (404) | `routes/not-found.tsx` | Catch-all — 404 personalizada GRIXI |
 
 ### APIs (5)
 
@@ -205,6 +215,7 @@
 | `lib/i18n/es.ts` | Traducciones español |
 | `lib/i18n/en.ts` | Traducciones inglés |
 | `lib/i18n/pt.ts` | Traducciones portugués |
+| `lib/api-fetch.ts` | Wrapper fetch con CSRF header (X-GRIXI-Client: 1) |
 
 ## Arquitectura Multi-Tenant
 
@@ -244,6 +255,8 @@
 | 7 | DB `platform_admins` | Solo admins acceden a panel admin |
 | 8 | Sidebar (UI) | Links admin ocultos si no es admin |
 | 9 | RLS (29+ policies) | Aislamiento por org_id |
+| 10 | CSRF Header | `X-GRIXI-Client: 1` requerido en POST/PUT/DELETE/PATCH a `/api/*` |
+| 11 | Owner Protection | No se puede eliminar al último owner de una org |
 
 ## Dependencias
 
@@ -287,6 +300,8 @@
 | `SUPABASE_SERVICE_ROLE_KEY` | Secret | Clave admin (bypass RLS) |
 | `RESEND_API_KEY` | Secret | API key para emails transaccionales |
 | `GEMINI_API_KEY` | Secret | API key para Google Gemini AI |
+| `VAPID_PUBLIC_KEY` | Secret | Clave pública para Web Push |
+| `VAPID_PRIVATE_KEY` | Secret | Clave privada para Web Push |
 
 ## Workflows Documentados
 
@@ -311,12 +326,10 @@
 
 ## Próximos Pasos
 
-1. Seed data para Finanzas (transacciones + centros de costo de demo)
-2. Dashboard Realtime (Supabase subscriptions auto-refresh)
-3. Módulo Almacenes (tablas + UI + 3D warehouse)
-4. Módulo Compras (vendors, POs, PRs)
-5. Command Center (Cmd+K) — modal global de búsqueda
-6. CI/CD GitHub Actions → Cloudflare Workers
-7. Error boundaries globales
-8. Dark/Light mode toggle
-9. Documentar módulos en `docs/modulos/`
+1. Command Center (Cmd+K) — modal global de búsqueda
+2. Seed data para Finanzas (transacciones de demo)
+3. Org Logo upload + Favicon dinámico
+4. Login Page animaciones mejoradas
+5. Módulo Almacenes (tablas + UI + 3D warehouse)
+6. Módulo Compras (vendors, POs, PRs)
+7. Error boundaries globales por tenant

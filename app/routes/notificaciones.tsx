@@ -1,18 +1,21 @@
 import { useOutletContext } from "react-router";
 import type { TenantContext } from "./authenticated";
+
+export const meta = () => [{ title: "Notificaciones — GRIXI" }];
+export const handle = { breadcrumb: "Notificaciones" };
 import { useNotifications } from "~/lib/hooks/use-notifications";
 import {
-  Bell, Check, CheckCheck, Trash2, Filter, Inbox,
+  Bell, Check, CheckCheck, Trash2, Inbox, BellOff, BellRing,
   Info, CheckCircle2, AlertTriangle, AlertCircle, Zap,
   DollarSign, Warehouse, ShoppingCart, Users, Truck, Sparkles,
-  LayoutDashboard, Shield, Settings, ChevronLeft,
+  LayoutDashboard, Shield, Settings, ChevronLeft, ExternalLink,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import type { Notification } from "~/lib/hooks/use-notifications";
 
 // ═══════════════════════════════════════════════════════════
-// Notification Center — Página completa de notificaciones
+// Notification Center — Centro de notificaciones premium
 // Ruta: /notificaciones
 // ═══════════════════════════════════════════════════════════
 
@@ -39,12 +42,12 @@ const MODULE_CONFIG: Record<string, { label: string; Icon: typeof Info; color: s
 };
 
 const FILTER_TABS = [
-  { key: "all", label: "Todas" },
-  { key: "unread", label: "Sin leer" },
-  { key: "finanzas", label: "Finanzas" },
-  { key: "team", label: "Equipo" },
-  { key: "system", label: "Sistema" },
-  { key: "ai", label: "AI" },
+  { key: "all", label: "Todas", icon: Bell },
+  { key: "unread", label: "Sin leer", icon: BellRing },
+  { key: "finanzas", label: "Finanzas", icon: DollarSign },
+  { key: "team", label: "Equipo", icon: Users },
+  { key: "system", label: "Sistema", icon: Settings },
+  { key: "ai", label: "AI", icon: Sparkles },
 ];
 
 function formatDate(dateStr: string): string {
@@ -74,7 +77,7 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
-  // Filter notifications
+  // Filter
   const filtered = notifications.filter((n) => {
     if (filter === "unread") return !n.read_at;
     if (filter === "all") return true;
@@ -100,11 +103,14 @@ export default function NotificacionesPage() {
   if (olderItems.length > 0) groups.push({ label: "Anteriores", items: olderItems });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-24">
-      {/* Header */}
-      <div className="enter-fade">
-        <div className="flex items-center gap-3 mb-1">
-          <Link to="/dashboard" className="rounded-lg p-1.5 text-text-muted hover:bg-muted hover:text-text-primary transition-colors md:hidden">
+    <div className="mx-auto max-w-2xl space-y-5 pb-24">
+      {/* ── Header ─────────────────────────────────── */}
+      <div style={{ animation: "enterFade 0.4s ease-out" }}>
+        <div className="mb-1 flex items-center gap-3">
+          <Link
+            to="/dashboard"
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-muted hover:text-text-primary md:hidden"
+          >
             <ChevronLeft size={20} />
           </Link>
           <div className="flex-1">
@@ -124,12 +130,12 @@ export default function NotificacionesPage() {
             </p>
           </div>
 
-          {/* Actions */}
+          {/* Action buttons */}
           <div className="flex items-center gap-1">
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-brand transition-colors hover:bg-brand/5"
+                className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-brand transition-all hover:bg-brand/5 active:scale-95"
               >
                 <CheckCheck size={14} />
                 <span className="hidden sm:inline">Leer todas</span>
@@ -138,7 +144,7 @@ export default function NotificacionesPage() {
             {notifications.length > 0 && (
               <button
                 onClick={deleteAll}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-500 transition-colors hover:bg-red-500/5"
+                className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-red-500 transition-all hover:bg-red-500/5 active:scale-95"
               >
                 <Trash2 size={14} />
                 <span className="hidden sm:inline">Limpiar</span>
@@ -148,47 +154,87 @@ export default function NotificacionesPage() {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="enter-fade stagger-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1 scrollbar-none">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
-            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-              filter === tab.key
-                ? "bg-brand text-white shadow-sm"
-                : "text-text-muted hover:bg-muted hover:text-text-primary"
-            }`}
-          >
-            {tab.label}
-            {tab.key === "unread" && unreadCount > 0 && (
-              <span className="ml-1.5 rounded-full bg-white/20 px-1.5 text-[10px]">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* ── Filter Tabs ────────────────────────────── */}
+      <div
+        className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-surface p-1 scrollbar-none"
+        style={{ animation: "enterFade 0.4s ease-out 0.05s both" }}
+      >
+        {FILTER_TABS.map((tab) => {
+          const TabIcon = tab.icon;
+          const isActive = filter === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all ${
+                isActive
+                  ? "bg-brand text-white shadow-sm"
+                  : "text-text-muted hover:bg-muted hover:text-text-primary"
+              }`}
+            >
+              <TabIcon size={12} />
+              {tab.label}
+              {tab.key === "unread" && unreadCount > 0 && (
+                <span className={`rounded-full px-1.5 text-[10px] font-bold ${isActive ? "bg-white/20" : "bg-red-500/10 text-red-500"}`}>
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Notification Groups */}
+      {/* ── Content ────────────────────────────────── */}
       {loading && notifications.length === 0 ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+        /* Loading skeleton */
+        <div className="space-y-3" style={{ animation: "enterFade 0.4s ease-out 0.1s both" }}>
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex gap-3 rounded-2xl border border-border bg-surface p-4">
+              <div className="h-9 w-9 animate-pulse rounded-xl bg-muted" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3.5 w-3/4 animate-pulse rounded-lg bg-muted" />
+                <div className="h-3 w-1/2 animate-pulse rounded-lg bg-muted" />
+                <div className="h-2.5 w-1/4 animate-pulse rounded-lg bg-muted" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="enter-fade stagger-2 flex flex-col items-center justify-center rounded-2xl border border-border bg-surface py-20">
-          <Inbox size={40} className="mb-3 text-text-muted opacity-30" />
-          <p className="text-sm font-medium text-text-muted">
-            {filter === "unread" ? "No hay notificaciones sin leer" : "No hay notificaciones"}
+        /* Empty state premium */
+        <div
+          className="flex flex-col items-center justify-center rounded-2xl border border-border bg-surface py-20"
+          style={{ animation: "enterFade 0.5s ease-out 0.1s both" }}
+        >
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50">
+            {filter === "unread" ? (
+              <BellOff size={28} className="text-text-muted opacity-40" />
+            ) : (
+              <Inbox size={28} className="text-text-muted opacity-40" />
+            )}
+          </div>
+          <p className="text-sm font-semibold text-text-primary">
+            {filter === "unread" ? "Todo al día" : "Sin notificaciones"}
           </p>
-          <p className="mt-1 text-xs text-text-muted/60">
-            Las notificaciones de tus módulos aparecerán aquí
+          <p className="mt-1 max-w-xs text-center text-xs text-text-muted">
+            {filter === "unread"
+              ? "No tienes notificaciones pendientes por leer. ¡Excelente!"
+              : "Las notificaciones de tus módulos aparecerán aquí en tiempo real"}
           </p>
+          {filter !== "all" && (
+            <button
+              onClick={() => setFilter("all")}
+              className="mt-4 flex items-center gap-1.5 rounded-xl bg-brand/5 px-4 py-2 text-xs font-medium text-brand transition-all hover:bg-brand/10"
+            >
+              <Bell size={13} />
+              Ver todas las notificaciones
+            </button>
+          )}
         </div>
       ) : (
+        /* Grouped notification list */
         <div className="space-y-4">
-          {groups.map((group) => (
-            <div key={group.label} className="enter-fade stagger-2">
+          {groups.map((group, gi) => (
+            <div key={group.label} style={{ animation: `enterFade 0.4s ease-out ${0.1 + gi * 0.05}s both` }}>
               <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
                 {group.label}
               </h3>
@@ -202,9 +248,9 @@ export default function NotificacionesPage() {
                   return (
                     <div
                       key={notif.id}
-                      className={`group relative flex gap-3 px-4 py-3.5 transition-colors ${
+                      className={`group relative flex gap-3 px-4 py-3.5 transition-all ${
                         i < group.items.length - 1 ? "border-b border-border/50" : ""
-                      } ${isUnread ? "bg-brand/[0.03]" : ""} hover:bg-muted/30`}
+                      } ${isUnread ? "bg-brand/3" : ""} hover:bg-muted/30`}
                     >
                       {/* Unread indicator */}
                       {isUnread && (
@@ -256,6 +302,9 @@ export default function NotificacionesPage() {
                               <span>{notif.actor_name}</span>
                             </>
                           )}
+                          {notif.action_url && (
+                            <ExternalLink size={9} className="opacity-40" />
+                          )}
                         </div>
                       </div>
 
@@ -286,6 +335,14 @@ export default function NotificacionesPage() {
           ))}
         </div>
       )}
+
+      {/* Animation keyframes */}
+      <style>{`
+        @keyframes enterFade {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { apiFetch } from "~/lib/api-fetch";
 import {
   DollarSign,
   TrendingUp,
@@ -756,7 +757,7 @@ function TransactionDrawer({ transaction: tx, currency, convert, onClose }: {
   const handleAnalyze = async () => {
     setAiLoading(true);
     try {
-      const res = await fetch("/api/finance-analyze", {
+      const res = await apiFetch("/api/finance-analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -781,7 +782,7 @@ function TransactionDrawer({ transaction: tx, currency, convert, onClose }: {
   const handleSaveNotes = async () => {
     setNotesSaving(true);
     try {
-      await fetch("/api/finance-notes", {
+      await apiFetch("/api/finance-notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: tx.id, notes }),

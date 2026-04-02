@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRealtimeSubscription } from "./use-realtime";
+import { apiFetch } from "~/lib/api-fetch";
 
 // ═══════════════════════════════════════════════════════════
 // useNotifications — Hook completo para sistema de notificaciones
@@ -44,6 +45,27 @@ interface UseNotificationsReturn {
   isLive: boolean;
 }
 
+// Module-level dedup cache to avoid double HTTP fetch
+const pendingFetches = new Map<string, Promise<any>>();
+
+function fetchNotificationsDedup(orgId: string): Promise<any> {
+  const key = `notifs:${orgId}`;
+  const existing = pendingFetches.get(key);
+  if (existing) return existing;
+
+  const promise = apiFetch(`/api/notifications?orgId=${orgId}&limit=50`)
+    .then((res) => {
+      if (!res.ok) throw new Error("Error cargando notificaciones");
+      return res.json();
+    })
+    .finally(() => {
+      pendingFetches.delete(key);
+    });
+
+  pendingFetches.set(key, promise);
+  return promise;
+}
+
 export function useNotifications(orgId: string | null | undefined): UseNotificationsReturn {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -53,17 +75,14 @@ export function useNotifications(orgId: string | null | undefined): UseNotificat
   const [isLive, setIsLive] = useState(false);
   const initialLoadDone = useRef(false);
 
-  // Fetch notifications from API
+  // Module-level dedup: avoid double fetch when hook mounts in layout + page
   const fetchNotifications = useCallback(async () => {
     if (!orgId) return;
 
     if (!initialLoadDone.current) setLoading(true);
 
     try {
-      const res = await fetch(`/api/notifications?orgId=${orgId}&limit=50`);
-      if (!res.ok) throw new Error("Error cargando notificaciones");
-      
-      const data = await res.json();
+      const data = await fetchNotificationsDedup(orgId);
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
       setTotalCount(data.total);
@@ -128,7 +147,7 @@ export function useNotifications(orgId: string | null | undefined): UseNotificat
     setUnreadCount((c) => Math.max(0, c - 1));
 
     try {
-      await fetch("/api/notifications", {
+      await apiFetch("/api/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "read", notificationId: id }),
@@ -149,7 +168,7 @@ export function useNotifications(orgId: string | null | undefined): UseNotificat
     setUnreadCount(0);
 
     try {
-      await fetch("/api/notifications", {
+      await apiFetch("/api/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "readAll", orgId }),
@@ -167,7 +186,7 @@ export function useNotifications(orgId: string | null | undefined): UseNotificat
     if (deleted && !deleted.read_at) setUnreadCount((c) => Math.max(0, c - 1));
 
     try {
-      await fetch("/api/notifications", {
+      await apiFetch("/api/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", notificationId: id }),
@@ -185,7 +204,7 @@ export function useNotifications(orgId: string | null | undefined): UseNotificat
     setTotalCount(0);
 
     try {
-      await fetch("/api/notifications", {
+      await apiFetch("/api/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "deleteAll", orgId }),

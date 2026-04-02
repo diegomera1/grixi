@@ -73,6 +73,48 @@ function getStaleSessionCleanupHeaders(request: Request, appDomain: string): str
   return cleanupHeaders;
 }
 
+// ─── Security Headers ─────────────────────────────────────
+
+function getSecurityHeaders(): Record<string, string> {
+  return {
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "X-XSS-Protection": "1; mode=block",
+    "Content-Security-Policy": [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co https://*.grixi.ai",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://accounts.google.com",
+      "frame-src https://accounts.google.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+    ].join("; "),
+  };
+}
+
+// ─── Cache Headers ────────────────────────────────────────
+
+function getCacheControl(pathname: string): string | null {
+  // Static assets (hashed filenames) — cache forever
+  if (/\.(js|css|woff2?|ttf|eot)$/.test(pathname) || pathname.startsWith("/assets/")) {
+    return "public, max-age=31536000, immutable";
+  }
+  // Images — cache for 1 week
+  if (/\.(png|jpg|jpeg|gif|webp|svg|ico)$/.test(pathname)) {
+    return "public, max-age=604800, stale-while-revalidate=86400";
+  }
+  // API routes — no caching
+  if (pathname.startsWith("/api/")) {
+    return "no-store";
+  }
+  // HTML pages — revalidate
+  return "no-cache, no-store, must-revalidate";
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -105,27 +147,82 @@ export default {
         );
       }
     }
+    // ── CSRF Protection: mutation API routes require X-GRIXI-Client header ──
+    const isMutationApi = url.pathname.startsWith("/api/") &&
+      ["POST", "PUT", "DELETE", "PATCH"].includes(request.method);
 
-    const response = await requestHandler(request, {
-      cloudflare: { env, ctx },
-      // admin.grixi.ai → tenantSlug stays "admin" for routing,
-      // but isPlatformAdminPortal signals dedicated admin portal
-      tenantSlug: isPlatformAdminPortal ? null : tenantSlug,
-      isPlatformAdminPortal,
-    } as any);
+    if (isMutationApi) {
+      const hasClientHeader = request.headers.get("X-GRIXI-Client") === "1";
+      const isFormSubmission = request.headers.get("Content-Type")?.includes("multipart/form-data");
+      // Allow form submissions from same-origin (file uploads) + require header for JSON APIs
+      if (!hasClientHeader && !isFormSubmission) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden — missing client header" }),
+          {
+            status: 403,
+            headers: {
+              "Content-Type": "application/json",
+              ...getSecurityHeaders(),
+            },
+          }
+        );
+      }
+    }
 
-    // SECURITY: Append stale cookie cleanup headers to every response
-    const cleanupHeaders = getStaleSessionCleanupHeaders(request, env.APP_DOMAIN);
-    if (cleanupHeaders.length > 0) {
-      // Clone response to add headers
+    try {
+      const response = await requestHandler(request, {
+        cloudflare: { env, ctx },
+        tenantSlug: isPlatformAdminPortal ? null : tenantSlug,
+        isPlatformAdminPortal,
+      } as any);
+
+      // Build enhanced response with security + cache headers
       const newResponse = new Response(response.body, response);
+
+      // Security headers
+      const secHeaders = getSecurityHeaders();
+      for (const [key, value] of Object.entries(secHeaders)) {
+        newResponse.headers.set(key, value);
+      }
+
+      // Cache headers
+      const cacheControl = getCacheControl(url.pathname);
+      if (cacheControl && !newResponse.headers.has("Cache-Control")) {
+        newResponse.headers.set("Cache-Control", cacheControl);
+      }
+
+      // Stale cookie cleanup
+      const cleanupHeaders = getStaleSessionCleanupHeaders(request, env.APP_DOMAIN);
       for (const header of cleanupHeaders) {
         newResponse.headers.append("Set-Cookie", header);
       }
-      return newResponse;
-    }
 
-    return response;
+      return newResponse;
+    } catch (error: any) {
+      // ── Structured error logging (appears in CF Workers Observability) ──
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      console.error(JSON.stringify({
+        level: "error",
+        message: error.message || "Unhandled error",
+        stack: error.stack,
+        path: url.pathname,
+        method: request.method,
+        hostname,
+        ip,
+        tenantSlug,
+        timestamp: new Date().toISOString(),
+      }));
+
+      return new Response(
+        JSON.stringify({ error: "Internal Server Error" }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            ...getSecurityHeaders(),
+          },
+        }
+      );
+    }
   },
 } satisfies ExportedHandler<Env>;
-

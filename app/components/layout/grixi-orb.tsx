@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { apiFetch } from "~/lib/api-fetch";
 import { useNavigate, useLocation, useRouteLoaderData } from "react-router";
 import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion";
 import {
@@ -7,6 +8,9 @@ import {
   Moon, Sun, LogOut, Search, Bell, X, Send, Plus,
   MessageSquare, History, Maximize2, Square,
   GripVertical, AudioLines,
+  Check, CheckCheck, Trash2, ExternalLink,
+  Info, CheckCircle2, AlertTriangle, AlertCircle, Zap,
+  Warehouse, ShoppingCart, Users, Truck, Bot,
 } from "lucide-react";
 import { useThemeTransition } from "~/lib/hooks/use-theme-transition";
 import { GrixiAiLogo } from "~/features/ai/components/grixi-ai-logo";
@@ -14,6 +18,7 @@ import { WelcomeScreen } from "~/features/ai/components/welcome-screen";
 import { WidgetMessageContent } from "~/features/ai/components/widget-message-content";
 import type { AiModule, ChatMessage, Conversation } from "~/features/ai/types";
 import type { TenantContext } from "~/routes/authenticated";
+import type { Notification } from "~/lib/hooks/use-notifications";
 import { createBrowserClient } from "@supabase/ssr";
 
 // ─── Module Definitions ─────────────────────────────────
@@ -49,8 +54,46 @@ function openCommandPalette() {
   );
 }
 
+// ─── Notification Helpers ───────────────────────────────
+const NOTIF_TYPE_CONFIG: Record<string, { color: string; Icon: typeof Info }> = {
+  info: { color: "#3B82F6", Icon: Info },
+  success: { color: "#10B981", Icon: CheckCircle2 },
+  warning: { color: "#F59E0B", Icon: AlertTriangle },
+  error: { color: "#EF4444", Icon: AlertCircle },
+  action: { color: "#8B5CF6", Icon: Zap },
+};
+
+const NOTIF_MODULE_ICONS: Record<string, typeof Info> = {
+  system: Settings, dashboard: LayoutDashboard, finanzas: DollarSign,
+  almacenes: Warehouse, compras: ShoppingCart, rrhh: Users,
+  flota: Truck, ai: Sparkles, audit: Shield, team: Users, admin: Shield,
+};
+
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const minutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(diffMs / 3600000);
+  const days = Math.floor(diffMs / 86400000);
+  if (minutes < 1) return "ahora";
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) return `${hours}h`;
+  if (days < 7) return `${days}d`;
+  return `${Math.floor(days / 7)}sem`;
+}
+
+interface OrbNotifs {
+  notifications: Notification[];
+  unreadCount: number;
+  loading: boolean;
+  markAsRead: (id: string) => void;
+  markAllRead: () => void;
+  deleteNotification: (id: string) => void;
+}
+
 // ─── Main Component ─────────────────────────────────────
-export function GrixiOrb({ data }: { data: TenantContext }) {
+export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNotifs }) {
   const navigate = useNavigate();
   const location = useLocation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,8 +105,10 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
   const [hoveredAi, setHoveredAi] = useState(false);
   const aiHoverTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const [showUserPopover, setShowUserPopover] = useState(false);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [mounted, setMounted] = useState(false);
   const collapseTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const notifDropdownRef = useRef<HTMLDivElement>(null);
 
   // AI Chat state
   const [aiOpen, setAiOpen] = useState(false);
@@ -284,7 +329,7 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
     abortRef.current = controller;
 
     try {
-      const res = await fetch("/api/ai/chat", {
+      const res = await apiFetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -391,7 +436,7 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
             dragListener={false}
             dragControls={dragControls}
             onDragEnd={() => saveWidgetLayout()}
-            className="fixed bottom-20 left-4 z-[51] flex flex-col overflow-hidden rounded-2xl border border-border bg-surface/95 shadow-2xl backdrop-blur-xl"
+            className="fixed bottom-20 left-4 z-51 flex flex-col overflow-hidden rounded-2xl border border-border bg-surface/95 shadow-2xl backdrop-blur-xl"
             style={{ width: panelSize.w, height: panelSize.h, x: panelX, y: panelY }}
           >
             {/* Header — drag handle */}
@@ -624,7 +669,7 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
                         <div className="flex h-full w-full items-center justify-center bg-brand text-xs font-bold text-white">{userInitial}</div>
                       )}
                     </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-(--bg-surface) bg-emerald-500" />
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12px] font-semibold text-text-primary">{userName}</p>
@@ -817,10 +862,159 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
               <div className="border-t border-border px-2 py-1.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-0.5">
-                    <button className="relative rounded-lg p-2 text-text-muted transition-all hover:bg-muted hover:text-text-secondary" title="Notificaciones">
-                      <Bell size={14} />
-                      <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-(--error)" />
-                    </button>
+                    <div className="relative" ref={notifDropdownRef}>
+                      <button
+                        onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                        className="relative rounded-lg p-2 text-text-muted transition-all hover:bg-muted hover:text-text-secondary"
+                        title="Notificaciones"
+                      >
+                        <Bell size={14} />
+                        {(notifs?.unreadCount ?? 0) > 0 && (
+                          <span className="absolute right-1 top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500 px-0.5 text-[7px] font-bold text-white shadow-sm">
+                            {(notifs?.unreadCount ?? 0) > 99 ? "99+" : notifs?.unreadCount}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Mini Notification Dropdown */}
+                      <AnimatePresence>
+                        {showNotifDropdown && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            className="absolute bottom-full left-0 z-80 mb-2 w-80 overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* Gradient accent */}
+                            <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand to-transparent" />
+
+                            {/* Header */}
+                            <div className="flex items-center justify-between border-b border-border px-3 py-2">
+                              <div className="flex items-center gap-1.5">
+                                <h4 className="text-xs font-semibold text-text-primary">Notificaciones</h4>
+                                {(notifs?.unreadCount ?? 0) > 0 && (
+                                  <span className="rounded-full bg-red-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-red-500">
+                                    {notifs?.unreadCount}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-0.5">
+                                {(notifs?.unreadCount ?? 0) > 0 && (
+                                  <button
+                                    onClick={() => notifs?.markAllRead()}
+                                    className="rounded-md p-1 text-text-muted hover:bg-muted hover:text-brand"
+                                    title="Marcar todas como leídas"
+                                  >
+                                    <CheckCheck size={12} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => setShowNotifDropdown(false)}
+                                  className="rounded-md p-1 text-text-muted hover:bg-muted hover:text-text-primary"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* List */}
+                            <div className="max-h-72 overflow-y-auto overscroll-contain">
+                              {notifs?.loading && notifs.notifications.length === 0 ? (
+                                <div className="flex items-center justify-center py-8">
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+                                </div>
+                              ) : !notifs || notifs.notifications.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-8 text-text-muted">
+                                  <Bell size={22} className="mb-1.5 opacity-20" />
+                                  <p className="text-[10px]">Sin notificaciones</p>
+                                </div>
+                              ) : (
+                                notifs.notifications.slice(0, 6).map((notif) => {
+                                  const tc = NOTIF_TYPE_CONFIG[notif.type] || NOTIF_TYPE_CONFIG.info;
+                                  const ModIcon = NOTIF_MODULE_ICONS[notif.module] || Bell;
+                                  const isUnread = !notif.read_at;
+                                  return (
+                                    <div
+                                      key={notif.id}
+                                      className={`group relative flex gap-2.5 border-b border-border/30 px-3 py-2.5 transition-colors last:border-0 ${isUnread ? "bg-brand/3" : ""} hover:bg-muted/40`}
+                                    >
+                                      {isUnread && (
+                                        <div className="absolute left-1 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-brand" />
+                                      )}
+                                      <div
+                                        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+                                        style={{ background: `color-mix(in oklch, ${tc.color} 12%, transparent)` }}
+                                      >
+                                        <ModIcon size={11} style={{ color: tc.color }} strokeWidth={2} />
+                                      </div>
+                                      <div
+                                        className="min-w-0 flex-1 cursor-pointer"
+                                        onClick={() => {
+                                          if (isUnread) notifs.markAsRead(notif.id);
+                                          if (notif.action_url) {
+                                            navigate(notif.action_url);
+                                            setShowNotifDropdown(false);
+                                            setState("orb");
+                                          }
+                                        }}
+                                      >
+                                        <p className={`text-[11px] leading-snug ${isUnread ? "font-semibold text-text-primary" : "text-text-secondary"}`}>
+                                          {notif.title}
+                                        </p>
+                                        {notif.body && (
+                                          <p className="mt-0.5 line-clamp-1 text-[10px] text-text-muted">{notif.body}</p>
+                                        )}
+                                        <span className="mt-0.5 text-[9px] text-text-muted">
+                                          {formatTimeAgo(notif.created_at)}
+                                          {notif.actor_name && ` · ${notif.actor_name}`}
+                                        </span>
+                                      </div>
+                                      <div className="flex shrink-0 flex-col items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                                        {isUnread && (
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); notifs.markAsRead(notif.id); }}
+                                            className="rounded p-0.5 text-text-muted hover:bg-muted hover:text-brand"
+                                            title="Marcar como leída"
+                                          >
+                                            <Check size={10} />
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); notifs.deleteNotification(notif.id); }}
+                                          className="rounded p-0.5 text-text-muted hover:bg-red-500/10 hover:text-red-500"
+                                          title="Eliminar"
+                                        >
+                                          <Trash2 size={10} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            {/* Footer */}
+                            {notifs && notifs.notifications.length > 0 && (
+                              <div className="border-t border-border px-3 py-2">
+                                <button
+                                  onClick={() => {
+                                    navigate("/notificaciones");
+                                    setShowNotifDropdown(false);
+                                    setState("orb");
+                                  }}
+                                  className="flex w-full items-center justify-center gap-1 rounded-lg py-1 text-[10px] font-medium text-brand transition-colors hover:bg-brand/5"
+                                >
+                                  Ver todas
+                                  <ExternalLink size={9} />
+                                </button>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                     {mounted && (
                       <button
                         onClick={(e) => toggleTheme(e)}
@@ -837,14 +1031,14 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
                     title={userName}
                   >
                     <div className="relative h-6 w-6">
-                      <div className="h-6 w-6 overflow-hidden rounded-full ring-1.5 ring-(--border)">
+                      <div className="h-6 w-6 overflow-hidden rounded-full ring-1.5 ring-border">
                         {userAvatar ? (
                           <img src={userAvatar} alt={userName} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-brand text-[8px] font-bold text-white">{userInitial}</div>
                         )}
                       </div>
-                      <span className="absolute -bottom-px -right-px h-2 w-2 rounded-full border-[1.5px] border-(--bg-surface) bg-emerald-500" />
+                      <span className="absolute -bottom-px -right-px h-2 w-2 rounded-full border-[1.5px] border-surface bg-emerald-500" />
                     </div>
                   </button>
                 </div>
@@ -866,7 +1060,7 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
           >
             {/* Conic gradient ring */}
             <div
-              className="orb-ring absolute inset-[-1px] rounded-full"
+              className="orb-ring absolute -inset-px rounded-full"
               style={{
                 background: `conic-gradient(from 0deg, ${activeColor}25, transparent 40%, ${activeColor}15, transparent 80%, ${activeColor}25)`,
               }}
@@ -901,7 +1095,7 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
             {activeModule && (
               <motion.span
                 layoutId="orb-dot"
-                className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-(--bg-surface)"
+                className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface"
                 style={{ backgroundColor: activeModule.color }}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -940,7 +1134,7 @@ export function GrixiOrb({ data }: { data: TenantContext }) {
                 <Sparkles size={15} className="relative" />
                 {/* Context dot */}
                 <span
-                  className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border-[1.5px] border-(--bg-surface)"
+                  className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border-[1.5px] border-surface"
                   style={{ backgroundColor: activeColor }}
                 />
               </motion.button>

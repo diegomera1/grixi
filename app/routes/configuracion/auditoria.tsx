@@ -45,14 +45,25 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const actorMap: Record<string, { name: string; avatar?: string; email: string }> = {};
 
   if (actorIds.length > 0) {
-    const { data: authData } = await admin.auth.admin.listUsers({ page: 1, perPage: 100 });
-    authData?.users?.forEach((u: any) => {
-      if (actorIds.includes(u.id)) {
-        actorMap[u.id] = {
-          name: u.user_metadata?.full_name || u.email || "—",
-          avatar: u.user_metadata?.avatar_url,
-          email: u.email || "",
-        };
+    // Fetch auth users in batches — supports any platform size
+    const batchSize = 50;
+    for (let i = 0; i < actorIds.length; i += batchSize) {
+      const batch = actorIds.slice(i, i + batchSize);
+      const { data: authData } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      authData?.users?.forEach((u: any) => {
+        if (batch.includes(u.id)) {
+          actorMap[u.id] = {
+            name: u.user_metadata?.full_name || u.email || "—",
+            avatar: u.user_metadata?.avatar_url,
+            email: u.email || "",
+          };
+        }
+      });
+    }
+    // Fill any missing actors with fallback
+    actorIds.forEach(id => {
+      if (!actorMap[id]) {
+        actorMap[id] = { name: "Usuario eliminado", email: "", avatar: undefined };
       }
     });
   }

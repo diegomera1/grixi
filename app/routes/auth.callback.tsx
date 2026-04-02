@@ -1,6 +1,29 @@
 import { redirect } from "react-router";
 import type { Route } from "./+types/auth.callback";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { logAuditEvent, getClientIP } from "~/lib/audit";
+import { createNotification } from "~/lib/notifications.server";
+
+/**
+ * Parse user-agent into browser/OS/device for login history
+ */
+function parseUserAgent(ua: string) {
+  const browser = ua.match(/(Chrome|Firefox|Safari|Edge|Opera|Brave)\/[\d.]+/)?.[0]?.split("/")[0]
+    || (ua.includes("CriOS") ? "Chrome" : ua.includes("FxiOS") ? "Firefox" : "Unknown");
+  const os = ua.includes("Windows") ? "Windows"
+    : ua.includes("Mac") ? "macOS"
+    : ua.includes("Linux") ? "Linux"
+    : ua.includes("Android") ? "Android"
+    : ua.includes("iPhone") || ua.includes("iPad") ? "iOS"
+    : "Unknown";
+  const isMobile = /Mobile|Android|iPhone|iPad/i.test(ua);
+  const isTablet = /iPad|Tablet/i.test(ua);
+  return {
+    browser,
+    os,
+    deviceType: isTablet ? "tablet" : isMobile ? "mobile" : "desktop",
+  };
+}
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
@@ -26,8 +49,11 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     return redirect("/?error=no_email");
   }
 
-  // Check whitelist access using admin client (bypasses RLS)
+  // ── Record login history + audit ──
   const admin = createSupabaseAdminClient(env);
+  const ip = getClientIP(request);
+  const ua = request.headers.get("user-agent") || "";
+  const { browser, os, deviceType } = parseUserAgent(ua);
 
   // 1. Check existing memberships
   const { data: existingMemberships } = await admin
@@ -36,6 +62,50 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     .eq("user_id", sessionData.user.id);
 
   if (existingMemberships && existingMemberships.length > 0) {
+    // Record login for each org (fire-and-forget)
+    const orgId = existingMemberships[0].organization_id;
+    const orgName = (existingMemberships[0] as any).organizations?.name || "GRIXI";
+    const userName = sessionData.user.user_metadata?.full_name || sessionData.user.email || "Usuario";
+    await Promise.all([
+      admin.from("login_history").insert({
+        user_id: sessionData.user.id, organization_id: orgId,
+        ip_address: ip, user_agent: ua, browser, os, device_type: deviceType,
+      }),
+      logAuditEvent(admin, {
+        actorId: sessionData.user.id, action: "user.login", entityType: "session",
+        organizationId: orgId, metadata: { browser, os, deviceType, ip },
+        ipAddress: ip,
+      }),
+    ]);
+
+    // Notify platform admins of login (fire & forget)
+    const { data: admins } = await admin.from("platform_admins")
+      .select("user_id").neq("user_id", sessionData.user.id);
+    if (admins && admins.length > 0) {
+      const timeStr = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+      const notifEnv = {
+        VAPID_PUBLIC_KEY: (env as any).VAPID_PUBLIC_KEY || "",
+        VAPID_PRIVATE_KEY: (env as any).VAPID_PRIVATE_KEY || "",
+      };
+      Promise.all(
+        admins.map((a) =>
+          createNotification(admin, {
+            userId: a.user_id,
+            organizationId: orgId,
+            title: `${userName} inició sesión`,
+            body: `Accedió a ${orgName} a las ${timeStr}`,
+            type: "info",
+            module: "system",
+            actionUrl: "/configuracion",
+            actorId: sessionData.user.id,
+            actorName: userName,
+            metadata: { event: "login", userEmail: sessionData.user.email },
+            sendPush: true,
+          }, notifEnv)
+        )
+      ).catch(() => {});
+    }
+
     // User already has access — route to dashboard
     if (existingMemberships.length === 1) {
       return redirect("/dashboard", { headers });

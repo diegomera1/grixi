@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiFetch } from "~/lib/api-fetch";
 import {
   Send, Paperclip, X, Image as ImageIcon, FileText,
   FileSpreadsheet, Sparkles,
@@ -70,7 +71,7 @@ export function ChatInput({ onSend, isStreaming, selectedModules, onToggleModule
         const formData = new FormData();
         formData.append("file", fp.file);
 
-        const res = await fetch("/api/ai/upload", { method: "POST", body: formData });
+        const res = await apiFetch("/api/ai/upload", { method: "POST", body: formData });
         if (res.ok) {
           const data = await res.json() as { attachment: Attachment };
           uploadedAttachments.push(data.attachment);

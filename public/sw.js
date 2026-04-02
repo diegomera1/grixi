@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
-const CACHE_VERSION = "grixi-v1";
+// Cache version — update this on each deploy to bust stale caches
+const CACHE_VERSION = "grixi-v2026-04-02";
 const STATIC_ASSETS = [
   "/icon-192.png",
   "/icon-512.png",

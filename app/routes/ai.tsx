@@ -4,6 +4,7 @@
  */
 import { Suspense, lazy, useState, useEffect, type ComponentType } from "react";
 import { useOutletContext } from "react-router";
+import { apiFetch } from "~/lib/api-fetch";
 import type { TenantContext } from "./authenticated";
 import type { Route } from "./+types/ai";
 import { createSupabaseServerClient } from "~/lib/supabase/client.server";
@@ -14,6 +15,7 @@ export function meta() {
     { name: "description", content: "Asistente de inteligencia artificial enterprise de GRIXI" },
   ];
 }
+export const handle = { breadcrumb: "GRIXI AI" };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
@@ -69,7 +71,7 @@ export default function AiPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/ai/conversations");
+        const res = await apiFetch("/api/ai/conversations");
         if (res.ok) {
           const data = await res.json() as { conversations: any[] };
           setConversations(data.conversations || []);

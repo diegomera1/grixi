@@ -83,6 +83,59 @@ export async function action({ request, context }: Route.ActionArgs) {
     .select("id").eq("slug", tenantSlug).maybeSingle();
   if (!org) return Response.json({ error: "Org not found" }, { status: 404, headers });
 
+  // ── RBAC: Verify actor has team management permission ──
+  const { data: pa } = await admin.from("platform_admins")
+    .select("user_id").eq("user_id", user.id).maybeSingle();
+  const isPlatformAdmin = !!pa;
+
+  if (!isPlatformAdmin) {
+    const { data: actorMembership } = await admin.from("memberships")
+      .select("roles(role_permissions(permissions(key)))")
+      .eq("user_id", user.id)
+      .eq("organization_id", org.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    const actorPerms = ((actorMembership as any)?.roles?.role_permissions || [])
+      .map((rp: any) => rp.permissions?.key).filter(Boolean);
+
+    if (!actorPerms.includes("team.manage") && !actorPerms.includes("team.view")) {
+      return Response.json({ error: "Sin permisos para gestionar equipo" }, { status: 403, headers });
+    }
+  }
+
+  // ── Helper: Protect owner self-actions ──
+  async function validateTargetMember(membershipId: string, targetUserId?: string) {
+    // Can't act on yourself
+    if (targetUserId === user!.id) {
+      return "No puedes realizar esta acción sobre tu propia cuenta";
+    }
+    // Check if target is the last owner
+    const { data: targetMembership } = await admin.from("memberships")
+      .select("roles(name, hierarchy_level)")
+      .eq("id", membershipId)
+      .maybeSingle();
+    if ((targetMembership as any)?.roles?.name === "owner") {
+      // Count remaining active owners
+      const { count } = await admin.from("memberships")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", org!.id)
+        .eq("status", "active")
+        .not("id", "eq", membershipId);
+      // Also check if any of those are owners
+      const { data: otherOwners } = await admin.from("memberships")
+        .select("id, roles!inner(name)")
+        .eq("organization_id", org!.id)
+        .eq("status", "active")
+        .eq("roles.name", "owner")
+        .neq("id", membershipId);
+      if (!otherOwners || otherOwners.length === 0) {
+        return "No se puede eliminar/suspender al único owner de la organización";
+      }
+    }
+    return null;
+  }
+
   if (intent === "change_role") {
     const membershipId = formData.get("membership_id") as string;
     const newRoleId = formData.get("role_id") as string;
@@ -94,7 +147,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "member.change_role", entityType: "membership",
+      actorId: user.id, action: "member.role.update", entityType: "membership",
       entityId: membershipId, organizationId: org.id,
       metadata: { newRoleId }, ipAddress: ip,
     });
@@ -103,10 +156,15 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   if (intent === "suspend") {
     const membershipId = formData.get("membership_id") as string;
+    const targetUserId = formData.get("user_id") as string;
+    const validationError = await validateTargetMember(membershipId, targetUserId);
+    if (validationError) return Response.json({ error: validationError }, { status: 400, headers });
+
     await admin.from("memberships").update({ status: "suspended" }).eq("id", membershipId);
     await logAuditEvent(admin, {
-      actorId: user.id, action: "member.suspend", entityType: "membership",
-      entityId: membershipId, organizationId: org.id, ipAddress: ip,
+      actorId: user.id, action: "member.suspend" as any, entityType: "membership",
+      entityId: membershipId, organizationId: org.id,
+      metadata: { suspendedUserId: targetUserId }, ipAddress: ip,
     });
     return Response.json({ success: true }, { headers });
   }
@@ -115,7 +173,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     const membershipId = formData.get("membership_id") as string;
     await admin.from("memberships").update({ status: "active" }).eq("id", membershipId);
     await logAuditEvent(admin, {
-      actorId: user.id, action: "member.reactivate", entityType: "membership",
+      actorId: user.id, action: "member.reactivate" as any, entityType: "membership",
       entityId: membershipId, organizationId: org.id, ipAddress: ip,
     });
     return Response.json({ success: true }, { headers });
@@ -123,21 +181,15 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   if (intent === "remove") {
     const membershipId = formData.get("membership_id") as string;
-    const userId = formData.get("user_id") as string;
-    if (!confirm) {
-      await admin.from("memberships").delete().eq("id", membershipId);
-      await logAuditEvent(admin, {
-        actorId: user.id, action: "member.remove", entityType: "membership",
-        entityId: membershipId, organizationId: org.id,
-        metadata: { removedUserId: userId }, ipAddress: ip,
-      });
-    }
-    // Actually delete
+    const targetUserId = formData.get("user_id") as string;
+    const validationError = await validateTargetMember(membershipId, targetUserId);
+    if (validationError) return Response.json({ error: validationError }, { status: 400, headers });
+
     await admin.from("memberships").delete().eq("id", membershipId);
     await logAuditEvent(admin, {
       actorId: user.id, action: "member.remove", entityType: "membership",
       entityId: membershipId, organizationId: org.id,
-      metadata: { removedUserId: userId }, ipAddress: ip,
+      metadata: { removedUserId: targetUserId }, ipAddress: ip,
     });
     return Response.json({ success: true }, { headers });
   }
@@ -298,20 +350,22 @@ export default function EquipoTab() {
                       <button
                         onClick={() => {
                           if (confirm(`¿Suspender a ${m.user.name}?`))
-                            fetcher.submit({ intent: "suspend", membership_id: m.id }, { method: "post" });
+                            fetcher.submit({ intent: "suspend", membership_id: m.id, user_id: m.user_id }, { method: "post" });
                         }}
-                        className="rounded-lg px-2 py-1 text-xs transition-colors hover:bg-red-500/10"
+                        disabled={fetcher.state !== "idle"}
+                        className="rounded-lg px-2 py-1 text-xs transition-colors hover:bg-red-500/10 disabled:opacity-40"
                         style={{ color: "#EF4444" }}
                       >
-                        Suspender
+                        {fetcher.state !== "idle" && fetcher.formData?.get("membership_id") === m.id ? "…" : "Suspender"}
                       </button>
                     ) : (
                       <button
                         onClick={() => fetcher.submit({ intent: "reactivate", membership_id: m.id }, { method: "post" })}
-                        className="rounded-lg px-2 py-1 text-xs transition-colors hover:bg-green-500/10"
+                        disabled={fetcher.state !== "idle"}
+                        className="rounded-lg px-2 py-1 text-xs transition-colors hover:bg-green-500/10 disabled:opacity-40"
                         style={{ color: "#16A34A" }}
                       >
-                        Reactivar
+                        {fetcher.state !== "idle" && fetcher.formData?.get("membership_id") === m.id ? "…" : "Reactivar"}
                       </button>
                     )}
                     <button
@@ -319,10 +373,11 @@ export default function EquipoTab() {
                         if (confirm(`¿Eliminar a ${m.user.name} de la organización? Esta acción no se puede deshacer.`))
                           fetcher.submit({ intent: "remove", membership_id: m.id, user_id: m.user_id }, { method: "post" });
                       }}
-                      className="rounded-lg px-2 py-1 text-xs transition-colors hover:bg-red-500/10"
+                      disabled={fetcher.state !== "idle"}
+                      className="rounded-lg px-2 py-1 text-xs transition-colors hover:bg-red-500/10 disabled:opacity-40"
                       style={{ color: "#EF4444" }}
                     >
-                      Eliminar
+                      {fetcher.state !== "idle" && fetcher.formData?.get("intent") === "remove" && fetcher.formData?.get("membership_id") === m.id ? "…" : "Eliminar"}
                     </button>
                   </div>
                 </td>
