@@ -54,38 +54,38 @@ export function RackPanel({ rackCode, positions, rows, columns, occupancy, onClo
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="absolute right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl"
+        className="absolute right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-border bg-surface/98 backdrop-blur-xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
-            <h3 className="text-sm font-bold text-[var(--text-primary)]">Rack {rackCode}</h3>
-            <p className="text-[10px] text-[var(--text-muted)]">{rows}×{columns} posiciones</p>
+            <h3 className="text-sm font-bold text-text-primary">Rack {rackCode}</h3>
+            <p className="text-[10px] text-text-muted">{rows}×{columns} posiciones</p>
           </div>
-          <button onClick={onClose} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+          <button onClick={onClose} className="rounded-md p-1 text-text-muted hover:text-text-primary">
             <X size={14} />
           </button>
         </div>
 
         {/* Stats bar */}
-        <div className="grid grid-cols-3 gap-2 border-b border-[var(--border)] px-4 py-2.5">
+        <div className="grid grid-cols-3 gap-2 border-b border-border px-4 py-2.5">
           <div className="text-center">
-            <p className="text-lg font-bold text-[var(--text-primary)]">{Math.round(occupancy * 100)}%</p>
-            <p className="text-[9px] text-[var(--text-muted)]">Ocupación</p>
+            <p className="text-lg font-bold text-text-primary">{Math.round(occupancy * 100)}%</p>
+            <p className="text-[9px] text-text-muted">Ocupación</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-[var(--brand)]">{occupied}</p>
-            <p className="text-[9px] text-[var(--text-muted)]">Ocupados</p>
+            <p className="text-lg font-bold text-brand">{occupied}</p>
+            <p className="text-[9px] text-text-muted">Ocupados</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-bold text-red-500">{expired}</p>
-            <p className="text-[9px] text-[var(--text-muted)]">Vencidos</p>
+            <p className="text-[9px] text-text-muted">Vencidos</p>
           </div>
         </div>
 
         {/* Grid visualization */}
-        <div className="border-b border-[var(--border)] px-4 py-3">
-          <p className="mb-2 text-[10px] font-semibold text-[var(--text-muted)] uppercase">Mapa de posiciones</p>
+        <div className="border-b border-border px-4 py-3">
+          <p className="mb-2 text-[10px] font-semibold text-text-muted uppercase">Mapa de posiciones</p>
           <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
             {Array.from({ length: rows }, (_, r) =>
               Array.from({ length: columns }, (_, c) => {
@@ -96,7 +96,7 @@ export function RackPanel({ rackCode, positions, rows, columns, occupancy, onClo
                   <button
                     key={`${r}-${c}`}
                     onClick={() => pos && onPositionClick?.(pos)}
-                    className={`aspect-square rounded-sm ${styles.bg} transition-all hover:ring-1 hover:ring-[var(--brand)]`}
+                    className={`aspect-square rounded-sm ${styles.bg} transition-all hover:ring-1 hover:ring-brand`}
                     title={pos?.inventory?.product_name || "Vacío"}
                   />
                 );
@@ -107,7 +107,7 @@ export function RackPanel({ rackCode, positions, rows, columns, occupancy, onClo
             {Object.entries(statusStyles).filter(([k]) => k !== "occupied").map(([key, s]) => (
               <div key={key} className="flex items-center gap-1">
                 <div className={`h-2 w-2 rounded-sm ${s.bg}`} />
-                <span className="text-[8px] text-[var(--text-muted)]">{s.label}</span>
+                <span className="text-[8px] text-text-muted">{s.label}</span>
               </div>
             ))}
           </div>
@@ -115,7 +115,7 @@ export function RackPanel({ rackCode, positions, rows, columns, occupancy, onClo
 
         {/* Position list */}
         <div className="flex-1 overflow-y-auto px-4 py-2">
-          <p className="mb-2 text-[10px] font-semibold text-[var(--text-muted)] uppercase">Inventario</p>
+          <p className="mb-2 text-[10px] font-semibold text-text-muted uppercase">Inventario</p>
           <div className="space-y-1.5">
             {positions
               .filter((p) => p.inventory)
@@ -131,16 +131,16 @@ export function RackPanel({ rackCode, positions, rows, columns, occupancy, onClo
                   <button
                     key={pos.id}
                     onClick={() => onPositionClick?.(pos)}
-                    className="flex w-full items-start gap-2 rounded-lg bg-[var(--bg-muted)]/40 p-2 text-left transition-colors hover:bg-[var(--bg-muted)]"
+                    className="flex w-full items-start gap-2 rounded-lg bg-muted/40 p-2 text-left transition-colors hover:bg-muted"
                   >
                     <div className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${st.bg}`} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[11px] font-medium text-[var(--text-primary)]">{inv.product_name}</p>
-                      <p className="text-[9px] text-[var(--text-muted)]">
+                      <p className="truncate text-[11px] font-medium text-text-primary">{inv.product_name}</p>
+                      <p className="text-[9px] text-text-muted">
                         {inv.product_sku} · F{pos.row_number}C{pos.column_number} · {inv.quantity} uds
                       </p>
                       {daysIn !== null && (
-                        <p className="flex items-center gap-0.5 text-[8px] text-[var(--text-muted)]">
+                        <p className="flex items-center gap-0.5 text-[8px] text-text-muted">
                           <Clock size={8} /> {daysIn}d en almacén
                           {inv.supplier && <> · {inv.supplier}</>}
                         </p>

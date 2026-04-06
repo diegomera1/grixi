@@ -52,7 +52,7 @@ Jira Board (GRIXI)
         └── GRIXI-142: "Add fleet management module"
               ├── Tipo: Feature
               ├── Prioridad: High
-              ├── Asignado: dev@grixi.com
+              ├── Asignado: dev@grixi.io
               └── Estado: In Progress
 ```
 
@@ -328,7 +328,7 @@ Reviewer aprueba PR → Click "Merge"
 Producción actualizada:
   ├── Workers: nueva versión del frontend (~30-60s)
   ├── Supabase: migraciones aplicadas a la DB de producción
-  └── app.grixi.com + *.grixi.com → todo actualizado
+  └── app.grixi.io + *.grixi.io → todo actualizado
 ```
 
 > [!IMPORTANT]
@@ -380,11 +380,11 @@ wrangler versions rollback <version-id>
  │  Git Branch         Supabase Branch        Cloudflare Worker       │
  │  ──────────         ───────────────        ─────────────────       │
  │  main ────────────→ Production (main) ───→ grixi (production)     │
- │                     • DB producción        • app.grixi.com         │
- │                     • Datos reales         • *.grixi.com           │
+ │                     • DB producción        • app.grixi.io         │
+ │                     • Datos reales         • *.grixi.io           │
  │                                                                    │
  │  develop ─────────→ develop (persistent) → grixi-staging           │
- │                     • Copia de schema      • staging.grixi.com     │
+ │                     • Copia de schema      • staging.grixi.io     │
  │                     • Datos de staging     • Pruebas internas      │
  │                                                                    │
  │  feature/flota ───→ Preview Branch ──────→ abc123.workers.dev     │
@@ -415,13 +415,13 @@ wrangler versions rollback <version-id>
  │  1. Preparar     2. Tenant      3. Datos       4. Presentar           │
  │     Demo            Demo           Demo           Demo                │
  │                                                                        │
- │  Jira/CRM →     Supabase →     Seed data →    empresa-demo.grixi.com │
+ │  Jira/CRM →     Supabase →     Seed data →    empresa-demo.grixi.io │
  │  contactar       crear org      poblar con       + screenshare        │
  │  prospecto       + usuario      datos reales     + walk-through       │
  │                                                                        │
  │  5. Seguimiento  6. Onboarding  7. Go Live                            │
  │                                                                        │
- │  Propuesta →     Crear tenant → empresa.grixi.com                     │
+ │  Propuesta →     Crear tenant → empresa.grixi.io                     │
  │  negociación     real + users   producción                            │
  └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -433,8 +433,8 @@ wrangler versions rollback <version-id>
 El comercial tiene acceso a un **tenant de demostración** permanente:
 
 ```
-🌐 demo.grixi.com          ← Tenant de demos genérico
-🌐 empresa-x.grixi.com     ← Tenant personalizado para prospecto específico
+🌐 demo.grixi.io          ← Tenant de demos genérico
+🌐 empresa-x.grixi.io     ← Tenant personalizado para prospecto específico
 ```
 
 **El comercial NO necesita conocimientos técnicos.** Todo se gestiona desde el panel SuperAdmin de GRIXI.
@@ -442,10 +442,10 @@ El comercial tiene acceso a un **tenant de demostración** permanente:
 #### Paso 2: Crear Tenant de Demo (Panel SuperAdmin)
 
 ```
-app.grixi.com (SuperAdmin) → Organizaciones → + Nueva Organización
+app.grixi.io (SuperAdmin) → Organizaciones → + Nueva Organización
 
   Nombre:    "Empresa X S.A."
-  Slug:      empresa-x          → empresa-x.grixi.com
+  Slug:      empresa-x          → empresa-x.grixi.io
   Plan:      demo                → módulos completos, sin límite de tiempo
   Branding:
     Logo:    [subir logo del prospecto]
@@ -453,7 +453,7 @@ app.grixi.com (SuperAdmin) → Organizaciones → + Nueva Organización
   Módulos:   ✅ Dashboard  ✅ Almacenes  ✅ Compras  ✅ Finanzas  ✅ RRHH  ✅ AI
 ```
 
-**Resultado:** En 2 minutos el comercial tiene `empresa-x.grixi.com` funcionando con el branding del prospecto.
+**Resultado:** En 2 minutos el comercial tiene `empresa-x.grixi.io` funcionando con el branding del prospecto.
 
 #### Paso 3: Poblar con Datos de Demo
 
@@ -486,7 +486,7 @@ GRIXI importa y genera dashboards con los datos reales del prospecto
 ```
 Reunión (Google Meet / presencial)
   │
-  ├── 1. Abrir empresa-x.grixi.com (con logo y colores del prospecto)
+  ├── 1. Abrir empresa-x.grixi.io (con logo y colores del prospecto)
   │     → "Esto es su plataforma personalizada"
   │
   ├── 2. Dashboard → KPIs en tiempo real con SUS datos
@@ -518,7 +518,7 @@ CRM / Jira:
   └── Oportunidad: "Empresa X S.A."
         ├── Estado: Propuesta enviada
         ├── Monto: $X/mes
-        ├── Demo URL: empresa-x.grixi.com (sigue activa)
+        ├── Demo URL: empresa-x.grixi.io (sigue activa)
         └── Decisión esperada: 2 semanas
 ```
 
@@ -546,7 +546,7 @@ Invitaciones por email (via Resend):
 
 #### Paso 7: Go Live
 ```
-empresa-x.grixi.com → Producción
+empresa-x.grixi.io → Producción
   ├── Datos reales sincronizados
   ├── Usuarios con roles configurados
   ├── Supabase Realtime activo
@@ -582,7 +582,7 @@ empresa-x.grixi.com → Producción
 #### Paso 1: Login
 
 ```
-Usuario abre: empresa-x.grixi.com
+Usuario abre: empresa-x.grixi.io
   ↓
 Pantalla de login con branding de "Empresa X S.A."
   (logo, colores corporativos)
@@ -608,7 +608,7 @@ Worker middleware:
 #### Paso 2: Dashboard
 
 ```
-empresa-x.grixi.com/dashboard
+empresa-x.grixi.io/dashboard
   │
   ├── Hero KPIs (SSR — llegan pre-renderizados)
   │   ├── 💰 Ventas del mes: $142,500
@@ -632,7 +632,7 @@ empresa-x.grixi.com/dashboard
 ```
 Sidebar → Almacenes
   ↓
-empresa-x.grixi.com/almacenes
+empresa-x.grixi.io/almacenes
   │
   ├── Lista de almacenes (SSR — pre-renderizada)
   │   ├── Almacén Principal — 78% ocupado
@@ -641,7 +641,7 @@ empresa-x.grixi.com/almacenes
   │
   ├── Click en "Almacén Principal"
   │   ↓
-  │   empresa-x.grixi.com/almacenes/abc123
+  │   empresa-x.grixi.io/almacenes/abc123
   │   │
   │   ├── Vista 2D: Cards de racks con ocupación
   │   ├── Vista 3D: Modelo interactivo (React Three Fiber)
@@ -702,7 +702,7 @@ Escenario: Bodeguero registra entrada de mercadería
 #### Paso 6: Mobile
 
 ```
-El usuario abre empresa-x.grixi.com desde su celular
+El usuario abre empresa-x.grixi.io desde su celular
   ↓
 La misma aplicación, responsive:
   ├── Sidebar → menú hamburguesa
@@ -763,7 +763,7 @@ Canales:
 
 ```
 SuperAdmin:
-  └── app.grixi.com
+  └── app.grixi.io
         ├── Dashboard global (todas las empresas)
         ├── Gestión de organizaciones (crear, editar, suspender)
         ├── Gestión de planes y facturación
@@ -771,7 +771,7 @@ SuperAdmin:
         └── Configuración de plataforma
 
 Owner/Admin de empresa:
-  └── empresa-x.grixi.com
+  └── empresa-x.grixi.io
         ├── Dashboard de su empresa
         ├── Todos los módulos habilitados
         ├── Gestión de usuarios (invitar, roles, permisos)
@@ -779,14 +779,14 @@ Owner/Admin de empresa:
         └── Reportes y exportaciones
 
 Member:
-  └── empresa-x.grixi.com
+  └── empresa-x.grixi.io
         ├── Dashboard (lectura)
         ├── Módulos asignados (CRUD)
         ├── GRIXI AI
         └── Notificaciones
 
 Viewer:
-  └── empresa-x.grixi.com
+  └── empresa-x.grixi.io
         ├── Dashboard (lectura)
         ├── Módulos asignados (solo lectura)
         └── Exportar reportes
@@ -813,7 +813,7 @@ Viewer:
 │  (HMR ~50ms)                ↓              Compras, etc.)        │
 │       ↓                 Presentar               ↓                │
 │  git push →             empresa-x.         GRIXI AI              │
-│  Preview Worker +       grixi.com         ("¿Cuánto              │
+│  Preview Worker +       grixi.io         ("¿Cuánto              │
 │  Branch DB (paralelo)        ↓              gastamos?")           │
 │       ↓                 Cliente firma           ↓                │
 │  Code review                 ↓             Realtime              │
@@ -821,7 +821,7 @@ Viewer:
 │       ↓                 (demo → prod)      vivo)                 │
 │  Merge → main                ↓                  ↓                │
 │  Workers + DB           empresa-x.         Reportes              │
-│  (migraciones           grixi.com          + Alertas             │
+│  (migraciones           grixi.io          + Alertas             │
 │   atómicas)             GO LIVE ✅         + Mobile              │
 │       ↓                                                          │
 │  Branch cleanup                                                  │

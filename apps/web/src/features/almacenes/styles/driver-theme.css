@@ -1,0 +1,310 @@
+/* ─── GRIXI WMS Tour — Adaptive Light/Dark Theme ───────────── */
+/* Adapts to next-themes (.dark class on <html>)               */
+/* Uses CSS custom properties for dual-mode support            */
+
+/* ── Theme tokens ──────────────────────────────────────────── */
+:root {
+  --tour-bg: #ffffff;
+  --tour-bg-gradient-from: rgba(249, 250, 251, 0.98);
+  --tour-bg-gradient-to: rgba(255, 255, 255, 0.99);
+  --tour-border: rgba(0, 0, 0, 0.08);
+  --tour-shadow: rgba(0, 0, 0, 0.08);
+  --tour-shadow-lg: rgba(0, 0, 0, 0.12);
+  --tour-text-primary: #0f172a;
+  --tour-text-secondary: #475569;
+  --tour-text-muted: #64748b;
+  --tour-btn-secondary-bg: rgba(0, 0, 0, 0.04);
+  --tour-btn-secondary-border: rgba(0, 0, 0, 0.08);
+  --tour-btn-secondary-hover: rgba(0, 0, 0, 0.08);
+  --tour-code-bg: rgba(139, 92, 246, 0.08);
+  --tour-code-border: rgba(139, 92, 246, 0.12);
+  --tour-code-color: #7c3aed;
+  --tour-close-hover-bg: rgba(0, 0, 0, 0.06);
+  --tour-overlay-bg: rgba(0, 0, 0, 0.35);
+  --tour-arrow-color: #ffffff;
+}
+
+.dark {
+  --tour-bg: #0c0c18;
+  --tour-bg-gradient-from: rgba(18, 18, 35, 0.97);
+  --tour-bg-gradient-to: rgba(10, 10, 22, 0.98);
+  --tour-border: rgba(139, 92, 246, 0.15);
+  --tour-shadow: rgba(0, 0, 0, 0.3);
+  --tour-shadow-lg: rgba(0, 0, 0, 0.55);
+  --tour-text-primary: #f8fafc;
+  --tour-text-secondary: #e2e8f0;
+  --tour-text-muted: #94a3b8;
+  --tour-btn-secondary-bg: rgba(255, 255, 255, 0.04);
+  --tour-btn-secondary-border: rgba(255, 255, 255, 0.08);
+  --tour-btn-secondary-hover: rgba(255, 255, 255, 0.08);
+  --tour-code-bg: rgba(139, 92, 246, 0.15);
+  --tour-code-border: rgba(139, 92, 246, 0.2);
+  --tour-code-color: #c4b5fd;
+  --tour-close-hover-bg: rgba(255, 255, 255, 0.06);
+  --tour-overlay-bg: rgba(0, 0, 0, 0.45);
+  --tour-arrow-color: #0c0c18;
+}
+
+/* ── OVERLAY ───────────────────────────────────────────────── */
+div.driver-overlay {
+  background: var(--tour-overlay-bg) !important;
+}
+
+/* ── POPOVER ───────────────────────────────────────────────── */
+div.driver-popover {
+  background-color: var(--tour-bg) !important;
+  background: linear-gradient(165deg, var(--tour-bg-gradient-from) 0%, var(--tour-bg-gradient-to) 100%) !important;
+  border: 1px solid var(--tour-border) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.02),
+    0 8px 40px var(--tour-shadow-lg),
+    0 2px 10px var(--tour-shadow) !important;
+  padding: 0 !important;
+  color: var(--tour-text-secondary) !important;
+  max-width: 400px !important;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif !important;
+  overflow: hidden !important;
+  animation: grixi-tour-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* ── Progress bar at top ──────────────────────────────────── */
+div.driver-popover::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 3px !important;
+  background: linear-gradient(
+    90deg,
+    #8B5CF6 var(--tour-progress, 0%),
+    rgba(139, 92, 246, 0.08) var(--tour-progress, 0%)
+  ) !important;
+  border-radius: 16px 16px 0 0 !important;
+  z-index: 2 !important;
+  display: block !important;
+}
+
+/* ── TITLE ─────────────────────────────────────────────────── */
+div.driver-popover .driver-popover-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--tour-text-primary) !important;
+  padding: 20px 20px 0 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: transparent !important;
+}
+
+/* ── DESCRIPTION ───────────────────────────────────────────── */
+div.driver-popover .driver-popover-description {
+  font-size: 12px !important;
+  line-height: 1.7 !important;
+  color: var(--tour-text-muted) !important;
+  padding: 10px 20px 6px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  max-height: 50vh !important;
+  overflow-y: auto !important;
+}
+
+div.driver-popover .driver-popover-description strong {
+  color: var(--tour-text-secondary) !important;
+  font-weight: 600 !important;
+}
+
+div.driver-popover .driver-popover-description code {
+  background: var(--tour-code-bg) !important;
+  padding: 2px 6px !important;
+  border-radius: 5px !important;
+  font-size: 11px !important;
+  font-family: var(--font-geist-mono), 'SF Mono', monospace !important;
+  color: var(--tour-code-color) !important;
+  border: 1px solid var(--tour-code-border) !important;
+}
+
+/* ── STEP COUNTER ──────────────────────────────────────────── */
+div.driver-popover .driver-popover-progress-text {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--tour-text-muted) !important;
+  padding: 0 20px !important;
+  margin-top: 8px !important;
+  letter-spacing: 0.03em !important;
+  background: transparent !important;
+  opacity: 0.7 !important;
+}
+
+/* ── FOOTER ────────────────────────────────────────────────── */
+div.driver-popover .driver-popover-footer {
+  padding: 12px 20px 18px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border-top: none !important;
+}
+
+/* ── NAVIGATION BUTTONS ────────────────────────────────────── */
+div.driver-popover .driver-popover-navigation-btns {
+  display: flex !important;
+  gap: 8px !important;
+  width: 100% !important;
+  justify-content: flex-end !important;
+}
+
+/* ── Previous button ───────────────────────────────────────── */
+div.driver-popover .driver-popover-prev-btn {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 8px 16px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  font-family: var(--font-geist-sans), system-ui, sans-serif !important;
+  border: 1px solid var(--tour-btn-secondary-border) !important;
+  outline: none !important;
+  background: var(--tour-btn-secondary-bg) !important;
+  color: var(--tour-text-muted) !important;
+  text-shadow: none !important;
+}
+
+div.driver-popover .driver-popover-prev-btn:hover {
+  background: var(--tour-btn-secondary-hover) !important;
+  color: var(--tour-text-primary) !important;
+}
+
+/* ── Next button — brand gradient ──────────────────────────── */
+div.driver-popover .driver-popover-next-btn {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 8px 18px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  font-family: var(--font-geist-sans), system-ui, sans-serif !important;
+  border: none !important;
+  outline: none !important;
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.35) !important;
+}
+
+div.driver-popover .driver-popover-next-btn:hover {
+  background: linear-gradient(135deg, #9B6FF6 0%, #8B5CF6 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.45) !important;
+}
+
+div.driver-popover .driver-popover-next-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* ── CLOSE BUTTON ──────────────────────────────────────────── */
+div.driver-popover .driver-popover-close-btn {
+  position: absolute !important;
+  top: 14px !important;
+  right: 14px !important;
+  width: 26px !important;
+  height: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--tour-text-muted) !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  transition: all 0.15s ease !important;
+  z-index: 3 !important;
+}
+
+div.driver-popover .driver-popover-close-btn:hover {
+  background: var(--tour-close-hover-bg) !important;
+  color: var(--tour-text-primary) !important;
+}
+
+/* ── ARROW ─────────────────────────────────────────────────── */
+div.driver-popover .driver-popover-arrow {
+  border: none !important;
+}
+div.driver-popover .driver-popover-arrow-side-left   { border-left-color: var(--tour-arrow-color) !important; }
+div.driver-popover .driver-popover-arrow-side-right  { border-right-color: var(--tour-arrow-color) !important; }
+div.driver-popover .driver-popover-arrow-side-top    { border-top-color: var(--tour-arrow-color) !important; }
+div.driver-popover .driver-popover-arrow-side-bottom { border-bottom-color: var(--tour-arrow-color) !important; }
+
+/* ── HIGHLIGHT OUTLINE ─────────────────────────────────────── */
+.driver-highlighted-element {
+  outline: 2px solid rgba(139, 92, 246, 0.5) !important;
+  outline-offset: 4px !important;
+  border-radius: 12px !important;
+  transition: outline 0.3s ease !important;
+}
+
+/* ── ENTRANCE ANIMATION ────────────────────────────────────── */
+@keyframes grixi-tour-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── TOUR ICON BADGES ──────────────────────────────────────── */
+.tour-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.tour-icon--brand   { background: rgba(139, 92, 246, 0.12); color: #8B5CF6; }
+.tour-icon--emerald { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.tour-icon--rose    { background: rgba(244, 63, 94, 0.12);  color: #f43f5e; }
+.tour-icon--blue    { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+.tour-icon--amber   { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+.tour-icon--cyan    { background: rgba(6, 182, 212, 0.12);  color: #06b6d4; }
+.tour-icon--indigo  { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+
+.dark .tour-icon--brand   { background: rgba(139, 92, 246, 0.18); }
+.dark .tour-icon--emerald { background: rgba(16, 185, 129, 0.18); }
+.dark .tour-icon--rose    { background: rgba(244, 63, 94, 0.18); }
+.dark .tour-icon--blue    { background: rgba(59, 130, 246, 0.18); }
+.dark .tour-icon--amber   { background: rgba(245, 158, 11, 0.18); }
+.dark .tour-icon--cyan    { background: rgba(6, 182, 212, 0.18); }
+.dark .tour-icon--indigo  { background: rgba(99, 102, 241, 0.18); }
+
+/* ── WELCOME STEP ──────────────────────────────────────────── */
+div.driver-popover.welcome-step {
+  max-width: 420px !important;
+  text-align: center !important;
+}
+
+div.driver-popover.welcome-step .driver-popover-title {
+  justify-content: center !important;
+  font-size: 16px !important;
+}
+
+div.driver-popover.welcome-step .driver-popover-description {
+  text-align: center !important;
+  font-size: 13px !important;
+}
+
+div.driver-popover.welcome-step .driver-popover-navigation-btns {
+  justify-content: center !important;
+}

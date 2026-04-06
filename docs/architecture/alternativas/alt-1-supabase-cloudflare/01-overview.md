@@ -59,6 +59,10 @@ Usuario → Cloudflare Edge (310+ PoPs globales)
 
 ## Documentos de Esta Alternativa
 
+> ✅ **Esta es la arquitectura elegida para GRIXI.** Los documentos 10-15 cubren la implementación desde cero.
+
+### Arquitectura y Stack
+
 | Documento | Contenido |
 |---|---|
 | [02-stack.md](./02-stack.md) | Stack tecnológico completo |
@@ -69,3 +73,14 @@ Usuario → Cloudflare Edge (310+ PoPs globales)
 | [07-costos.md](./07-costos.md) | Desglose de costos |
 | [08-avanzado.md](./08-avanzado.md) | Workers KV cache, R2, environments, rollback, limitaciones |
 | [09-workflows.md](./09-workflows.md) | Workflows: Desarrollo, Demo comercial, y Usuario final |
+
+### Implementación (From Scratch)
+
+| Documento | Contenido |
+|---|---|
+| [10-setup-guide.md](./10-setup-guide.md) | **Día 0:** Compra y config de todas las herramientas (12 pasos) |
+| [11-database-schema.md](./11-database-schema.md) | Schema PostgreSQL multi-tenant completo (~30 tablas + RLS) |
+| [12-modules.md](./12-modules.md) | Spec de los 11 módulos con features, rutas, y componentes |
+| [13-ui-design-system.md](./13-ui-design-system.md) | Design system: colores, tipografía, animations, 3D, layout |
+| [14-ai-integration.md](./14-ai-integration.md) | Gemini 3.1: arquitectura, prompts, rich output, caching |
+| [15-roadmap.md](./15-roadmap.md) | Roadmap: 6 fases, 12 semanas, task breakdown por dev |

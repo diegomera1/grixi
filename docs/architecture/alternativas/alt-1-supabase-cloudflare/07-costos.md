@@ -1,7 +1,7 @@
 # Alternativa 1 — Costos Detallados
 
 > Desglose completo para un equipo de **5 personas (2 developers + 3 equipo)**, **~100 usuarios por tenant**, estimados **holgados**.
-> Dominio único: `grixi.com` (wildcard `*.grixi.com` para tenants).
+> Dominio único: `grixi.io` (wildcard `*.grixi.io` para tenants).
 > AI: **Gemini 3.1 Flash-Lite** ($0.25 input / $1.50 output por M tokens).
 > **Actualizado:** 21 de marzo, 2026.
 
@@ -24,7 +24,7 @@
 | **Supabase Compute Medium** | CPU y RAM dedicada para la DB (2 vCPU ARM, 4 GB RAM) | Sin compute dedicado, la DB comparte recursos con otros y se pone lenta bajo carga |
 | **Supabase PITR** | Point-in-Time Recovery — restaurar la DB a cualquier segundo de los últimos 7 días | Seguro contra desastres: un error que borre datos se recupera al instante |
 | **Supabase Branching** | Crea copias aisladas de la DB para cada feature branch de Git | 5 devs trabajan en features paralelas sin tocar la DB de producción |
-| **Cloudflare Pro** | CDN global 310+ PoPs, WAF, DDoS, DNS, SSL, Analytics | Protege y acelera la app. Wildcard `*.grixi.com` para subdominios de tenants |
+| **Cloudflare Pro** | CDN global 310+ PoPs, WAF, DDoS, DNS, SSL, Analytics | Protege y acelera la app. Wildcard `*.grixi.io` para subdominios de tenants |
 | **Cloudflare Workers** | Runtime serverless en el edge — ejecuta SSR + API | Reemplaza a Vercel. Corre React Router v7 con 0ms cold starts globalmente |
 | **Cloudflare KV** | Key-value store distribuido globalmente | Cache de config de orgs, permisos, datos semi-estáticos |
 | **Cloudflare R2** | Object storage S3-compatible. **Egress siempre $0** | Storage principal de archivos pesados (imágenes, documentos, exports). Sin costo por descargas |
@@ -44,7 +44,7 @@
 | **Discord Level 2** | Servidor privado con boosts para el equipo | Comunicación interna, soporte, alertas CI/CD |
 | **Resend Pro** | Emails transaccionales con dominio custom | Invitaciones, alertas, notificaciones, reportes, verificaciones |
 | **GitHub Team** | Repos privados, CI/CD, code review | Control de versiones, deploys automáticos, PR reviews |
-| **Google Workspace** | Gmail, Drive, Meet, Calendar con @grixi.com | Email profesional, documentos, videoconferencias |
+| **Google Workspace** | Gmail, Drive, Meet, Calendar con @grixi.io | Email profesional, documentos, videoconferencias |
 | **Jira** | Gestión de proyectos y sprints | Tracking de features, backlog, planificación |
 | **Sentry** | Monitoreo de errores en producción | Detecta crashes y excepciones en tiempo real |
 
@@ -86,7 +86,7 @@
 | | **Subtotal Supabase** | | | **$190.00** |
 | | | | | |
 | | **CLOUDFLARE** | | | |
-| 11 | Pro (grixi.com) | 🔒 Fijo | CDN 310+ PoPs, WAF 20 reglas, DDoS, DNS, SSL, `*.grixi.com` | $20.00 |
+| 11 | Pro (grixi.io) | 🔒 Fijo | CDN 310+ PoPs, WAF 20 reglas, DDoS, DNS, SSL, `*.grixi.io` | $20.00 |
 | 12 | Workers Paid | 🔒 Fijo | 10M req, 30M CPU ms, Hyperdrive, KV base (10M reads, 1M writes, 1 GB) | $5.00 |
 | 13 | Workers req extra | 📈 Variable | ~1M req con 5 tenants (dentro de 10M) | ~$0.00 |
 | 14 | KV reads extra | 📈 Variable | ~500K reads cache (dentro de 10M) | ~$0.00 |
@@ -113,7 +113,7 @@
 | | | | | |
 | | **POR PERSONA** | | | |
 | 25 | GitHub Team (solo devs) | 🔒 Fijo | $4/dev × 2 developers. Repos privados, CI/CD, code review | $8.00 |
-| 26 | Google Workspace (todo el equipo) | 🔒 Fijo | $14/persona × 5. Gmail, Drive, Meet con @grixi.com | $70.00 |
+| 26 | Google Workspace (todo el equipo) | 🔒 Fijo | $14/persona × 5. Gmail, Drive, Meet con @grixi.io | $70.00 |
 | | **Subtotal Equipo** | | | **$78.00** |
 
 ### Totales

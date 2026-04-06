@@ -37,7 +37,7 @@ export default function PlatformLayout({
             className="platform-dot-grid relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden safe-area-all px-4 pb-6 md:px-6 md:pb-6 lg:px-8 lg:pb-8"
             style={{ paddingTop: "max(env(safe-area-inset-top, 0px) + 2rem, 2rem)" }}
           >
-            <div className="relative z-10">
+            <div className="relative z-10 flex min-h-full flex-col">
               <PasskeyPromptBanner />
               <ActivityTrackerProvider>{children}</ActivityTrackerProvider>
             </div>

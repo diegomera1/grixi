@@ -16,9 +16,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function WarehouseDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ view?: string }>;
 }) {
+  const sp = await searchParams;
+  const initialView = sp.view === "3d" ? "3d" as const : "2d" as const;
   const { id } = await params;
   const supabase = await createClient();
 
@@ -120,6 +124,7 @@ export default async function WarehouseDetailPage({
     <WarehouseDetail
       warehouse={warehouse}
       racks={enrichedRacks}
+      initialView={initialView}
       stats={{
         totalRacks: enrichedRacks.length,
         totalPositions,

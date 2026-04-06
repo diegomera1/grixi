@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { PWASplash } from "@/components/layout/pwa-splash";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -91,14 +92,37 @@ export default function RootLayout({
         <ThemeProvider>
           <PWASplash />
           {children}
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            toastOptions={{
+              style: {
+                fontFamily: "var(--font-geist-sans)",
+              },
+            }}
+          />
         </ThemeProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(() => {});
-                });
+                if (location.hostname === 'localhost') {
+                  // Dev: unregister SWs to prevent stale Server Action hashes
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    regs.forEach(function(r) { r.unregister(); });
+                  });
+                  if ('caches' in window) {
+                    caches.keys().then(function(names) {
+                      names.forEach(function(n) { caches.delete(n); });
+                    });
+                  }
+                } else {
+                  // Prod: register SW for PWA support
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').catch(function() {});
+                  });
+                }
               }
             `,
           }}

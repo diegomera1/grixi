@@ -442,18 +442,29 @@ function DustParticles() {
 function WarehouseBuilding({ textures, rackCount = 16, maxRackWidth = 2.5 }: { textures: ReturnType<typeof useWarehouseTextures>; rackCount?: number; maxRackWidth?: number }) {
   // ── Calculate building size FROM the actual rack grid footprint ──
   // Mirror the exact same spacing formula used by getRackPosition
-  const xSpacing = maxRackWidth + 0.5;  // rack width + 0.5m walkway  
-  const zSpacing = 0.5 + 1.8;           // rack depth (0.5) + 1.8m aisle
+  const xSpacing = maxRackWidth + 0.8;  // rack width + wider walkway
+  const zSpacing = 0.5 + 2.2;           // rack depth (0.5) + 2.2m aisle for walking
   const cols = Math.ceil(Math.sqrt(rackCount * 1.5));
   const rows = Math.ceil(rackCount / cols);
   const gridW = (cols - 1) * xSpacing;
   const gridD = (rows - 1) * zSpacing;
   
   // Building = grid footprint + margin each side
-  const margin = 2.5;
-  const W = gridW + margin * 2;
-  const D = gridD + margin * 2;
+  const margin = 3.5;
+  const W = Math.max(gridW + margin * 2, 12);
+  const D = Math.max(gridD + margin * 2, 10);
   const H = 5.5;
+
+  // Stripe floor markings for aisles
+  const aisleMarkings = useMemo(() => {
+    const marks: { x: number; z: number; w: number; d: number }[] = [];
+    // Add horizontal aisle stripes along each aisle row
+    for (let r = 0; r < rows; r++) {
+      const z = -gridD / 2 + r * zSpacing;
+      marks.push({ x: 0, z: z + 0.5 + 0.5, w: gridW + 3, d: 0.06 });
+    }
+    return marks;
+  }, [rows, gridD, zSpacing, gridW]);
 
   return (
     <group>
@@ -466,6 +477,14 @@ function WarehouseBuilding({ textures, rackCount = 16, maxRackWidth = 2.5 }: { t
           metalness={0.02}
         />
       </mesh>
+
+      {/* ── Aisle floor stripes (yellow safety lines) ── */}
+      {aisleMarkings.map((m, i) => (
+        <mesh key={`aisle-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[m.x, 0.003, m.z]}>
+          <planeGeometry args={[m.w, m.d]} />
+          <meshBasicMaterial color="#F59E0B" transparent opacity={0.35} />
+        </mesh>
+      ))}
 
       {/* ── Back wall ────── */}
       <mesh position={[0, H / 2, -D / 2]} receiveShadow>
@@ -488,17 +507,18 @@ function WarehouseBuilding({ textures, rackCount = 16, maxRackWidth = 2.5 }: { t
         <meshStandardMaterial map={textures.wall} roughness={0.8} metalness={0.15} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* ── Columns ────── */}
-      {[-W / 2 + 0.2, W / 2 - 0.2].map((x) =>
-        Array.from({ length: 3 }, (_, j) => (
-          <mesh key={`col-${x}-${j}`} position={[x, H / 2, -D / 2 + 3 + j * (D / 3)]}>
+      {/* ── Columns — distributed evenly ── */}
+      {[-W / 2 + 0.2, W / 2 - 0.2].map((x) => {
+        const numCols = Math.max(2, Math.ceil(D / 6));
+        return Array.from({ length: numCols }, (_, j) => (
+          <mesh key={`col-${x}-${j}`} position={[x, H / 2, -D / 2 + 1.5 + j * ((D - 3) / Math.max(numCols - 1, 1))]}>
             <boxGeometry args={[0.3, H, 0.3]} />
             <meshStandardMaterial color="#78716C" metalness={0.5} roughness={0.35} />
           </mesh>
-        ))
-      )}
+        ));
+      })}
 
-      {/* ── Industrial Gate ────── */}
+      {/* ── Industrial Gate — centered on front wall ── */}
       <group position={[0, 0, D / 2]}>
         <mesh position={[-2.2, H / 2 - 0.5, 0]}>
           <boxGeometry args={[0.15, H - 1, 0.15]} />
@@ -973,9 +993,15 @@ function FloatingDashboard({ racks }: { racks: Rack[] }) {
   );
   const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
-  // Wall-mounted on back wall, at eye-level
+  // Dynamically place on left wall based on the grid footprint
+  const maxRackWidth = Math.max(...racks.map(r => r.columns * 0.5));
+  const xSpacing = maxRackWidth + 0.8;
+  const cols = Math.ceil(Math.sqrt(racks.length * 1.5));
+  const gridW = (cols - 1) * xSpacing;
+  const wallX = -(gridW / 2 + 3.5); // near left wall
+
   return (
-    <group position={[-12.8, 2.2, 0]} rotation={[0, Math.PI / 2, 0]}>
+    <group position={[wallX, 2.4, 0]} rotation={[0, Math.PI / 2, 0]}>
       {/* Metal frame */}
       <mesh>
         <boxGeometry args={[2.6, 1.5, 0.06]} />
@@ -1010,12 +1036,12 @@ function FloatingDashboard({ racks }: { racks: Rack[] }) {
         {pct}% OCUPADO — {occupied}/{total}
       </Text>
 
-      {/* Rack bars — horizontal, compact */}
-      {racks.slice(0, 6).map((rack, i) => {
+      {/* Rack bars — horizontal, compact — show up to 8 racks */}
+      {racks.slice(0, 8).map((rack, i) => {
         const rTotal = rack.rack_positions.length;
         const rOcc = rack.rack_positions.filter((p) => p.status !== "empty").length;
         const ratio = rTotal > 0 ? rOcc / rTotal : 0;
-        const y = 0.14 - i * 0.14;
+        const y = 0.14 - i * 0.12;
         const barW = 1.4;
 
         return (
@@ -1091,9 +1117,9 @@ function SceneContent({
     const maxRackWidth = Math.max(...racks.map(r => r.columns * 0.5));
     const maxRackDepth = 0.5; // rD is always 0.5
     
-    // Spacing = widest rack + aisle gap
-    const xSpacing = maxRackWidth + 0.5;  // rack width + 0.5m walkway
-    const zSpacing = maxRackDepth + 1.8;  // rack depth + 1.8m aisle for walking
+    // Spacing = widest rack + wider aisle gap (matches WarehouseBuilding)
+    const xSpacing = maxRackWidth + 0.8;  // rack width + 0.8m walkway
+    const zSpacing = maxRackDepth + 2.2;  // rack depth + 2.2m aisle for walking + forklifts
     
     // Calculate grid dimensions — slightly more columns than rows for wide layout
     const cols = Math.ceil(Math.sqrt(totalRacks * 1.5));
@@ -1597,7 +1623,7 @@ export function Warehouse3DScene({
       : 0;
 
   return (
-    <div ref={containerRef} className={`relative w-full overflow-hidden transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen' : 'h-[calc(100vh-12rem)] min-h-[400px] rounded-xl border border-slate-200'}`}>
+    <div ref={containerRef} className={`relative w-full overflow-hidden transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-50 h-screen w-screen' : 'h-full rounded-2xl border border-slate-200/80 shadow-lg'}`}>
       <ErrorBoundary
         fallback={
           <div className="flex h-full items-center justify-center bg-slate-50 p-8">
@@ -2065,29 +2091,29 @@ export function Warehouse3DScene({
 
       {/* ── AI Recommendations Panel ──────────── */}
       {aiPanelOpen && (
-        <div className="absolute right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl">
-          <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+        <div className="absolute right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-border bg-surface/98 backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/10">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1.27c.35-.6 1-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1H20a7 7 0 01-7 7v1.27c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73V23a7 7 0 01-7-7H2.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1H4a7 7 0 017-7V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z" /></svg>
               </div>
-              <h3 className="text-sm font-bold text-[var(--text-primary)]">AI Insights</h3>
+              <h3 className="text-sm font-bold text-text-primary">AI Insights</h3>
             </div>
-            <button onClick={() => setAiPanelOpen(false)} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+            <button onClick={() => setAiPanelOpen(false)} className="rounded-md p-1 text-text-muted hover:text-text-primary">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             </button>
           </div>
 
           {aiLoading ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 text-[var(--text-muted)]">
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 text-text-muted">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
               <p className="text-xs">La IA está analizando {racks.length} racks...</p>
             </div>
           ) : aiRecs ? (
             <div className="flex-1 overflow-y-auto">
               {/* Summary */}
-              <div className="border-b border-[var(--border)] bg-violet-500/5 px-4 py-3">
-                <p className="text-xs text-[var(--text-secondary)]">{aiRecs.summary}</p>
+              <div className="border-b border-border bg-violet-500/5 px-4 py-3">
+                <p className="text-xs text-text-secondary">{aiRecs.summary}</p>
               </div>
               {/* Recommendations */}
               <div className="space-y-2 p-3">
@@ -2113,18 +2139,18 @@ export function Warehouse3DScene({
                           setAiPanelOpen(false);
                         }
                       }}
-                      className="w-full rounded-lg bg-[var(--bg-muted)]/40 p-3 text-left transition-colors hover:bg-[var(--bg-muted)]"
+                      className="w-full rounded-lg bg-muted/40 p-3 text-left transition-colors hover:bg-muted"
                     >
                       <div className="flex items-start gap-2">
                         <span className="text-sm">{typeIcons[rec.type] || "💡"}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-[11px] font-semibold text-[var(--text-primary)]">{rec.title}</p>
+                            <p className="text-[11px] font-semibold text-text-primary">{rec.title}</p>
                             <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold ${impactColors[rec.impactLevel] || impactColors.bajo}`}>
                               {rec.impactLevel.toUpperCase()}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-[10px] text-[var(--text-muted)] leading-relaxed">{rec.description}</p>
+                          <p className="mt-0.5 text-[10px] text-text-muted leading-relaxed">{rec.description}</p>
                           <p className="mt-1 text-[9px] text-violet-500 font-medium">📍 Rack {rec.rackCode}{rec.productSku ? ` · ${rec.productSku}` : ""} →</p>
                         </div>
                       </div>

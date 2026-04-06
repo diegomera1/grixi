@@ -155,7 +155,7 @@ export async function getAsset(env: Env, key: string): Promise<Response> {
 name = "grixi"
 [vars]
 APP_ENV = "production"
-SUPABASE_URL = "https://api.grixi.com"
+SUPABASE_URL = "https://api.grixi.io"
 
 # Hyperdrive (connection pooling → Supabase PostgreSQL)
 [[hyperdrive]]
@@ -167,7 +167,7 @@ id = "<hyperdrive-config-id>"
 name = "grixi-staging"
 [env.staging.vars]
 APP_ENV = "staging"
-SUPABASE_URL = "https://staging.grixi.com"
+SUPABASE_URL = "https://staging.grixi.io"
 
 # Preview (PRs)
 [env.preview]

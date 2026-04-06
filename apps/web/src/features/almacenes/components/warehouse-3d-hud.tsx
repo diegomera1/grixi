@@ -168,15 +168,15 @@ export function IoTDashboardPanel({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl"
+      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-border bg-surface/98 backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm">📡</span>
-          <h3 className="text-sm font-bold text-[var(--text-primary)]">IoT en Vivo</h3>
+          <h3 className="text-sm font-bold text-text-primary">IoT en Vivo</h3>
           <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[8px] font-bold text-emerald-500 animate-pulse">● LIVE</span>
         </div>
-        <button onClick={onClose} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+        <button onClick={onClose} className="rounded-md p-1 text-text-muted hover:text-text-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -191,7 +191,7 @@ export function IoTDashboardPanel({
                 ? "border-red-500/30 bg-red-500/5 animate-pulse"
                 : sensor.status === "warning"
                 ? "border-amber-500/30 bg-amber-500/5"
-                : "border-[var(--border)] bg-[var(--bg-muted)]/30"
+                : "border-border bg-muted/30"
             }`}
           >
             <div className="flex items-center justify-between">
@@ -200,15 +200,15 @@ export function IoTDashboardPanel({
                   {sensor.sensor_type === "temperature" ? "🌡" : sensor.sensor_type === "humidity" ? "💧" : sensor.sensor_type === "light" ? "💡" : "👁"}
                 </span>
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--text-primary)]">{sensor.label}</p>
-                  <p className="text-[8px] text-[var(--text-muted)] capitalize">{sensor.sensor_type}</p>
+                  <p className="text-[10px] font-bold text-text-primary">{sensor.label}</p>
+                  <p className="text-[8px] text-text-muted capitalize">{sensor.sensor_type}</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className={`text-sm font-black tabular-nums ${statusColors[sensor.status]}`}>
                   {sensor.current_value.toFixed(1)}{sensor.unit}
                 </p>
-                <p className="text-[7px] text-[var(--text-muted)]">
+                <p className="text-[7px] text-text-muted">
                   {sensor.min_threshold}{sensor.unit} — {sensor.max_threshold}{sensor.unit}
                 </p>
               </div>
@@ -275,51 +275,51 @@ export function LaborPanel({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl"
+      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-border bg-surface/98 backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm">👷</span>
-          <h3 className="text-sm font-bold text-[var(--text-primary)]">Personal</h3>
+          <h3 className="text-sm font-bold text-text-primary">Personal</h3>
           <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[8px] font-bold text-emerald-500">{activOps}/{operators.length} activos</span>
         </div>
-        <button onClick={onClose} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+        <button onClick={onClose} className="rounded-md p-1 text-text-muted hover:text-text-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-2 border-b border-[var(--border)] p-3">
+      <div className="grid grid-cols-3 gap-2 border-b border-border p-3">
         <div className="text-center">
-          <p className="text-lg font-black text-[var(--text-primary)]">{operators.length}</p>
-          <p className="text-[7px] text-[var(--text-muted)]">Operarios</p>
+          <p className="text-lg font-black text-text-primary">{operators.length}</p>
+          <p className="text-[7px] text-text-muted">Operarios</p>
         </div>
         <div className="text-center">
           <p className="text-lg font-black text-emerald-500">{totalItems}</p>
-          <p className="text-[7px] text-[var(--text-muted)]">Items Hoy</p>
+          <p className="text-[7px] text-text-muted">Items Hoy</p>
         </div>
         <div className="text-center">
           <p className="text-lg font-black text-blue-500">{operators.reduce((s, o) => s + o.tasks_completed_today, 0)}</p>
-          <p className="text-[7px] text-[var(--text-muted)]">Tareas</p>
+          <p className="text-[7px] text-text-muted">Tareas</p>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {operators.map((op) => (
-          <div key={op.id} className="rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/30 p-3">
+          <div key={op.id} className="rounded-lg border border-border bg-muted/30 p-3">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ backgroundColor: op.avatar_color }}>
                 {op.name.split(" ").map((n) => n[0]).join("")}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold text-[var(--text-primary)] truncate">{op.name}</p>
-                <p className="text-[8px] text-[var(--text-muted)]">{roleLabels[op.role]} · Zona {op.current_zone}</p>
+                <p className="text-[10px] font-bold text-text-primary truncate">{op.name}</p>
+                <p className="text-[8px] text-text-muted">{roleLabels[op.role]} · Zona {op.current_zone}</p>
               </div>
               <div className="text-right">
                 <p className={`text-[9px] font-bold ${op.current_task === "idle" ? "text-slate-400" : "text-emerald-500"}`}>
                   {taskIcons[op.current_task || "idle"]} {op.current_task || "idle"}
                 </p>
-                <p className="text-[7px] text-[var(--text-muted)]">{op.items_picked_today} items</p>
+                <p className="text-[7px] text-text-muted">{op.items_picked_today} items</p>
               </div>
             </div>
           </div>
@@ -373,14 +373,14 @@ export function WaveManagementPanel({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute right-0 top-0 z-40 flex h-full w-80 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl"
+      className="absolute right-0 top-0 z-40 flex h-full w-80 flex-col border-l border-border bg-surface/98 backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm">📋</span>
-          <h3 className="text-sm font-bold text-[var(--text-primary)]">Wave Management</h3>
+          <h3 className="text-sm font-bold text-text-primary">Wave Management</h3>
         </div>
-        <button onClick={onClose} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+        <button onClick={onClose} className="rounded-md p-1 text-text-muted hover:text-text-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -393,17 +393,17 @@ export function WaveManagementPanel({
               <span className="text-[9px] font-black text-violet-500 uppercase tracking-wider">
                 {waveId === "sin-wave" ? "Sin Ola" : waveId}
               </span>
-              <div className="flex-1 h-px bg-[var(--border)]" />
-              <span className="text-[8px] text-[var(--text-muted)]">{waveOrders.length} órdenes</span>
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-[8px] text-text-muted">{waveOrders.length} órdenes</span>
             </div>
             {waveOrders.map((order) => (
-              <div key={order.id} className="rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/30 p-3">
+              <div key={order.id} className="rounded-lg border border-border bg-muted/30 p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{statusIcons[order.status]}</span>
                     <div>
-                      <p className="text-[10px] font-bold text-[var(--text-primary)]">{order.order_number}</p>
-                      <p className="text-[8px] text-[var(--text-muted)]">{order.total_items} items · ~{order.estimated_time_min || "?"}min</p>
+                      <p className="text-[10px] font-bold text-text-primary">{order.order_number}</p>
+                      <p className="text-[8px] text-text-muted">{order.total_items} items · ~{order.estimated_time_min || "?"}min</p>
                     </div>
                   </div>
                   <span className={`rounded-full px-2 py-0.5 text-[7px] font-bold ${priorityColors[order.priority]}`}>
@@ -418,7 +418,7 @@ export function WaveManagementPanel({
                       style={{ width: `${(order.picked_items / (order.total_items || 1)) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[8px] font-bold text-[var(--text-muted)]">{order.picked_items}/{order.total_items}</span>
+                  <span className="text-[8px] font-bold text-text-muted">{order.picked_items}/{order.total_items}</span>
                 </div>
                 {/* Action button */}
                 {order.status === "pending" && (
@@ -553,19 +553,19 @@ export function AlertFeed({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl"
+      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-border bg-surface/98 backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm">🔔</span>
-          <h3 className="text-sm font-bold text-[var(--text-primary)]">Alertas</h3>
+          <h3 className="text-sm font-bold text-text-primary">Alertas</h3>
           {alerts.filter((a) => a.severity === "critical").length > 0 && (
             <span className="rounded-full bg-red-500 px-2 py-0.5 text-[8px] font-bold text-white animate-pulse">
               {alerts.filter((a) => a.severity === "critical").length} críticas
             </span>
           )}
         </div>
-        <button onClick={onClose} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+        <button onClick={onClose} className="rounded-md p-1 text-text-muted hover:text-text-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -573,7 +573,7 @@ export function AlertFeed({
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {alerts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-[var(--text-muted)]">
+          <div className="flex flex-col items-center justify-center py-8 text-text-muted">
             <span className="text-2xl mb-2">✅</span>
             <p className="text-xs">Sin alertas activas</p>
           </div>
@@ -583,8 +583,8 @@ export function AlertFeed({
               <div className="flex items-start gap-2">
                 <span className="text-sm">{typeIcons[alert.type]}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-semibold text-[var(--text-primary)]">{alert.message}</p>
-                  <p className="text-[8px] text-[var(--text-muted)] mt-0.5">
+                  <p className="text-[10px] font-semibold text-text-primary">{alert.message}</p>
+                  <p className="text-[8px] text-text-muted mt-0.5">
                     {alert.timestamp.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })}
                     {alert.rackCode && ` · Rack ${alert.rackCode}`}
                   </p>
@@ -633,27 +633,27 @@ export function CapacityPlanningPanel({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl"
+      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-border bg-surface/98 backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm">📐</span>
-          <h3 className="text-sm font-bold text-[var(--text-primary)]">Capacidad</h3>
+          <h3 className="text-sm font-bold text-text-primary">Capacidad</h3>
         </div>
-        <button onClick={onClose} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+        <button onClick={onClose} className="rounded-md p-1 text-text-muted hover:text-text-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
-      <div className="border-b border-[var(--border)] p-4">
-        <p className="text-[9px] font-semibold text-[var(--text-muted)] mb-2">¿Cuántas posiciones necesitas?</p>
+      <div className="border-b border-border p-4">
+        <p className="text-[9px] font-semibold text-text-muted mb-2">¿Cuántas posiciones necesitas?</p>
         <div className="flex items-center gap-2">
           <input
             type="number"
             value={incomingQty}
             onChange={(e) => setIncomingQty(parseInt(e.target.value) || 0)}
-            className="w-20 rounded-md border border-[var(--border)] bg-[var(--bg-muted)] px-2 py-1.5 text-sm font-bold text-[var(--text-primary)]"
+            className="w-20 rounded-md border border-border bg-muted px-2 py-1.5 text-sm font-bold text-text-primary"
           />
           <div className={`rounded-full px-3 py-1 text-[9px] font-bold ${canFit ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
             {canFit ? `✅ Caben (${totalEmpty} libres)` : `❌ No caben (solo ${totalEmpty} libres)`}
@@ -673,17 +673,17 @@ export function CapacityPlanningPanel({
           )}
         </div>
         <div className="flex justify-between mt-1">
-          <span className="text-[7px] text-[var(--text-muted)]">Usado: {totalPositions - totalEmpty}</span>
+          <span className="text-[7px] text-text-muted">Usado: {totalPositions - totalEmpty}</span>
           <span className="text-[7px] text-blue-500 font-bold">+ {incomingQty} nuevo</span>
-          <span className="text-[7px] text-[var(--text-muted)]">Total: {totalPositions}</span>
+          <span className="text-[7px] text-text-muted">Total: {totalPositions}</span>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-3">
-        <p className="text-[9px] font-bold text-[var(--text-muted)] mb-2">📍 Racks con espacio disponible</p>
+        <p className="text-[9px] font-bold text-text-muted mb-2">📍 Racks con espacio disponible</p>
         <div className="space-y-1.5">
           {suggestions.map((r) => (
-            <div key={r.code} className="flex items-center justify-between rounded-lg bg-[var(--bg-muted)]/30 px-3 py-2">
-              <span className="text-[10px] font-bold text-[var(--text-primary)]">{r.code}</span>
+            <div key={r.code} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+              <span className="text-[10px] font-bold text-text-primary">{r.code}</span>
               <div className="flex items-center gap-2">
                 <div className="w-16 h-1.5 rounded-full bg-slate-200 overflow-hidden">
                   <div
@@ -750,14 +750,14 @@ export function SlottingOptimizerPanel({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl"
+      className="absolute right-0 top-0 z-40 flex h-full w-72 flex-col border-l border-border bg-surface/98 backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-sm">🧩</span>
-          <h3 className="text-sm font-bold text-[var(--text-primary)]">Slotting Optimizer</h3>
+          <h3 className="text-sm font-bold text-text-primary">Slotting Optimizer</h3>
         </div>
-        <button onClick={onClose} className="rounded-md p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+        <button onClick={onClose} className="rounded-md p-1 text-text-muted hover:text-text-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -786,11 +786,11 @@ export function SlottingOptimizerPanel({
             <div key={i} className="rounded-lg border border-violet-500/20 bg-violet-500/5 p-2.5">
               <div className="flex items-center gap-1 text-[10px]">
                 <span className="font-bold text-red-400">{sug.from}</span>
-                <span className="text-[var(--text-muted)]">→</span>
+                <span className="text-text-muted">→</span>
                 <span className="font-bold text-emerald-400">{sug.to}</span>
               </div>
-              <p className="text-[9px] font-semibold text-[var(--text-primary)] mt-0.5">{sug.product}</p>
-              <p className="text-[8px] text-[var(--text-muted)]">{sug.reason}</p>
+              <p className="text-[9px] font-semibold text-text-primary mt-0.5">{sug.product}</p>
+              <p className="text-[8px] text-text-muted">{sug.reason}</p>
             </div>
           ))}
         </div>
@@ -939,7 +939,7 @@ export function GuidedTourOverlay({
           {/* Progress bar */}
           <div className="mb-3 h-1 w-full rounded-full bg-slate-700 overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-400"
+              className="h-full rounded-full bg-linear-to-r from-emerald-400 to-sky-400"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3 }}

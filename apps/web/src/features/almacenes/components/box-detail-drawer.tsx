@@ -50,8 +50,8 @@ function ProductImage({ src, name }: { src: string | null; name: string }) {
 
   if (!src || error) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-[var(--bg-muted)]">
-        <ImageOff size={24} className="text-[var(--text-muted)]" />
+      <div className="flex h-full w-full items-center justify-center bg-muted">
+        <ImageOff size={24} className="text-text-muted" />
       </div>
     );
   }
@@ -112,19 +112,19 @@ export function BoxDetailDrawer({ inventory, rackCode, posRow, posCol, onClose }
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: 340, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="absolute right-0 top-0 z-50 flex h-full w-80 flex-col overflow-hidden border-l border-[var(--border)] bg-[var(--bg-surface)]/98 backdrop-blur-xl"
+        className="absolute right-0 top-0 z-50 flex h-full w-80 flex-col overflow-hidden border-l border-border bg-surface/98 backdrop-blur-xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
-            <p className="text-xs font-bold text-[var(--text-primary)]">Detalle de Inventario</p>
-            <p className="text-[10px] text-[var(--text-muted)]">
+            <p className="text-xs font-bold text-text-primary">Detalle de Inventario</p>
+            <p className="text-[10px] text-text-muted">
               Rack {rackCode} · Fila {posRow}, Col {posCol}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+            className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-muted hover:text-text-primary"
           >
             <X size={14} />
           </button>
@@ -133,7 +133,7 @@ export function BoxDetailDrawer({ inventory, rackCode, posRow, posCol, onClose }
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
           {/* Product Image */}
-          <div className="relative aspect-[16/9] w-full overflow-hidden bg-[var(--bg-muted)]">
+          <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
             <ProductImage src={inventory.image_url} name={inventory.product_name} />
             {/* Status badge overlay */}
             <div className="absolute bottom-2 left-2">
@@ -150,10 +150,10 @@ export function BoxDetailDrawer({ inventory, rackCode, posRow, posCol, onClose }
           {/* Product name */}
           <div className="px-4 pt-3 pb-1">
             <div className="flex items-start gap-2">
-              <Package size={14} className="mt-0.5 shrink-0 text-[var(--brand)]" />
+              <Package size={14} className="mt-0.5 shrink-0 text-brand" />
               <div>
-                <p className="text-[9px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Producto</p>
-                <p className="text-sm font-bold text-[var(--text-primary)] leading-tight">{inventory.product_name}</p>
+                <p className="text-[9px] font-medium uppercase tracking-wider text-text-muted">Producto</p>
+                <p className="text-sm font-bold text-text-primary leading-tight">{inventory.product_name}</p>
               </div>
             </div>
 
@@ -168,14 +168,14 @@ export function BoxDetailDrawer({ inventory, rackCode, posRow, posCol, onClose }
           {/* Fields */}
           <div className="space-y-0 px-4 py-2">
             {fields.map((f) => (
-              <div key={f.label} className="flex items-start gap-2.5 border-b border-[var(--border)]/50 py-2 last:border-0">
-                <f.icon size={12} className="mt-0.5 shrink-0 text-[var(--text-muted)]" />
+              <div key={f.label} className="flex items-start gap-2.5 border-b border-border/50 py-2 last:border-0">
+                <f.icon size={12} className="mt-0.5 shrink-0 text-text-muted" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] font-medium uppercase tracking-wider text-[var(--text-muted)]">{f.label}</p>
+                  <p className="text-[9px] font-medium uppercase tracking-wider text-text-muted">{f.label}</p>
                   <div className="flex items-center gap-1.5">
-                    <p className="truncate text-[11px] font-semibold text-[var(--text-primary)]">{f.value}</p>
+                    <p className="truncate text-[11px] font-semibold text-text-primary">{f.value}</p>
                     {f.extra && (
-                      <span className={`text-[9px] font-bold ${f.warn ? "text-amber-500" : "text-[var(--text-muted)]"}`}>
+                      <span className={`text-[9px] font-bold ${f.warn ? "text-amber-500" : "text-text-muted"}`}>
                         {f.extra}
                       </span>
                     )}

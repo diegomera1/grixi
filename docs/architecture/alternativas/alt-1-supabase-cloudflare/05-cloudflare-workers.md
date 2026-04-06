@@ -25,7 +25,7 @@ id = "abc123..."
 
 # Variables de entorno (no sensibles)
 [vars]
-SUPABASE_URL = "https://api.grixi.com"
+SUPABASE_URL = "https://api.grixi.io"
 APP_ENV = "production"
 
 # Secrets (sensibles — se configuran con wrangler secret put)
@@ -163,22 +163,22 @@ jobs:
 
 ## 4. Dominios
 
-> Un solo dominio: `grixi.com` con wildcard `*.grixi.com`.
+> Un solo dominio: `grixi.io` con wildcard `*.grixi.io`.
 
 | Dominio | Configuración |
 |---|---|
-| `app.grixi.com` | Dashboard SuperAdmin |
-| `*.grixi.com` | Wildcard para tenants (empresa-x.grixi.com, demo.grixi.com) |
-| `api.grixi.com` | CNAME → Supabase custom domain (sin cambios) |
+| `app.grixi.io` | Dashboard SuperAdmin |
+| `*.grixi.io` | Wildcard para tenants (empresa-x.grixi.io, demo.grixi.io) |
+| `api.grixi.io` | CNAME → Supabase custom domain (sin cambios) |
 
 ```toml
 # wrangler.toml — rutas
 [[routes]]
-pattern = "app.grixi.com/*"
+pattern = "app.grixi.io/*"
 custom_domain = true
 
 [[routes]]
-pattern = "*.grixi.com/*"
+pattern = "*.grixi.io/*"
 custom_domain = true
 ```
 

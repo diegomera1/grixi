@@ -91,22 +91,22 @@ export function WarehouseSearch({ items, onSelect, isOpen, onClose }: WarehouseS
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: -20, opacity: 0, scale: 0.96 }}
           transition={{ type: "spring", damping: 25, stiffness: 350 }}
-          className="w-full max-w-md overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-surface)]/98 shadow-2xl backdrop-blur-xl"
+          className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface/98 shadow-2xl backdrop-blur-xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Search input */}
-          <div className="flex items-center gap-2 border-b border-[var(--border)] px-3.5 py-2.5">
-            <Search size={14} className="text-[var(--text-muted)]" />
+          <div className="flex items-center gap-2 border-b border-border px-3.5 py-2.5">
+            <Search size={14} className="text-text-muted" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar por SKU, producto, categoría o rack..."
-              className="flex-1 bg-transparent text-[12px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none"
+              className="flex-1 bg-transparent text-[12px] text-text-primary placeholder:text-text-muted outline-none"
             />
             <button
               onClick={onClose}
-              className="rounded-md p-0.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+              className="rounded-md p-0.5 text-text-muted transition-colors hover:text-text-primary"
             >
               <X size={12} />
             </button>
@@ -116,38 +116,38 @@ export function WarehouseSearch({ items, onSelect, isOpen, onClose }: WarehouseS
           <div className="max-h-72 overflow-y-auto py-1">
             {results.length === 0 ? (
               <div className="px-4 py-6 text-center">
-                <Package size={20} className="mx-auto mb-1.5 text-[var(--text-muted)]" />
-                <p className="text-[11px] text-[var(--text-muted)]">Sin resultados para &quot;{query}&quot;</p>
+                <Package size={20} className="mx-auto mb-1.5 text-text-muted" />
+                <p className="text-[11px] text-text-muted">Sin resultados para &quot;{query}&quot;</p>
               </div>
             ) : (
               results.map((item) => (
                 <button
                   key={item.positionId}
                   onClick={() => handleSelect(item)}
-                  className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left transition-colors hover:bg-[var(--bg-muted)]"
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left transition-colors hover:bg-muted"
                 >
                   <div className={`h-2 w-2 rounded-full ${statusColor[item.status] || "bg-slate-400"}`} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-semibold text-[var(--text-primary)]">
+                    <p className="truncate text-[11px] font-semibold text-text-primary">
                       {item.productName}
                     </p>
-                    <p className="text-[9px] text-[var(--text-muted)]">
+                    <p className="text-[9px] text-text-muted">
                       {item.productSku} · {item.category}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                  <div className="flex items-center gap-1 text-[9px] text-text-muted">
                     <MapPin size={9} />
                     <span>{item.rackCode} F{item.row}C{item.col}</span>
                   </div>
-                  <ArrowRight size={10} className="text-[var(--text-muted)]" />
+                  <ArrowRight size={10} className="text-text-muted" />
                 </button>
               ))
             )}
           </div>
 
           {/* Footer */}
-          <div className="border-t border-[var(--border)] px-3.5 py-1.5">
-            <p className="text-[8px] text-[var(--text-muted)]">
+          <div className="border-t border-border px-3.5 py-1.5">
+            <p className="text-[8px] text-text-muted">
               ⌘K para abrir · ESC para cerrar · Seleccionar para volar al producto
             </p>
           </div>

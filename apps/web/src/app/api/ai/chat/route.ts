@@ -17,7 +17,7 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
     { count: userCount },
     { count: warehouseCount },
     { count: productCount },
-    { data: warehouses },
+    {}, // warehouses list — unused; warehouseDetails used inside almacenes block
     { count: transactionCount },
     { count: vendorCount },
     { count: poCount },
@@ -55,12 +55,83 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
       .gt("min_stock", 0)
       .limit(5);
 
+    // WMS-specific enriched data
+    const { data: warehouseDetails } = await supabase
+      .from("warehouses")
+      .select("id, name, type, location, sap_plant_code")
+      .limit(10);
+
+    const { data: allPositions } = await supabase
+      .from("rack_positions")
+      .select("rack_id, status")
+      .limit(5000);
+
+    const { data: allRacks } = await supabase
+      .from("racks")
+      .select("id, warehouse_id, code")
+      .limit(500);
+
+    // Build occupancy map per warehouse
+    const rackToWarehouse = new Map<string, string>();
+    for (const r of allRacks || []) rackToWarehouse.set(r.id, r.warehouse_id);
+
+    const warehouseOccupancy = new Map<string, { total: number; occupied: number }>();
+    for (const p of allPositions || []) {
+      const whId = rackToWarehouse.get(p.rack_id);
+      if (!whId) continue;
+      if (!warehouseOccupancy.has(whId)) warehouseOccupancy.set(whId, { total: 0, occupied: 0 });
+      const s = warehouseOccupancy.get(whId)!;
+      s.total++;
+      if (p.status === "occupied") s.occupied++;
+    }
+
+    const occupancySummary = (warehouseDetails || []).map(w => {
+      const occ = warehouseOccupancy.get(w.id) || { total: 0, occupied: 0 };
+      const pct = occ.total > 0 ? Math.round((occ.occupied / occ.total) * 100) : 0;
+      return `${w.name} (${w.sap_plant_code || w.type}): ${pct}% ocupado (${occ.occupied}/${occ.total} posiciones)`;
+    }).join("; ");
+
+    // Expiring lots
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    const { data: expiringLots } = await supabase
+      .from("lot_tracking")
+      .select("lot_number, expiry_date, remaining_quantity, products(name, sku)")
+      .eq("status", "active")
+      .lte("expiry_date", expiryDate.toISOString().split("T")[0])
+      .order("expiry_date", { ascending: true })
+      .limit(10);
+
+    // Pending operations
+    const { count: pendingGR } = await supabase.from("goods_receipts").select("*", { count: "exact", head: true }).eq("status", "pending");
+    const { count: pendingGI } = await supabase.from("goods_issues").select("*", { count: "exact", head: true }).eq("status", "pending");
+    const { count: pendingTO } = await supabase.from("transfer_orders").select("*", { count: "exact", head: true }).eq("status", "pending");
+    const { count: pendingSO } = await supabase.from("sales_orders").select("*", { count: "exact", head: true }).in("status", ["pending", "confirmed"]);
+
+    // Recent movements
+    const { data: recentMov } = await supabase.rpc("wms_get_movements", { p_org_id: "a0000000-0000-0000-0000-000000000001", p_limit: 10 });
+
+    // Active AI insights
+    const { data: activeInsights } = await supabase
+      .from("wms_ai_insights")
+      .select("title, severity, message")
+      .eq("is_dismissed", false)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
     moduleContext += `
-## Datos de Almacenes
-- Almacenes: ${warehouses?.map((w) => `${w.name} (${w.type}, ${w.location})`).join(", ") || "N/A"}
+## Datos de Almacenes (WMS)
+- Almacenes: ${occupancySummary || "N/A"}
 - Productos catalogados: ${productCount || 0}
-- Productos ejemplo: ${products?.map((p) => `${p.name} [${p.sku}]`).join(", ") || "N/A"}
+- Productos ejemplo: ${products?.map((p) => `${p.name} [${p.sku}] (cat: ${p.category || "—"}, min_stock: ${p.min_stock || "N/A"})`).join(", ") || "N/A"}
 - Productos con stock mínimo configurado: ${lowStock?.length || 0}
+- Lotes próximos a vencer (30d): ${expiringLots?.map(l => {
+      const prod = (l as unknown as { products: { name: string; sku: string } | null }).products;
+      return `${l.lot_number} (${prod?.name || "?"} [${prod?.sku || "?"}], qty: ${l.remaining_quantity}, vence: ${l.expiry_date})`;
+    }).join("; ") || "Ninguno"}
+- Operaciones pendientes: ${pendingGR || 0} entradas, ${pendingGI || 0} salidas, ${pendingTO || 0} traspasos, ${pendingSO || 0} pedidos
+- Últimos movimientos: ${(recentMov as Array<{ product_name: string; movement_type: string; quantity: number; warehouse_name: string }> || []).slice(0, 5).map(m => `${m.movement_type}: ${m.quantity} UN ${m.product_name} → ${m.warehouse_name}`).join("; ") || "N/A"}
+- Alertas IA activas: ${activeInsights?.map(i => `[${i.severity}] ${i.title}: ${i.message}`).join("; ") || "Sin alertas"}
 `;
   }
 

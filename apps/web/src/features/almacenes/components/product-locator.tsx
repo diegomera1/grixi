@@ -86,45 +86,45 @@ export function ProductLocator({ items, onLocate, onClose, isOpen }: ProductLoca
           initial={{ y: -20, scale: 0.95 }}
           animate={{ y: 0, scale: 1 }}
           exit={{ y: -20, scale: 0.95 }}
-          className="w-full max-w-lg overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-2xl"
+          className="w-full max-w-lg overflow-hidden rounded-xl border border-border bg-surface shadow-2xl"
         >
           {/* Header */}
-          <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-3">
-            <QrCode size={16} className="text-[var(--brand)]" />
-            <h3 className="text-sm font-bold text-[var(--text-primary)]">Localizar Producto</h3>
+          <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+            <QrCode size={16} className="text-brand" />
+            <h3 className="text-sm font-bold text-text-primary">Localizar Producto</h3>
             <div className="flex-1" />
-            <button onClick={handleDemo} className="rounded-md bg-[var(--brand)]/10 px-2 py-1 text-[10px] font-semibold text-[var(--brand)] hover:bg-[var(--brand)]/20 transition-colors">
+            <button onClick={handleDemo} className="rounded-md bg-brand/10 px-2 py-1 text-[10px] font-semibold text-brand hover:bg-brand/20 transition-colors">
               🎯 Demo
             </button>
-            <button onClick={onClose} className="rounded p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+            <button onClick={onClose} className="rounded p-1 text-text-muted hover:text-text-primary">
               <X size={14} />
             </button>
           </div>
 
           {/* Search input */}
-          <div className="flex items-center gap-2 border-b border-[var(--border)] px-4 py-2.5">
-            <Search size={14} className="text-[var(--text-muted)]" />
+          <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+            <Search size={14} className="text-text-muted" />
             <input
               type="text"
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelectedItem(null); }}
               placeholder="Buscar por SKU, nombre, lote, categoría o rack..."
-              className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none"
+              className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
               autoFocus
             />
           </div>
 
           {/* Selected item detail card */}
           {selectedItem && (
-            <div className="border-b border-[var(--border)] bg-[var(--brand)]/5 px-4 py-3">
+            <div className="border-b border-border bg-brand/5 px-4 py-3">
               <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-[var(--brand)]/10 p-2">
-                  <Package size={20} className="text-[var(--brand)]" />
+                <div className="rounded-lg bg-brand/10 p-2">
+                  <Package size={20} className="text-brand" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-[var(--text-primary)]">{selectedItem.productName}</p>
-                  <p className="text-xs text-[var(--brand)] font-mono">{selectedItem.productSku}</p>
-                  <div className="mt-1.5 grid grid-cols-2 gap-1 text-[10px] text-[var(--text-muted)]">
+                  <p className="text-sm font-bold text-text-primary">{selectedItem.productName}</p>
+                  <p className="text-xs text-brand font-mono">{selectedItem.productSku}</p>
+                  <div className="mt-1.5 grid grid-cols-2 gap-1 text-[10px] text-text-muted">
                     <span className="flex items-center gap-1"><MapPin size={10} /> Rack {selectedItem.rackCode} · F{selectedItem.row}C{selectedItem.col}</span>
                     <span className="flex items-center gap-1"><Layers size={10} /> {selectedItem.quantity} unidades</span>
                     <span>📦 {selectedItem.category}</span>
@@ -145,7 +145,7 @@ export function ProductLocator({ items, onLocate, onClose, isOpen }: ProductLoca
           {/* Results */}
           <div className="max-h-60 overflow-y-auto">
             {query.trim() && filteredItems.length === 0 && (
-              <div className="flex flex-col items-center gap-1 py-6 text-[var(--text-muted)]">
+              <div className="flex flex-col items-center gap-1 py-6 text-text-muted">
                 <Package size={24} className="opacity-30" />
                 <p className="text-xs">No se encontraron productos</p>
               </div>
@@ -154,18 +154,18 @@ export function ProductLocator({ items, onLocate, onClose, isOpen }: ProductLoca
               <button
                 key={`${item.positionId}`}
                 onClick={() => handleLocate(item)}
-                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--bg-muted)] ${
-                  selectedItem?.positionId === item.positionId ? "bg-[var(--brand)]/5" : ""
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted ${
+                  selectedItem?.positionId === item.positionId ? "bg-brand/5" : ""
                 }`}
               >
                 <div className={`h-2 w-2 shrink-0 rounded-full ${statusColors[item.status] || "bg-gray-400"}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-xs font-medium text-[var(--text-primary)]">{item.productName}</p>
-                  <p className="text-[10px] text-[var(--text-muted)]">
+                  <p className="truncate text-xs font-medium text-text-primary">{item.productName}</p>
+                  <p className="text-[10px] text-text-muted">
                     {item.productSku} · Rack {item.rackCode} · {item.quantity} uds
                   </p>
                 </div>
-                <ArrowRight size={12} className="text-[var(--text-muted)]" />
+                <ArrowRight size={12} className="text-text-muted" />
               </button>
             ))}
           </div>
