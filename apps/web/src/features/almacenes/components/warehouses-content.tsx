@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
+
 import {
   Warehouse,
   MapPin,
@@ -54,6 +54,7 @@ import { AiAnalysisTab } from "./ai-analysis-tab";
 import { WmsTour } from "./wms-tour";
 import StockHierarchyView from "./stock-hierarchy-view";
 import LotDetailDrawer from "./lot-detail-drawer";
+import { WarehouseDetailDrawer } from "./warehouse-detail-drawer";
 import type { PhysicalCountRow } from "../actions/wms-queries";
 import type {
   WmsTab,
@@ -221,6 +222,8 @@ export function WarehousesContent({
   const [hoveredWarehouse, setHoveredWarehouse] = useState<string | null>(null);
   const [selectedWarehouseId] = useState<string | null>(null);
   const [almacenesView, setAlmacenesView] = useState<"3d" | "cards">("cards");
+  const [focusedWarehouseId, setFocusedWarehouseId] = useState<string | null>(null);
+  const [detailDrawerWarehouse, setDetailDrawerWarehouse] = useState<string | null>(null);
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
 
   // Warehouse list for child components
@@ -474,7 +477,7 @@ export function WarehousesContent({
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <WarehouseOverview3D />
+                  <WarehouseOverview3D initialSelectedId={focusedWarehouseId} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -628,21 +631,24 @@ export function WarehousesContent({
 
                       {/* Action buttons */}
                       <div className="mt-4 flex gap-2">
-                        <Link
-                          href={`/almacenes/${warehouse.id}`}
+                        <button
+                          onClick={() => setDetailDrawerWarehouse(warehouse.id)}
                           className="group/btn relative flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-text-secondary transition-all hover:border-brand/20 hover:bg-muted"
                         >
                           <Eye size={14} />
-                          Vista 2D
-                        </Link>
-                        <Link
-                          href={`/almacenes/${warehouse.id}?view=3d`}
+                          Ver Detalle
+                        </button>
+                        <button
+                          onClick={() => {
+                            setFocusedWarehouseId(warehouse.id);
+                            setAlmacenesView("3d");
+                          }}
                           className="group/btn relative flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-brand/25"
                         >
                           <Box size={14} />
                           Vista 3D
                           <ArrowRight size={14} className="transition-transform group-hover/btn:translate-x-0.5" />
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   </motion.div>
@@ -750,6 +756,38 @@ export function WarehousesContent({
           setActiveTab("operaciones");
         }}
       />
+
+      {/* ── Warehouse Detail Drawer ──────────── */}
+      <AnimatePresence>
+        {detailDrawerWarehouse && (() => {
+          const wh = warehouses.find(w => w.id === detailDrawerWarehouse);
+          if (!wh) return null;
+          return (
+            <>
+              <motion.div
+                key="drawer-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+                onClick={() => setDetailDrawerWarehouse(null)}
+              />
+              <WarehouseDetailDrawer
+                key="drawer"
+                warehouseId={wh.id}
+                warehouseName={wh.name}
+                warehouseType={wh.type}
+                warehouseLocation={wh.location}
+                occupancy={wh.occupancy}
+                totalPositions={wh.totalPositions}
+                occupiedPositions={wh.occupiedPositions}
+                rackCount={wh.rackCount}
+                onClose={() => setDetailDrawerWarehouse(null)}
+              />
+            </>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }

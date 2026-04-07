@@ -1097,13 +1097,21 @@ function HudStats({ warehouses }: { warehouses: WarehouseOverview[] }) {
 }
 
 // ─── Main Component ───────────────────────────────────────
-export default function WarehouseOverview3D() {
+export default function WarehouseOverview3D({ initialSelectedId }: { initialSelectedId?: string | null } = {}) {
   const [warehouses, setWarehouses] = useState<WarehouseOverview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId || null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedRack, setSelectedRack] = useState<MiniRackData | null>(null);
+
+  // Sync external initialSelectedId changes
+  useEffect(() => {
+    if (initialSelectedId) {
+      setSelectedId(initialSelectedId);
+      setSelectedRack(null);
+    }
+  }, [initialSelectedId]);
 
   useEffect(() => {
     fetchAllWarehousesOverview()
