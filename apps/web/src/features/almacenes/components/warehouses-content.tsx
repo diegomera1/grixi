@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils/cn";
 const WarehouseOverview3D = dynamic(() => import("./warehouse-overview-3d"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[calc(100vh-140px)] rounded-2xl bg-[#080b18] border border-indigo-500/15 flex items-center justify-center">
+    <div className="w-full h-[calc(100vh-220px)] min-h-[400px] rounded-2xl bg-[#080b18] border border-indigo-500/15 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" />
         <p className="text-xs text-indigo-300/50">Cargando vista 3D...</p>

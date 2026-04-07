@@ -118,6 +118,25 @@ export function AiChatContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Listen for 3D navigation events from AI chat messages
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      const params = new URLSearchParams();
+      params.set("tab", "3d");
+      if (detail.type === "warehouse" && detail.id) {
+        params.set("warehouse", detail.id);
+      } else if (detail.type === "rack" && detail.warehouseId) {
+        params.set("warehouse", detail.warehouseId);
+        if (detail.rackCode) params.set("rack", detail.rackCode);
+      }
+      router.push(`/almacenes?${params.toString()}`);
+    };
+    window.addEventListener("grixi-ai:navigate", handler);
+    return () => window.removeEventListener("grixi-ai:navigate", handler);
+  }, [router]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

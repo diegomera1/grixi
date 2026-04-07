@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Bot, User, Copy, Check, RefreshCw, Star, ImageIcon, Loader2 } from "lucide-react";
+import { Bot, User, Copy, Check, RefreshCw, Star, ImageIcon, Loader2, MapPin, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -37,6 +37,60 @@ function parseSuggestions(content: string): {
   } catch {
     return { cleanContent: content, suggestions: [] };
   }
+}
+
+/** Navigation link type */
+type NavigateLink = {
+  type: "warehouse" | "rack" | "position";
+  id?: string;
+  warehouseId?: string;
+  rackCode?: string;
+  label: string;
+};
+
+/** Parse NAVIGATE blocks from AI response */
+function parseNavigateBlocks(content: string): {
+  cleanContent: string;
+  navigateLinks: NavigateLink[];
+} {
+  const regex = /<!--NAVIGATE:(\{[\s\S]*?\})-->/g;
+  const links: NavigateLink[] = [];
+  let cleanContent = content;
+
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    try {
+      const link = JSON.parse(match[1]) as NavigateLink;
+      links.push(link);
+      cleanContent = cleanContent.replace(match[0], "");
+    } catch {
+      // skip malformed
+    }
+  }
+
+  return { cleanContent: cleanContent.trim(), navigateLinks: links };
+}
+
+/** Navigate link button component */
+function NavigateLinkButton({ link }: { link: NavigateLink }) {
+  const handleClick = () => {
+    window.dispatchEvent(
+      new CustomEvent("grixi-ai:navigate", {
+        detail: link,
+      })
+    );
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="group/nav flex items-center gap-2 rounded-xl border border-[var(--brand)]/20 bg-[var(--brand)]/5 px-3.5 py-2 text-xs font-semibold text-[var(--brand)] transition-all hover:border-[var(--brand)]/40 hover:bg-[var(--brand)]/10 hover:shadow-md hover:shadow-[var(--brand)]/5 active:scale-[0.98]"
+    >
+      <MapPin size={13} className="shrink-0" />
+      <span>{link.label}</span>
+      <ExternalLink size={10} className="shrink-0 opacity-0 transition-opacity group-hover/nav:opacity-60" />
+    </button>
+  );
 }
 
 /** AI Image Block — fetches and renders generated image */
@@ -178,12 +232,13 @@ export function ChatMessage({
   const isUser = message.role === "user";
 
   // Parse rich content: suggestions, charts, images
-  const { cleanContent, suggestions, charts, imagePrompts } = useMemo(() => {
-    if (isUser) return { cleanContent: message.content, suggestions: [], charts: [], imagePrompts: [] };
+  const { cleanContent, suggestions, charts, imagePrompts, navigateLinks } = useMemo(() => {
+    if (isUser) return { cleanContent: message.content, suggestions: [], charts: [], imagePrompts: [], navigateLinks: [] };
     const { cleanContent: c1, suggestions } = parseSuggestions(message.content);
     const { cleanContent: c2, charts } = parseChartBlocks(c1);
     const { cleanContent: c3, imagePrompts } = parseImageBlocks(c2);
-    return { cleanContent: c3, suggestions, charts, imagePrompts };
+    const { cleanContent: c4, navigateLinks } = parseNavigateBlocks(c3);
+    return { cleanContent: c4, suggestions, charts, imagePrompts, navigateLinks };
   }, [message.content, isUser]);
 
   const handleCopy = async () => {
@@ -330,6 +385,14 @@ export function ChatMessage({
               {imagePrompts.length > 0 && !isStreaming && imagePrompts.map((prompt, i) => (
                 <AiImageBlock key={`img-${i}`} prompt={prompt} />
               ))}
+              {/* 3D Navigate links */}
+              {navigateLinks.length > 0 && !isStreaming && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {navigateLinks.map((link, i) => (
+                    <NavigateLinkButton key={`nav-${i}`} link={link} />
+                  ))}
+                </div>
+              )}
               {/* Streaming cursor */}
               {isStreaming && (
                 <motion.span

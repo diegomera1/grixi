@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,7 +10,7 @@ import {
   Search, CheckCircle2, AlertCircle, Loader2,
   ShoppingCart, ClipboardList, Eye, Send,
   Users, Calendar, Truck, MapPin, Sparkles,
-  Save, ToggleLeft, ToggleRight, Plus, Minus, Box,
+  Save, Plus, Minus, Box,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { SalesOrderForGI } from "../types";
@@ -109,6 +110,7 @@ function formatDate(d: string | null) {
 }
 
 export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIWizardProps) {
+  const router = useRouter();
   const [step, setStep] = useState<WizardStep>(1);
   const [isPending, startTransition] = useTransition();
 
@@ -130,8 +132,9 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
   const [availableSUs, setAvailableSUs] = useState<Record<string, AvailableSU[]>>({});
   const [loadingSUs, setLoadingSUs] = useState<Record<string, boolean>>({});
 
-  // 3D panel
   const [show3DPanel, setShow3DPanel] = useState(false);
+  const [manualSubView, setManualSubView] = useState<Record<string, "list" | "map">>({});
+  const [manualMapRack, setManualMapRack] = useState<Record<string, string | null>>({});
 
   // Draft
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -354,6 +357,7 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
         toast.success("Borrador guardado", {
           description: `Picking guardado — puedes retomarlo después`,
         });
+        router.refresh();
       } else {
         toast.error("Error al guardar borrador");
       }
@@ -455,6 +459,7 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
               });
             }
           }
+          router.refresh();
         }
       } catch {
         setResult({ success: false, message: "Error al contabilizar" });
@@ -474,6 +479,8 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
     setManualPicks({});
     setAvailableSUs({});
     setShow3DPanel(false);
+    setManualSubView({});
+    setManualMapRack({});
     setDraftId(null);
     onClose();
   }
@@ -501,7 +508,7 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-2xl overflow-y-auto bg-background border-l border-border shadow-2xl"
+        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-2xl flex flex-col bg-background border-l border-border shadow-2xl"
       >
         {/* Header */}
         <div className="sticky top-0 z-10 border-b border-border bg-background p-4">
@@ -550,8 +557,8 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
           </div>
         </div>
 
-        {/* Body */}
-        <div className="p-4">
+        {/* Body — scrollable */}
+        <div className="flex-1 overflow-y-auto p-4">
           <AnimatePresence mode="wait">
             {/* ── STEP 1: Select Sales Order ── */}
             {step === 1 && (
@@ -749,21 +756,20 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
                 )}
 
                 {/* ═══ AI PICKING HEADER ═══ */}
-                <div className="flex items-center gap-3 rounded-xl border border-indigo-500/20 bg-linear-to-br from-indigo-500/5 to-violet-500/5 p-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-violet-500 shrink-0">
-                    <Sparkles size={14} className="text-white" />
+                <div className="flex items-center gap-2 rounded-lg border border-indigo-500/15 bg-indigo-500/5 px-3 py-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-linear-to-br from-indigo-500 to-violet-500 shrink-0">
+                    <Sparkles size={11} className="text-white" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold text-text-primary">GRIXI AI — Picking Inteligente</p>
-                    <p className="text-[8px] text-text-muted">
-                      FEFO/FIFO · Cada producto permite elegir entre sugerencia IA o selección manual
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold text-text-primary">GRIXI AI — Picking Inteligente
+                      <span className="font-normal text-text-muted ml-1">FEFO/FIFO · IA o manual por producto</span>
                     </p>
                   </div>
-                  {loadingPicking && <Loader2 size={14} className="animate-spin text-indigo-500" />}
+                  {loadingPicking && <Loader2 size={12} className="animate-spin text-indigo-500 shrink-0" />}
                 </div>
 
                 {/* ═══ PRODUCTS WITH PICKING MODES ═══ */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {pickItems.map((item, idx) => {
                     const mode = pickingMode[item.product_id] || "ai";
                     const aiSuggestions = pickingSuggestions[item.product_id] || [];
@@ -777,7 +783,7 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
                       <div
                         key={item.product_id}
                         className={cn(
-                          "rounded-xl border p-3 space-y-3",
+                          "rounded-lg border p-2.5 space-y-2",
                           mode === "manual" && manual.length > 0
                             ? "border-cyan-500/20 bg-cyan-500/2"
                             : hasSuggestion
@@ -785,52 +791,95 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
                             : "border-amber-500/20 bg-amber-500/2"
                         )}
                       >
-                        {/* Product header + mode toggle */}
-                        <div className="flex items-start justify-between">
+                        {/* Product header */}
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {(mode === "manual" ? manual.length > 0 : hasSuggestion) ? (
-                              <CheckCircle2 size={13} className={mode === "manual" ? "text-cyan-500 shrink-0 mt-0.5" : "text-emerald-500 shrink-0 mt-0.5"} />
+                              <CheckCircle2 size={13} className={mode === "manual" ? "text-cyan-500 shrink-0" : "text-emerald-500 shrink-0"} />
                             ) : (
-                              <AlertCircle size={13} className="text-amber-500 shrink-0 mt-0.5" />
+                              <AlertCircle size={13} className="text-amber-500 shrink-0" />
                             )}
                             <div>
                               <p className="text-xs font-bold text-text-primary">{item.product_name}</p>
-                              <p className="text-[10px] text-text-muted font-mono">{item.product_sku}</p>
+                              <p className="text-[10px] text-text-muted font-mono">{item.product_sku} · Pedido: {item.quantity_ordered} {item.unit}</p>
                             </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-text-muted">
-                              Pedido: {item.quantity_ordered} {item.unit}
-                            </span>
-                            {/* Mode Toggle */}
-                            <button
-                              onClick={() => togglePickingMode(item.product_id)}
-                              className={cn(
-                                "flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full transition-all",
-                                mode === "manual"
-                                  ? "bg-cyan-500/10 text-cyan-500 border border-cyan-500/20"
-                                  : "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20"
-                              )}
-                            >
-                              {mode === "manual" ? (
-                                <><ToggleRight size={10} /> Manual</>
-                              ) : (
-                                <><ToggleLeft size={10} /> IA</>
-                              )}
-                            </button>
                           </div>
                         </div>
 
+                        {/* ── MODE SELECTOR — inline compact ── */}
+                        <div className="flex items-center gap-1 p-0.5 bg-muted/50 rounded-lg border border-border/50">
+                          <button
+                            onClick={() => { if (mode !== "ai") togglePickingMode(item.product_id); }}
+                            className={cn(
+                              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[9px] font-bold transition-all flex-1 justify-center",
+                              mode === "ai"
+                                ? "bg-indigo-500/15 text-indigo-500 border border-indigo-500/25 shadow-sm"
+                                : "text-text-muted hover:bg-surface border border-transparent"
+                            )}
+                          >
+                            <Sparkles size={10} />
+                            IA Auto
+                          </button>
+                          <button
+                            onClick={() => { if (mode !== "manual") togglePickingMode(item.product_id); }}
+                            className={cn(
+                              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[9px] font-bold transition-all flex-1 justify-center",
+                              mode === "manual"
+                                ? "bg-cyan-500/15 text-cyan-500 border border-cyan-500/25 shadow-sm"
+                                : "text-text-muted hover:bg-surface border border-transparent"
+                            )}
+                          >
+                            <MapPin size={10} />
+                            Manual
+                          </button>
+                        </div>
+
+                        {/* ── Animated Mode Content ── */}
+                        <AnimatePresence mode="wait">
                         {/* ── AI Mode ── */}
                         {mode === "ai" && (
-                          <>
-                            {aiSuggestions.length > 0 ? (
-                              <div className="space-y-1">
+                          <motion.div
+                            key="ai-mode"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="space-y-2"
+                          >
+                            {/* AI Hint — compact */}
+                            <div className="flex items-center gap-2 rounded-md bg-indigo-500/5 border border-indigo-500/10 px-2.5 py-1.5">
+                              <Sparkles size={10} className="text-indigo-400 shrink-0" />
+                              <p className="text-[8px] text-indigo-400/80">
+                                <span className="font-bold text-indigo-400">Auto.</span> Optimizado FEFO/FIFO por lote y antigüedad.
+                              </p>
+                            </div>
+
+                            {loadingPicking && (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="flex items-center gap-2 py-4 justify-center"
+                              >
+                                <Loader2 size={14} className="animate-spin text-indigo-500" />
+                                <span className="text-[10px] text-indigo-400">Analizando stock con IA...</span>
+                              </motion.div>
+                            )}
+
+                            {!loadingPicking && aiSuggestions.length > 0 && (
+                              <div className="space-y-1.5">
                                 {aiSuggestions.map((s, sIdx) => (
-                                  <div key={sIdx} className="rounded-md bg-emerald-500/5 border border-emerald-500/10 px-2.5 py-1.5">
+                                  <motion.div
+                                    key={sIdx}
+                                    initial={{ opacity: 0, x: -12 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.15 + sIdx * 0.06, ease: "easeOut" }}
+                                    className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 px-3 py-2 hover:bg-emerald-500/8 transition-colors"
+                                  >
                                     <div className="flex items-center justify-between text-[10px]">
                                       <div className="flex items-center gap-2">
+                                        <div className="flex items-center justify-center w-5 h-5 rounded bg-emerald-500/20">
+                                          <Package size={9} className="text-emerald-400" />
+                                        </div>
                                         <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{s.su_code}</span>
                                         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">
                                           {s.lot_number}
@@ -838,45 +887,107 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
                                       </div>
                                       <span className="font-bold text-emerald-500 tabular-nums">{s.suggested_qty} {item.unit}</span>
                                     </div>
-                                    <div className="flex items-center gap-3 text-[8px] text-text-muted mt-0.5">
+                                    <div className="flex items-center gap-3 text-[8px] text-text-muted mt-1">
                                       <span className="flex items-center gap-0.5">
                                         <MapPin size={7} className="text-cyan-500" />
-                                        {s.rack_code} · Fila {s.row_number} · Col {s.column_number}
+                                        {s.rack_code} · F{s.row_number} · C{s.column_number}
                                       </span>
                                       <span>Stock: {s.available_quantity} {item.unit}</span>
                                     </div>
-                                    <p className="text-[8px] text-amber-600 dark:text-amber-400">💡 {s.reason}</p>
-                                  </div>
+                                    <p className="text-[8px] text-amber-600 dark:text-amber-400 mt-0.5">💡 {s.reason}</p>
+                                  </motion.div>
                                 ))}
+
+                                {/* AI Summary */}
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: 0.3 }}
+                                  className="flex items-center gap-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10 px-3 py-1.5"
+                                >
+                                  <CheckCircle2 size={10} className="text-emerald-500 shrink-0" />
+                                  <span className="text-[9px] text-emerald-500 font-medium">
+                                    {aiSuggestions.length} UA{aiSuggestions.length > 1 ? "s" : ""} seleccionada{aiSuggestions.length > 1 ? "s" : ""} ·{" "}
+                                    {aiSuggestions.reduce((s, a) => s + a.suggested_qty, 0)} {item.unit} total
+                                  </span>
+                                </motion.div>
                               </div>
-                            ) : !loadingPicking ? (
-                              <p className="text-[9px] text-amber-500">⚠ Sin stock disponible — usa modo Manual para buscar en otros almacenes</p>
-                            ) : null}
-                          </>
+                            )}
+
+                            {!loadingPicking && aiSuggestions.length === 0 && (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="rounded-lg bg-amber-500/5 border border-amber-500/15 px-3 py-3 text-center"
+                              >
+                                <AlertCircle size={16} className="mx-auto mb-1 text-amber-500/60" />
+                                <p className="text-[9px] text-amber-500 font-medium">Sin stock disponible en este almacén</p>
+                                <p className="text-[8px] text-text-muted mt-0.5">Cambia a modo <span className="text-cyan-500 font-bold">Manual</span> para buscar en todas las ubicaciones</p>
+                              </motion.div>
+                            )}
+                          </motion.div>
                         )}
 
                         {/* ── Manual Mode ── */}
-                        {mode === "manual" && (
-                          <div className="space-y-2">
-                            {/* Selected manual picks */}
+                        {mode === "manual" && (() => {
+                          const subView = (manualSubView[item.product_id] || "list") as "list" | "map";
+                          const setSubView = (v: "list" | "map") => setManualSubView(prev => ({ ...prev, [item.product_id]: v }));
+                          const selectedRackForMap = manualMapRack[item.product_id] || null;
+                          const setSelectedRackForMap = (r: string | null) => setManualMapRack(prev => ({ ...prev, [item.product_id]: r }));
+
+                          return (
+                          <motion.div
+                            key="manual-mode"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            className="space-y-2"
+                          >
+                            {/* Manual Hint — compact */}
+                            <div className="flex items-center gap-2 rounded-md bg-cyan-500/5 border border-cyan-500/10 px-2.5 py-1.5">
+                              <MapPin size={10} className="text-cyan-400 shrink-0" />
+                              <p className="text-[8px] text-cyan-400/80">
+                                <span className="font-bold text-cyan-400">Manual.</span> Selecciona UAs por lista o explora el mapa visual.
+                              </p>
+                            </div>
+
+                            {/* Selected manual picks (always visible) */}
+                            <AnimatePresence>
                             {manual.length > 0 && (
-                              <div className="space-y-1">
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="space-y-1.5 overflow-hidden"
+                              >
                                 <p className="text-[9px] font-semibold text-cyan-500 flex items-center gap-1">
                                   <Box size={9} /> UAs seleccionadas ({manual.length})
                                 </p>
-                                {manual.map((p) => (
-                                  <div key={p.su_id} className="rounded-md bg-cyan-500/5 border border-cyan-500/10 px-2.5 py-1.5">
+                                {manual.map((p, pIdx) => (
+                                  <motion.div
+                                    key={p.su_id}
+                                    initial={{ opacity: 0, x: -12 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 12, height: 0 }}
+                                    transition={{ delay: pIdx * 0.04 }}
+                                    layout
+                                    className="rounded-lg bg-cyan-500/5 border border-cyan-500/15 px-3 py-2"
+                                  >
                                     <div className="flex items-center justify-between text-[10px]">
                                       <div className="flex items-center gap-2">
+                                        <div className="flex items-center justify-center w-5 h-5 rounded bg-cyan-500/20">
+                                          <Package size={9} className="text-cyan-400" />
+                                        </div>
                                         <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">{p.su_code}</span>
                                         <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">
                                           {p.lot_number}
                                         </span>
                                       </div>
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1.5">
                                         <button
                                           onClick={() => updateManualPickQty(item.product_id, p.su_id, p.quantity - 1)}
-                                          className="w-5 h-5 flex items-center justify-center rounded bg-muted hover:bg-surface text-text-muted"
+                                          className="w-5 h-5 flex items-center justify-center rounded bg-muted hover:bg-surface text-text-muted transition-colors"
                                         >
                                           <Minus size={9} />
                                         </button>
@@ -890,73 +1001,393 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
                                         />
                                         <button
                                           onClick={() => updateManualPickQty(item.product_id, p.su_id, p.quantity + 1)}
-                                          className="w-5 h-5 flex items-center justify-center rounded bg-muted hover:bg-surface text-text-muted"
+                                          className="w-5 h-5 flex items-center justify-center rounded bg-muted hover:bg-surface text-text-muted transition-colors"
                                         >
                                           <Plus size={9} />
                                         </button>
                                         <span className="text-[8px] text-text-muted">/ {p.max_available}</span>
                                         <button
                                           onClick={() => removeManualPick(item.product_id, p.su_id)}
-                                          className="text-red-400 hover:text-red-500 ml-1"
+                                          className="text-red-400 hover:text-red-500 ml-1 transition-colors"
                                         >
                                           <X size={10} />
                                         </button>
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[8px] text-text-muted mt-0.5">
+                                    <div className="flex items-center gap-2 text-[8px] text-text-muted mt-1">
                                       <MapPin size={7} className="text-cyan-500" />
                                       <span>{p.warehouse_name} · {p.position_label}</span>
                                     </div>
-                                  </div>
+                                  </motion.div>
                                 ))}
                                 <div className="text-[9px] text-right">
                                   <span className={manualTotal >= item.quantity_to_pick ? "text-emerald-500 font-bold" : "text-amber-500 font-bold"}>
                                     {manualTotal} / {item.quantity_to_pick} {item.unit} seleccionadas
                                   </span>
                                 </div>
-                              </div>
+                              </motion.div>
+                            )}
+                            </AnimatePresence>
+
+                            {/* Sub-view toggle: Lista ↔ Mapa Visual ↔ 3D */}
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 0.15 }}
+                              className="flex items-center gap-1.5 border-t border-border/50 pt-2"
+                            >
+                              {([
+                                { key: "list" as const, label: "Lista", icon: ClipboardList },
+                                { key: "map" as const, label: "Mapa Rack", icon: MapPin },
+                              ]).map(tab => (
+                                <button
+                                  key={tab.key}
+                                  onClick={() => setSubView(tab.key)}
+                                  className={cn(
+                                    "flex items-center gap-1.5 text-[9px] px-3 py-1.5 rounded-lg font-medium transition-all",
+                                    subView === tab.key
+                                      ? "bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 shadow-sm"
+                                      : "text-text-muted hover:text-text-primary hover:bg-muted border border-transparent"
+                                  )}
+                                >
+                                  <tab.icon size={10} />
+                                  {tab.label}
+                                </button>
+                              ))}
+                              <span className="text-[8px] text-text-muted ml-auto tabular-nums">
+                                {available.length} UAs disp.
+                              </span>
+                            </motion.div>
+
+                            {/* ── Animated sub-views ── */}
+                            <AnimatePresence mode="wait">
+                            {/* LIST SUB-VIEW */}
+                            {subView === "list" && (
+                              <motion.div
+                                key="list-sub"
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                {isLoadingSU ? (
+                                  <div className="flex items-center gap-2 py-4 justify-center">
+                                    <Loader2 size={12} className="animate-spin text-cyan-500" />
+                                    <span className="text-[9px] text-cyan-500">Buscando UAs disponibles...</span>
+                                  </div>
+                                ) : available.length > 0 ? (
+                                  <div className="grid gap-1 max-h-[180px] overflow-y-auto">
+                                    {available
+                                      .filter(su => !manual.find(p => p.su_id === su.su_id))
+                                      .map((su, suIdx) => (
+                                        <motion.button
+                                          key={su.su_id}
+                                          initial={{ opacity: 0, x: -8 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          transition={{ delay: suIdx * 0.03 }}
+                                          onClick={() => addManualPick(item.product_id, su)}
+                                          className="flex items-center justify-between px-3 py-2 rounded-lg border border-border hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all text-left group"
+                                        >
+                                          <div className="flex items-center gap-2 text-[10px]">
+                                            <div className="flex items-center justify-center w-5 h-5 rounded bg-muted group-hover:bg-cyan-500/20 transition-colors">
+                                              <Plus size={9} className="text-text-muted group-hover:text-cyan-500 transition-colors" />
+                                            </div>
+                                            <span className="font-mono font-bold text-text-primary">{su.su_code}</span>
+                                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">
+                                              {su.lot_number}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-3 text-[9px] text-text-muted">
+                                            <span>{su.rack_code} · F{su.row_number}C{su.column_number}</span>
+                                            <span className="font-bold text-emerald-500 tabular-nums">{su.available_quantity} disp.</span>
+                                          </div>
+                                        </motion.button>
+                                      ))}
+                                  </div>
+                                ) : (
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="rounded-lg bg-amber-500/5 border border-amber-500/15 px-3 py-3 text-center"
+                                  >
+                                    <AlertCircle size={16} className="mx-auto mb-1 text-amber-500/60" />
+                                    <p className="text-[9px] text-amber-500 font-medium">No hay UAs disponibles para este producto</p>
+                                  </motion.div>
+                                )}
+                              </motion.div>
                             )}
 
-                            {/* Available SUs to add */}
-                            <div className="border-t border-border/50 pt-2">
-                              <p className="text-[9px] font-semibold text-text-muted mb-1">
-                                UAs disponibles — click para agregar
-                              </p>
-                              {isLoadingSU ? (
-                                <div className="flex items-center gap-2 py-3 justify-center">
-                                  <Loader2 size={12} className="animate-spin text-cyan-500" />
-                                  <span className="text-[9px] text-cyan-500">Buscando UAs...</span>
-                                </div>
-                              ) : available.length > 0 ? (
-                                <div className="grid gap-1 max-h-[160px] overflow-y-auto">
-                                  {available
-                                    .filter(su => !manual.find(p => p.su_id === su.su_id))
-                                    .map((su) => (
-                                      <button
-                                        key={su.su_id}
-                                        onClick={() => addManualPick(item.product_id, su)}
-                                        className="flex items-center justify-between px-2.5 py-1.5 rounded-md border border-border hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-colors text-left group"
+                            {/* MAP SUB-VIEW */}
+                            {subView === "map" && selectedWarehouse && (
+                              <motion.div
+                                key="map-sub"
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.2 }}
+                                className="space-y-2 max-h-[300px] overflow-y-auto"
+                              >
+                                {isLoadingSU ? (
+                                  <div className="flex items-center gap-2 py-6 justify-center">
+                                    <Loader2 size={14} className="animate-spin text-cyan-500" />
+                                    <span className="text-[10px] text-cyan-500">Cargando mapa...</span>
+                                  </div>
+                                ) : available.length > 0 ? (
+                                  <>
+                                    {/* Mini 3D Preview of full warehouse */}
+                                    {allHighlightedPositions.length > 0 && (
+                                      <motion.div
+                                        initial={{ opacity: 0, scale: 0.98 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="rounded-xl border border-cyan-500/15 overflow-hidden"
                                       >
-                                        <div className="flex items-center gap-2 text-[10px]">
-                                          <Plus size={10} className="text-text-muted group-hover:text-cyan-500 transition-colors" />
-                                          <span className="font-mono font-bold text-text-primary">{su.su_code}</span>
-                                          <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">
-                                            {su.lot_number}
-                                          </span>
+                                        <MiniWarehouse3D
+                                          warehouseId={selectedWarehouse}
+                                          warehouseName={wh?.name || "Almacén"}
+                                          highlightedPositions={allHighlightedPositions}
+                                          contextLabel={`Picking Manual · ${item.product_name}`}
+                                        />
+                                      </motion.div>
+                                    )}
+
+                                    {/* Rack chips */}
+                                    {(() => {
+                                      const rackGroups: Record<string, AvailableSU[]> = {};
+                                      for (const su of available) {
+                                        const key = su.rack_code || "SIN-RACK";
+                                        if (!rackGroups[key]) rackGroups[key] = [];
+                                        rackGroups[key].push(su);
+                                      }
+                                      const rackKeys = Object.keys(rackGroups);
+
+                                      return (
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-[8px] text-text-muted uppercase tracking-wider font-semibold shrink-0">Racks:</span>
+                                            {rackKeys.map((rk, rkIdx) => {
+                                              const isActive = selectedRackForMap === rk;
+                                              const count = rackGroups[rk].length;
+                                              const totalQty = rackGroups[rk].reduce((s, su) => s + su.available_quantity, 0);
+                                              return (
+                                                <motion.button
+                                                  key={rk}
+                                                  initial={{ opacity: 0, scale: 0.9 }}
+                                                  animate={{ opacity: 1, scale: 1 }}
+                                                  transition={{ delay: 0.15 + rkIdx * 0.04 }}
+                                                  onClick={() => setSelectedRackForMap(isActive ? null : rk)}
+                                                  className={cn(
+                                                    "text-[9px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all",
+                                                    isActive
+                                                      ? "bg-cyan-500/15 border-cyan-500/40 text-cyan-400 ring-1 ring-cyan-500/30 shadow-[0_0_8px_rgba(6,182,212,0.15)]"
+                                                      : "bg-muted border-border text-text-muted hover:border-cyan-500/20 hover:text-cyan-500"
+                                                  )}
+                                                >
+                                                  {rk}
+                                                  <span className="ml-1 text-[8px] font-normal opacity-60">
+                                                    {count} UA · {totalQty} UN
+                                                  </span>
+                                                </motion.button>
+                                              );
+                                            })}
+                                          </div>
+
+                                          {/* Selected rack content */}
+                                          <AnimatePresence mode="wait">
+                                          {selectedRackForMap && rackGroups[selectedRackForMap] && (
+                                            <motion.div
+                                              key={selectedRackForMap}
+                                              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                                              exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                                              transition={{ duration: 0.2 }}
+                                              className="rounded-xl border border-cyan-500/15 bg-[#0d0f1e] p-3 space-y-2"
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                  <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-cyan-500/20">
+                                                    <MapPin size={11} className="text-cyan-400" />
+                                                  </div>
+                                                  <div>
+                                                    <span className="text-[10px] font-bold text-white/90 font-mono">
+                                                      {wh?.name} → {selectedRackForMap}
+                                                    </span>
+                                                    <span className="text-[8px] text-cyan-400/50 font-mono ml-2">PICKING</span>
+                                                  </div>
+                                                </div>
+                                                <span className="text-[9px] text-emerald-400 font-bold tabular-nums">
+                                                  {rackGroups[selectedRackForMap].reduce((s, su) => s + su.available_quantity, 0)} UN disp.
+                                                </span>
+                                              </div>
+
+                                              {/* Visual position grid */}
+                                              {(() => {
+                                                const rackSUs = rackGroups[selectedRackForMap];
+                                                const maxRow = Math.max(...rackSUs.map(su => su.row_number), 1);
+                                                const maxCol = Math.max(...rackSUs.map(su => su.column_number), 1);
+
+                                                return (
+                                                  <div>
+                                                    <p className="text-[7px] text-zinc-500 uppercase tracking-widest mb-1.5">
+                                                      Posiciones con stock · Click para seleccionar
+                                                    </p>
+                                                    <div
+                                                      className="grid gap-[3px]"
+                                                      style={{ gridTemplateColumns: `auto repeat(${maxCol}, 1fr)` }}
+                                                    >
+                                                      <div />
+                                                      {Array.from({ length: maxCol }, (_, c) => (
+                                                        <div key={c} className="text-center text-[7px] font-mono text-zinc-600 py-0.5">C{c + 1}</div>
+                                                      ))}
+
+                                                      {Array.from({ length: maxRow }, (_, r) => (
+                                                        <>
+                                                          <div key={`rl-${r}`} className="flex items-center justify-center text-[7px] font-mono text-zinc-600 pr-1">F{r + 1}</div>
+                                                          {Array.from({ length: maxCol }, (_, c) => {
+                                                            const su = rackSUs.find(s => s.row_number === r + 1 && s.column_number === c + 1);
+                                                            const alreadyPicked = manual.find(p => p.su_id === su?.su_id);
+
+                                                            if (!su) {
+                                                              return <div key={`e-${r}-${c}`} className="h-10 rounded bg-zinc-900/50 border border-zinc-800/40" />;
+                                                            }
+
+                                                            return (
+                                                              <motion.button
+                                                                key={su.su_id}
+                                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                                animate={{ opacity: 1, scale: 1 }}
+                                                                transition={{ delay: (r * maxCol + c) * 0.02 }}
+                                                                onClick={() => { if (!alreadyPicked) addManualPick(item.product_id, su); }}
+                                                                disabled={!!alreadyPicked}
+                                                                className={cn(
+                                                                  "relative h-10 rounded border transition-all flex flex-col items-center justify-center gap-0.5",
+                                                                  alreadyPicked
+                                                                    ? "bg-cyan-500/20 border-cyan-400/50 ring-1 ring-cyan-400/30"
+                                                                    : "bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-400/50 cursor-pointer hover:scale-[1.08]"
+                                                                )}
+                                                                title={`${su.su_code} · ${su.available_quantity} UN · Lote ${su.lot_number}`}
+                                                              >
+                                                                <span className={cn(
+                                                                  "text-[8px] font-bold tabular-nums leading-none",
+                                                                  alreadyPicked ? "text-cyan-300" : "text-emerald-400"
+                                                                )}>
+                                                                  {su.available_quantity}
+                                                                </span>
+                                                                <span className="text-[5px] text-zinc-500 font-mono leading-none truncate max-w-full px-0.5">
+                                                                  {su.su_code.slice(-4)}
+                                                                </span>
+                                                                {alreadyPicked && (
+                                                                  <motion.div
+                                                                    initial={{ scale: 0 }}
+                                                                    animate={{ scale: 1 }}
+                                                                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-400 flex items-center justify-center"
+                                                                  >
+                                                                    <CheckCircle2 size={6} className="text-white" />
+                                                                  </motion.div>
+                                                                )}
+                                                              </motion.button>
+                                                            );
+                                                          })}
+                                                        </>
+                                                      ))}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 mt-2">
+                                                      <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 rounded-sm bg-emerald-500/30 border border-emerald-500/50" />
+                                                        <span className="text-[7px] text-zinc-500">Disponible</span>
+                                                      </div>
+                                                      <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 rounded-sm bg-cyan-500/30 border border-cyan-400/50" />
+                                                        <span className="text-[7px] text-zinc-500">Seleccionado</span>
+                                                      </div>
+                                                      <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 rounded-sm bg-zinc-900/50 border border-zinc-800" />
+                                                        <span className="text-[7px] text-zinc-500">Vacío</span>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })()}
+
+                                              {/* SU detail list */}
+                                              <div className="border-t border-white/5 pt-2 space-y-1 max-h-[120px] overflow-y-auto">
+                                                {rackGroups[selectedRackForMap].map((su, suIdx) => {
+                                                  const isPicked = !!manual.find(p => p.su_id === su.su_id);
+                                                  return (
+                                                    <motion.button
+                                                      key={su.su_id}
+                                                      initial={{ opacity: 0, x: -6 }}
+                                                      animate={{ opacity: 1, x: 0 }}
+                                                      transition={{ delay: suIdx * 0.03 }}
+                                                      onClick={() => { if (!isPicked) addManualPick(item.product_id, su); }}
+                                                      disabled={isPicked}
+                                                      className={cn(
+                                                        "flex items-center justify-between w-full px-2 py-1.5 rounded-lg text-left transition-all",
+                                                        isPicked
+                                                          ? "bg-cyan-500/10 border border-cyan-500/20"
+                                                          : "hover:bg-white/5 border border-transparent"
+                                                      )}
+                                                    >
+                                                      <div className="flex items-center gap-2 text-[10px]">
+                                                        {isPicked ? (
+                                                          <CheckCircle2 size={10} className="text-cyan-400 shrink-0" />
+                                                        ) : (
+                                                          <Plus size={10} className="text-zinc-600 shrink-0" />
+                                                        )}
+                                                        <span className={cn("font-mono font-bold", isPicked ? "text-cyan-300" : "text-white/80")}>{su.su_code}</span>
+                                                        <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400 font-medium">{su.lot_number}</span>
+                                                      </div>
+                                                      <div className="flex items-center gap-2 text-[9px]">
+                                                        <span className="text-zinc-500">F{su.row_number}C{su.column_number}</span>
+                                                        <span className="font-bold text-emerald-400 tabular-nums">{su.available_quantity} UN</span>
+                                                      </div>
+                                                    </motion.button>
+                                                  );
+                                                })}
+                                              </div>
+                                            </motion.div>
+                                          )}
+
+                                          {!selectedRackForMap && (
+                                            <motion.div
+                                              initial={{ opacity: 0 }}
+                                              animate={{ opacity: 1 }}
+                                              transition={{ delay: 0.2 }}
+                                              className="text-center py-4 rounded-xl border border-dashed border-border/40"
+                                            >
+                                              <motion.div
+                                                animate={{ y: [0, -4, 0] }}
+                                                transition={{ repeat: Infinity, duration: 2 }}
+                                              >
+                                                <MapPin size={20} className="mx-auto mb-2 text-cyan-500/40" />
+                                              </motion.div>
+                                              <p className="text-[10px] text-text-muted">Selecciona un rack para ver las posiciones</p>
+                                              <p className="text-[8px] text-text-muted mt-0.5">Cada celda representa una posición con stock disponible</p>
+                                            </motion.div>
+                                          )}
+                                          </AnimatePresence>
                                         </div>
-                                        <div className="flex items-center gap-3 text-[9px] text-text-muted">
-                                          <span>{su.warehouse_name} · {su.position_label}</span>
-                                          <span className="font-bold text-emerald-500 tabular-nums">{su.available_quantity} disp.</span>
-                                        </div>
-                                      </button>
-                                    ))}
-                                </div>
-                              ) : (
-                                <p className="text-[9px] text-amber-500 py-2">⚠ No hay UAs disponibles para este producto</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                                      );
+                                    })()}
+                                  </>
+                                ) : (
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="rounded-lg bg-amber-500/5 border border-amber-500/15 px-3 py-4 text-center"
+                                  >
+                                    <Package size={18} className="mx-auto mb-1.5 text-amber-500/40" />
+                                    <p className="text-[9px] text-amber-500 font-medium">No hay stock disponible en el almacén</p>
+                                  </motion.div>
+                                )}
+                              </motion.div>
+                            )}
+                            </AnimatePresence>
+                          </motion.div>
+                          );
+                        })()}
+                        </AnimatePresence>
 
                         {/* Quantity override */}
                         <div className="flex items-center gap-3 border-t border-border/30 pt-2">
@@ -982,37 +1413,6 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
                       </div>
                     );
                   })}
-                </div>
-
-                {/* Navigation + Save Draft */}
-                <div className="flex items-center justify-between pt-2">
-                  <button
-                    onClick={() => { setStep(1); setSelectedSO(null); }}
-                    className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
-                  >
-                    <ChevronLeft size={14} /> Cambiar Pedido
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={saveDraft}
-                      disabled={savingDraft || totalPicking === 0}
-                      className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-[10px] font-medium text-text-secondary hover:bg-muted transition-colors disabled:opacity-40"
-                    >
-                      {savingDraft ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Save size={12} />
-                      )}
-                      {draftId ? "Borrador Guardado ✓" : "Guardar Borrador"}
-                    </button>
-                    <button
-                      onClick={() => setStep(3)}
-                      disabled={totalPicking === 0 || !selectedWarehouse}
-                      className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600 transition-colors disabled:opacity-40"
-                    >
-                      Revisar Despacho <ChevronRight size={14} />
-                    </button>
-                  </div>
                 </div>
               </motion.div>
             )}
@@ -1149,31 +1549,6 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
                     </span>
                   </div>
                 </div>
-
-                {/* Navigation */}
-                <div className="flex items-center justify-between pt-2">
-                  <button
-                    onClick={() => setStep(2)}
-                    className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
-                  >
-                    <ChevronLeft size={14} /> Editar Picking
-                  </button>
-                  <button
-                    onClick={handlePost}
-                    disabled={isPending}
-                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                  >
-                    {isPending ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" /> Contabilizando...
-                      </>
-                    ) : (
-                      <>
-                        <Send size={14} /> Contabilizar Salida
-                      </>
-                    )}
-                  </button>
-                </div>
               </motion.div>
             )}
 
@@ -1231,6 +1606,66 @@ export function GoodsIssueWizard({ open, onClose, warehouseId, warehouses }: GIW
             )}
           </AnimatePresence>
         </div>
+
+        {/* ── Sticky Footer — Step 2 Actions ── */}
+        {step === 2 && (
+          <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-4 py-3">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => { setStep(1); setSelectedSO(null); }}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-text-muted hover:text-text-primary hover:bg-muted transition-colors"
+              >
+                <ChevronLeft size={14} /> Cambiar Pedido
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={saveDraft}
+                  disabled={savingDraft || totalPicking === 0}
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-[10px] font-medium text-text-secondary hover:bg-muted transition-colors disabled:opacity-40"
+                >
+                  {savingDraft ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Save size={12} />
+                  )}
+                  {draftId ? "Guardado ✓" : "Borrador"}
+                </button>
+                <button
+                  onClick={() => setStep(3)}
+                  disabled={totalPicking === 0 || !selectedWarehouse}
+                  className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600 shadow-sm shadow-orange-500/20 transition-colors disabled:opacity-40 disabled:shadow-none"
+                >
+                  Revisar <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Sticky Footer — Step 3 Actions ── */}
+        {step === 3 && selectedSO && (
+          <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur-sm px-4 py-3">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setStep(2)}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-text-muted hover:text-text-primary hover:bg-muted transition-colors"
+              >
+                <ChevronLeft size={14} /> Volver al Picking
+              </button>
+              <button
+                onClick={handlePost}
+                disabled={isPending}
+                className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-600 shadow-sm shadow-emerald-500/20 transition-colors disabled:opacity-40"
+              >
+                {isPending ? (
+                  <><Loader2 size={13} className="animate-spin" /> Contabilizando...</>
+                ) : (
+                  <><CheckCircle2 size={13} /> Contabilizar Salida</>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
       </motion.div>
     </>
   );

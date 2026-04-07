@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, memo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Text, Line, OrbitControls } from "@react-three/drei";
+import { Text, Line, OrbitControls, useTexture } from "@react-three/drei";
 import * as THREE from "three";
-import { Warehouse, MapPin, Box, X as XIcon, Layers, ChevronRight, ChevronLeft, Package, Activity, Search, Hash, Tag, Grid3x3 } from "lucide-react";
+import { Warehouse, MapPin, Box, X as XIcon, Layers, ChevronRight, Package, Activity, Search, Hash, Tag, Maximize, Minimize, Camera, RotateCcw, Eye, Ruler, Gauge, Grid3X3, Play } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils/cn";
 import { fetchAllWarehousesOverview } from "../actions/stock-hierarchy-actions";
 import type { WarehouseOverview, MiniRack as MiniRackData, MiniRackPosition } from "../actions/stock-hierarchy-actions";
@@ -26,23 +27,38 @@ function srand(seed: number): number {
 
 
 
-// ─── Grid Floor ─────────────────────────────────────────
-const HoloFloor = memo(function HoloFloor() {
+// ─── Grid Floor — Concrete Texture ─────────────────────────────
+const ConcreteFloor = memo(function ConcreteFloor({ isDark = true, showGrid = true }: { isDark?: boolean; showGrid?: boolean }) {
+  const rawTexture = useTexture("/textures/concrete-floor.png");
+  
+  // Clone and configure tiling (avoid mutating hook return value)
+  const texture = useMemo(() => {
+    const t = rawTexture.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(20, 20);
+    t.anisotropy = 16;
+    t.needsUpdate = true;
+    return t;
+  }, [rawTexture]);
+
   return (
     <group>
-      {/* Main floor surface — dark slate, not black */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+      {/* Main textured floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="#0e1225" roughness={0.92} metalness={0.05} />
+        <meshStandardMaterial
+          map={texture}
+          color={isDark ? "#3a3e50" : "#d0d4de"}
+          roughness={0.88}
+          metalness={0.02}
+        />
       </mesh>
-      {/* Primary grid — subtle indigo lines */}
-      <gridHelper args={[200, 100, "#1e2340", "#151933"]} position={[0, 0, 0]} />
-      {/* Secondary fine grid overlay */}
-      <gridHelper args={[200, 400, "#13172e", "#11152a"]} position={[0, 0.001, 0]} />
-      {/* Center accent glow on floor */}
+      {/* Subtle grid lines — warehouse floor markings */}
+      {showGrid && <gridHelper args={[200, 100, isDark ? "#1e2340" : "#b5b9c6", isDark ? "#151933" : "#c5c9d3"]} position={[0, 0, 0]} />}
+      {/* Center accent glow */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
         <circleGeometry args={[18, 64]} />
-        <meshBasicMaterial color="#4f46e5" transparent opacity={0.018} depthWrite={false} />
+        <meshBasicMaterial color={isDark ? "#4f46e5" : "#818cf8"} transparent opacity={isDark ? 0.015 : 0.025} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -133,13 +149,14 @@ const BOX_STATUS_COLORS: Record<string, number> = {
 };
 
 // ─── Mini Rack (detailed miniature) ───────────────────────
-const RackUnit = memo(function RackUnit({ rack, pos, tint, isHovered, onHover, onClick }: {
+const RackUnit = memo(function RackUnit({ rack, pos, tint, isHovered, onHover, onClick, onBoxClick }: {
   rack: MiniRackData;
   pos: [number, number, number];
   tint: number;
   isHovered: boolean;
   onHover: (h: boolean) => void;
   onClick: () => void;
+  onBoxClick?: (position: MiniRackPosition, rackCode: string) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const cols = rack.columns;
@@ -220,7 +237,7 @@ const RackUnit = memo(function RackUnit({ rack, pos, tint, isHovered, onHover, o
         );
       })}
 
-      {/* Inventory boxes — one per occupied position */}
+      {/* Inventory boxes — one per occupied position — CLICKABLE */}
       {rack.rack_positions.map((p) => {
         if (p.status === "empty" && !p.su_code) return null;
 
@@ -235,12 +252,22 @@ const RackUnit = memo(function RackUnit({ rack, pos, tint, isHovered, onHover, o
         const boxColor = BOX_STATUS_COLORS[p.status] || 0x22c55e;
 
         return (
-          <mesh key={p.id} position={[cx, cy, 0]}>
+          <mesh
+            key={p.id}
+            position={[cx, cy, 0]}
+            onClick={(e) => { e.stopPropagation(); onBoxClick?.(p, rack.code); }}
+            onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; }}
+            onPointerOut={() => { document.body.style.cursor = "auto"; }}
+          >
             <boxGeometry args={[boxW, boxH, boxD]} />
-            <meshBasicMaterial
+            <meshStandardMaterial
               color={boxColor}
               transparent
-              opacity={isHovered ? 0.85 : 0.6}
+              opacity={isHovered ? 0.9 : 0.7}
+              emissive={boxColor}
+              emissiveIntensity={isHovered ? 0.15 : 0.05}
+              roughness={0.6}
+              metalness={0.1}
             />
           </mesh>
         );
@@ -273,6 +300,7 @@ const HolographicBuilding = memo(function HolographicBuilding({
   onHover,
   onClick,
   onRackSelect,
+  onBoxClick,
 }: {
   warehouse: WarehouseOverview;
   position: [number, number, number];
@@ -281,6 +309,7 @@ const HolographicBuilding = memo(function HolographicBuilding({
   onHover: (h: boolean) => void;
   onClick: () => void;
   onRackSelect: (rack: MiniRackData) => void;
+  onBoxClick?: (position: MiniRackPosition, rackCode: string) => void;
 }) {
   const palette = HOLO_COLORS[warehouse.type] || HOLO_COLORS.standard;
   const [hoveredRack, setHoveredRack] = useState<string | null>(null);
@@ -394,6 +423,30 @@ const HolographicBuilding = memo(function HolographicBuilding({
         <meshBasicMaterial color={palette.base} transparent opacity={isActive ? 0.05 : 0.02} side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
 
+      {/* ── Selection glow — unmistakable highlight when selected ── */}
+      {isSelected && (
+        <>
+          {/* Point light fills the area with the warehouse's color */}
+          <pointLight
+            position={[0, H * 0.6, 0]}
+            color={palette.glow}
+            intensity={3}
+            distance={W + D}
+            decay={2}
+          />
+          {/* Bright floor highlight beam */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+            <planeGeometry args={[W + 0.6, D + 0.6]} />
+            <meshBasicMaterial
+              color={palette.glow}
+              transparent
+              opacity={0.12}
+              depthWrite={false}
+            />
+          </mesh>
+        </>
+      )}
+
       {/* ── Racks inside — clickable individually ── */}
       {warehouse.racks.map((r, i) => (
         <RackUnit
@@ -404,6 +457,7 @@ const HolographicBuilding = memo(function HolographicBuilding({
           isHovered={hoveredRack === r.id}
           onHover={(h) => setHoveredRack(h ? r.id : null)}
           onClick={() => onRackSelect(r)}
+          onBoxClick={onBoxClick}
         />
       ))}
 
@@ -492,6 +546,10 @@ function OverviewScene({
   onSelect,
   onHover,
   onRackSelect,
+  onBoxClick,
+  focusedRack,
+  isDark = true,
+  showGrid = true,
 }: {
   warehouses: WarehouseOverview[];
   selectedId: string | null;
@@ -499,6 +557,10 @@ function OverviewScene({
   onSelect: (id: string | null) => void;
   onHover: (id: string | null) => void;
   onRackSelect: (rack: MiniRackData) => void;
+  onBoxClick?: (position: MiniRackPosition, rackCode: string) => void;
+  focusedRack?: MiniRackData | null;
+  isDark?: boolean;
+  showGrid?: boolean;
 }) {
   // Calculate building sizes and positions in a horizontal line with proper gaps
   const positions = useMemo(() => {
@@ -531,7 +593,30 @@ function OverviewScene({
     return new THREE.Vector3(avgX, 1, 4);
   }, [positions]);
 
+  // Compute rack-level camera if a rack is focused
+  const rackWorldPos = useMemo(() => {
+    if (!focusedRack || !selectedId) return null;
+    const wIdx = warehouses.findIndex(w => w.id === selectedId);
+    if (wIdx < 0) return null;
+    const w = warehouses[wIdx];
+    const bPos = positions[wIdx];
+    const rIdx = w.racks.findIndex(r => r.id === focusedRack.id);
+    if (rIdx < 0) return null;
+
+    const rackCols = Math.max(Math.ceil(Math.sqrt(w.rackCount * 1.4)), 1);
+    const spacing = 1.8;
+    const gridW = (rackCols - 1) * spacing;
+    const rackRows = Math.max(Math.ceil(w.rackCount / rackCols), 1);
+    const gridD = (rackRows - 1) * spacing;
+    const c = rIdx % rackCols;
+    const r = Math.floor(rIdx / rackCols);
+    const rx = -gridW / 2 + c * spacing + bPos[0];
+    const rz = -gridD / 2 + r * spacing + bPos[2];
+    return new THREE.Vector3(rx, 1.2, rz);
+  }, [focusedRack, selectedId, warehouses, positions]);
+
   const camTarget = useMemo(() => {
+    if (rackWorldPos) return rackWorldPos;
     if (selectedId) {
       const idx = warehouses.findIndex(w => w.id === selectedId);
       if (idx >= 0) {
@@ -540,9 +625,9 @@ function OverviewScene({
       }
     }
     return sceneCenter;
-  }, [selectedId, warehouses, positions, sceneCenter]);
+  }, [rackWorldPos, selectedId, warehouses, positions, sceneCenter]);
 
-  const camDist = selectedId ? 12 : Math.max(30, positions.length * 8);
+  const camDist = rackWorldPos ? 4 : selectedId ? 12 : Math.max(30, positions.length * 8);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ctrlRef = useRef<any>(null);
@@ -556,17 +641,17 @@ function OverviewScene({
 
   return (
     <>
-      {/* Lighting — richer ambient scene */}
-      <ambientLight intensity={0.45} color="#c7d2fe" />
-      <hemisphereLight color="#e0e7ff" groundColor="#1e1b4b" intensity={0.5} />
-      <directionalLight position={[25, 30, 20]} intensity={0.8} color="#e0e7ff" />
-      <directionalLight position={[-20, 22, -15]} intensity={0.35} color="#a5b4fc" />
-      <directionalLight position={[0, 10, 30]} intensity={0.15} color="#22d3ee" />
+      {/* Lighting */}
+      <ambientLight intensity={isDark ? 0.45 : 0.7} color={isDark ? "#c7d2fe" : "#f5f5ff"} />
+      <hemisphereLight color={isDark ? "#e0e7ff" : "#f8fafc"} groundColor={isDark ? "#1e1b4b" : "#cbd5e1"} intensity={isDark ? 0.5 : 0.6} />
+      <directionalLight position={[25, 30, 20]} intensity={isDark ? 0.8 : 1.2} color={isDark ? "#e0e7ff" : "#f5f5ff"} />
+      <directionalLight position={[-20, 22, -15]} intensity={isDark ? 0.35 : 0.5} color={isDark ? "#a5b4fc" : "#c7d2fe"} />
+      <directionalLight position={[0, 10, 30]} intensity={isDark ? 0.15 : 0.3} color={isDark ? "#22d3ee" : "#67e8f9"} />
 
-      {/* Fog — softer, not pitch black */}
-      <fog attach="fog" args={["#0c1029", 50, 130]} />
+      {/* Fog */}
+      <fog attach="fog" args={[isDark ? "#0c1029" : "#f0f2f7", 50, 130]} />
 
-      <HoloFloor />
+      <ConcreteFloor isDark={isDark} showGrid={showGrid} />
       <HoloParticles />
       <ScanLine />
 
@@ -581,6 +666,7 @@ function OverviewScene({
           onHover={(h) => onHover(h ? w.id : null)}
           onClick={() => onSelect(selectedId === w.id ? null : w.id)}
           onRackSelect={onRackSelect}
+          onBoxClick={onBoxClick}
         />
       ))}
 
@@ -590,10 +676,10 @@ function OverviewScene({
         target={camTarget}
         enablePan
         enableZoom
-        minDistance={5}
+        minDistance={2}
         maxDistance={80}
         maxPolarAngle={Math.PI / 2.15}
-        autoRotate={!selectedId}
+        autoRotate={!selectedId && !focusedRack}
         autoRotateSpeed={0.2}
         enableDamping
         dampingFactor={0.08}
@@ -603,160 +689,55 @@ function OverviewScene({
   );
 }
 
-function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () => void }) {
-  const [selectedPos, setSelectedPos] = useState<MiniRackPosition | null>(null);
+function RackDetailPanel({ rack, onClose, initialPosition }: { rack: MiniRackData; onClose: () => void; initialPosition?: MiniRackPosition | null }) {
+  const [selectedPos, setSelectedPos] = useState<MiniRackPosition | null>(initialPosition || null);
   const allPositions = rack.rack_positions;
   const filled = allPositions.filter(p => p.su_code || p.status === "occupied");
   const total = rack.rows * rack.columns;
   const pct = total > 0 ? Math.round((filled.length / total) * 100) : 0;
 
-  // Count statuses
+  const statusConfig: Record<string, { color: string; bg: string; text: string; label: string }> = {
+    occupied: { color: "#22c55e", bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Ocupado" },
+    active:   { color: "#22c55e", bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Activo" },
+    empty:    { color: "#27272a", bg: "bg-zinc-500/15",    text: "text-zinc-500",    label: "Vacío" },
+    reserved: { color: "#3b82f6", bg: "bg-blue-500/15",    text: "text-blue-400",    label: "Reservado" },
+    expired:  { color: "#ef4444", bg: "bg-red-500/15",     text: "text-red-400",     label: "Vencido" },
+    quarantine:{ color: "#a855f7", bg: "bg-purple-500/15", text: "text-purple-400",  label: "Cuarentena" },
+    blocked:  { color: "#f97316", bg: "bg-orange-500/15",  text: "text-orange-400",  label: "Bloqueado" },
+  };
+
+  // Count statuses for legend
   const statusCounts: Record<string, number> = {};
   for (const p of allPositions) {
     const st = p.status || "empty";
     statusCounts[st] = (statusCounts[st] || 0) + 1;
   }
 
-  const statusColors: Record<string, { bg: string; text: string; label: string }> = {
-    occupied: { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Ocupado" },
-    empty: { bg: "bg-zinc-500/15", text: "text-zinc-500", label: "Vacío" },
-    reserved: { bg: "bg-blue-500/15", text: "text-blue-400", label: "Reservado" },
-    expired: { bg: "bg-red-500/15", text: "text-red-400", label: "Vencido" },
-    quarantine: { bg: "bg-purple-500/15", text: "text-purple-400", label: "Cuarentena" },
-    blocked: { bg: "bg-orange-500/15", text: "text-orange-400", label: "Bloqueado" },
-    active: { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Activo" },
-  };
+  // Build position lookup for fast access
+  const posMap = useMemo(() => {
+    const map = new Map<string, MiniRackPosition>();
+    for (const p of allPositions) {
+      map.set(`${p.row_number}-${p.column_number}`, p);
+    }
+    return map;
+  }, [allPositions]);
 
-  const gridColors: Record<string, string> = {
-    occupied: "#22c55e",
-    active: "#22c55e",
-    empty: "#27272a",
-    reserved: "#3b82f6",
-    expired: "#ef4444",
-    quarantine: "#a855f7",
-    blocked: "#f97316",
-  };
-
-  // ── Item Detail View ──────────────────────
-  if (selectedPos) {
-    const st = selectedPos.status || "occupied";
-    const stCfg = statusColors[st] || statusColors.occupied;
-    return (
-      <motion.div
-        initial={{ opacity: 0, x: 16 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 16 }}
-        className="absolute top-4 right-4 w-[310px] max-h-[calc(100%-32px)] bg-[#0a0d1e]/95 backdrop-blur-2xl border border-indigo-500/20 rounded-2xl shadow-2xl shadow-indigo-500/10 z-30 flex flex-col overflow-hidden"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSelectedPos(null)}
-              className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-zinc-500 hover:text-indigo-400 transition-colors"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <div>
-              <span className="text-sm font-bold text-white">Detalle de Posición</span>
-              <p className="text-[9px] text-indigo-300/50">
-                {rack.code} · Fila {selectedPos.row_number}, Col {selectedPos.column_number}
-              </p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-zinc-500 hover:text-white transition-colors">
-            <XIcon size={14} />
-          </button>
-        </div>
-
-        {/* Detail content */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Status badge */}
-          <div className="px-4 pt-4 pb-2">
-            <div className="flex items-center justify-between">
-              <span className={cn("inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-bold", stCfg.bg, stCfg.text)}>
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: gridColors[st] || "#22c55e" }} />
-                {stCfg.label}
-              </span>
-              {selectedPos.su_quantity != null && (
-                <span className="text-lg font-black tabular-nums text-emerald-400">{selectedPos.su_quantity} <span className="text-[10px] text-zinc-500 font-normal">UN</span></span>
-              )}
-            </div>
-          </div>
-
-          {/* Product Info */}
-          {selectedPos.product_name ? (
-            <div className="px-4 space-y-0">
-              {[
-                { icon: Package, label: "Producto", value: selectedPos.product_name },
-                { icon: Hash, label: "SKU", value: selectedPos.product_sku || "—" },
-                { icon: Box, label: "Unidad Almacén", value: selectedPos.su_code || "—" },
-                { icon: Layers, label: "Tipo UA", value: selectedPos.su_type || "—" },
-                { icon: Tag, label: "Lote", value: selectedPos.lot_number || "—" },
-                { icon: Grid3x3, label: "Posición", value: `F${selectedPos.row_number} C${selectedPos.column_number}` },
-              ].map(f => (
-                <div key={f.label} className="flex items-start gap-2.5 border-b border-white/5 py-2.5 last:border-0">
-                  <f.icon size={12} className="mt-0.5 shrink-0 text-indigo-400/60" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[8px] font-semibold uppercase tracking-wider text-zinc-500">{f.label}</p>
-                    <p className="text-[11px] font-semibold text-white/90 truncate">{f.value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center py-10 px-4">
-              <Package size={24} className="text-zinc-600 mb-3" />
-              <p className="text-[11px] text-zinc-400 font-medium">Posición Ocupada</p>
-              <p className="text-[9px] text-zinc-600 mt-1">Sin detalle de producto asignado</p>
-            </div>
-          )}
-
-          {/* Mini rack context - highlight selected position */}
-          <div className="px-4 py-3 mt-2 border-t border-white/5">
-            <p className="text-[8px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Ubicación en Rack</p>
-            <div
-              className="grid gap-[2px] rounded-lg overflow-hidden p-1.5 bg-white/2"
-              style={{ gridTemplateColumns: `repeat(${rack.columns}, 1fr)` }}
-            >
-              {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
-                const row = Math.floor(idx / rack.columns) + 1;
-                const col = (idx % rack.columns) + 1;
-                const pos = allPositions.find(p => p.row_number === row && p.column_number === col);
-                const status = pos?.status || "empty";
-                const isSelected = pos?.id === selectedPos.id;
-                return (
-                  <div
-                    key={idx}
-                    className={cn("aspect-square rounded-[2px] transition-all", isSelected && "ring-1 ring-indigo-400 ring-offset-1 ring-offset-[#0a0d1e]")}
-                    style={{ backgroundColor: gridColors[status] || "#27272a", opacity: isSelected ? 1 : status === "empty" ? 0.2 : 0.5 }}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // ── Rack Overview View (original + clickable grid) ──────
   return (
     <motion.div
       initial={{ opacity: 0, x: 16 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 16 }}
-      className="absolute top-4 right-4 w-[310px] max-h-[calc(100%-32px)] bg-[#0a0d1e]/95 backdrop-blur-2xl border border-indigo-500/20 rounded-2xl shadow-2xl shadow-indigo-500/10 z-30 flex flex-col overflow-hidden"
+      className="absolute top-4 right-4 w-[340px] max-h-[calc(100%-32px)] bg-[#0a0d1e]/95 backdrop-blur-2xl border border-indigo-500/20 rounded-2xl shadow-2xl shadow-indigo-500/10 z-30 flex flex-col overflow-hidden"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/15 flex items-center justify-center">
-            <Box size={14} className="text-indigo-400" />
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/15 flex items-center justify-center">
+            <Layers size={16} className="text-indigo-400" />
           </div>
           <div>
-            <span className="text-sm font-bold text-white font-mono">{rack.code}</span>
-            <p className="text-[9px] text-indigo-300/50">{rack.rows}×{rack.columns} posiciones</p>
+            <h3 className="text-sm font-bold text-white font-mono tracking-tight">{rack.code}</h3>
+            <p className="text-[9px] text-indigo-300/50 mt-0.5">{rack.rows} filas × {rack.columns} columnas · {total} posiciones</p>
           </div>
         </div>
         <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-zinc-500 hover:text-white transition-colors">
@@ -764,8 +745,8 @@ function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () =>
         </button>
       </div>
 
-      {/* KPIs */}
-      <div className="px-4 pt-3 pb-2">
+      {/* ── KPIs ── */}
+      <div className="px-4 pt-3 pb-2 shrink-0">
         <div className="grid grid-cols-3 gap-1.5">
           <div className="rounded-lg bg-white/3 px-2 py-2 text-center">
             <p className={cn("text-lg font-black tabular-nums leading-none", pct > 85 ? "text-red-400" : pct > 60 ? "text-amber-400" : "text-emerald-400")}>{pct}%</p>
@@ -780,119 +761,224 @@ function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () =>
             <p className="text-[7px] text-zinc-500 mt-1 uppercase tracking-widest">Vacías</p>
           </div>
         </div>
-
-        {/* Occupancy bar */}
         <div className="mt-2 h-1 rounded-full bg-zinc-800/50 overflow-hidden">
-          <div className={cn("h-full rounded-full transition-all", pct > 85 ? "bg-red-500" : pct > 60 ? "bg-amber-500" : "bg-emerald-500")} style={{ width: `${pct}%` }} />
+          <div className={cn("h-full rounded-full transition-all duration-500", pct > 85 ? "bg-red-500" : pct > 60 ? "bg-amber-500" : "bg-emerald-500")} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+
+      {/* ── Scrollable Content ── */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+
+        {/* ── Grid Map with Axis Labels ── */}
+        <div className="px-4 pt-2 pb-1">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[8px] font-semibold text-zinc-500 uppercase tracking-[0.15em]">Mapa del Rack</p>
+            <p className="text-[8px] text-indigo-400/70 font-medium">Selecciona una posición</p>
+          </div>
+
+          {/* Grid with row numbers on left and column numbers on top */}
+          <div className="rounded-xl bg-white/2 border border-white/5 p-2">
+            {/* Column headers */}
+            <div className="flex mb-1" style={{ paddingLeft: 20 }}>
+              {Array.from({ length: rack.columns }, (_, c) => (
+                <div
+                  key={`col-${c}`}
+                  className="text-center text-[7px] font-bold text-indigo-400/60 tabular-nums"
+                  style={{ flex: 1, minWidth: 0 }}
+                >
+                  C{c + 1}
+                </div>
+              ))}
+            </div>
+
+            {/* Rows with labels */}
+            <div className="flex flex-col gap-[3px]">
+              {Array.from({ length: rack.rows }, (_, r) => {
+                const row = r + 1;
+                return (
+                  <div key={`row-${r}`} className="flex items-center gap-[3px]">
+                    {/* Row label */}
+                    <div className="w-[17px] shrink-0 text-right text-[7px] font-bold text-indigo-400/60 tabular-nums pr-1">
+                      F{row}
+                    </div>
+                    {/* Cells */}
+                    {Array.from({ length: rack.columns }, (_, c) => {
+                      const col = c + 1;
+                      const pos = posMap.get(`${row}-${col}`);
+                      const status = pos?.status || "empty";
+                      const cfg = statusConfig[status] || statusConfig.empty;
+                      const hasItem = pos?.su_code || status === "occupied" || status === "active";
+                      const isActive = selectedPos?.id === pos?.id;
+
+                      return (
+                        <button
+                          key={`${row}-${col}`}
+                          onClick={() => { if (pos && hasItem) setSelectedPos(isActive ? null : pos); }}
+                          disabled={!hasItem}
+                          className={cn(
+                            "flex-1 aspect-square rounded transition-all flex items-center justify-center relative",
+                            hasItem && "cursor-pointer hover:scale-110 hover:z-10",
+                            !hasItem && "cursor-default",
+                            isActive && "ring-2 ring-indigo-400 ring-offset-1 ring-offset-[#0a0d1e] scale-110 z-10"
+                          )}
+                          style={{
+                            backgroundColor: cfg.color,
+                            opacity: isActive ? 1 : status === "empty" ? 0.2 : 0.8,
+                          }}
+                          title={
+                            hasItem
+                              ? `${pos?.product_name || "Ocupado"} — F${row} C${col}${pos?.su_quantity != null ? ` · ${pos.su_quantity} UN` : ""}`
+                              : `Vacío — F${row} C${col}`
+                          }
+                        >
+                          {hasItem && (
+                            <div className={cn(
+                              "w-1.5 h-1.5 rounded-full transition-colors",
+                              isActive ? "bg-white" : "bg-white/30"
+                            )} />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Legend ── */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+            {Object.entries(statusConfig)
+              .filter(([key]) => key !== "active" && (statusCounts[key] || 0) > 0)
+              .map(([key, cfg]) => (
+                <div key={key} className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: cfg.color, opacity: key === "empty" ? 0.3 : 0.8 }} />
+                  <span className="text-[7px] text-zinc-500">{cfg.label} ({statusCounts[key]})</span>
+                </div>
+              ))}
+          </div>
+
+          {/* ── Hint ── */}
+          <div className="mt-2 px-2.5 py-1.5 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+            <p className="text-[8px] text-indigo-300/60 leading-relaxed">
+              Haz clic en una posición de color para ver el detalle del producto almacenado. Las posiciones grises están vacías.
+            </p>
+          </div>
         </div>
 
-        {/* Status badges */}
-        <div className="flex flex-wrap gap-1 mt-2">
-          {Object.entries(statusCounts)
-            .filter(([k]) => k !== "empty")
-            .map(([status, count]) => {
-              const cfg = statusColors[status] || statusColors.occupied;
+        {/* ── Selected Position Detail (inline, below grid) ── */}
+        <AnimatePresence>
+          {selectedPos && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="mx-4 mt-2 mb-1 rounded-xl bg-indigo-500/5 border border-indigo-500/15 overflow-hidden">
+                {/* Position Header */}
+                <div className="flex items-center justify-between px-3 py-2 border-b border-indigo-500/10">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded"
+                      style={{ backgroundColor: (statusConfig[selectedPos.status] || statusConfig.occupied).color }}
+                    />
+                    <span className="text-[10px] font-bold text-white">
+                      F{selectedPos.row_number} C{selectedPos.column_number}
+                    </span>
+                    <span className={cn(
+                      "text-[8px] font-bold uppercase rounded px-1.5 py-0.5",
+                      (statusConfig[selectedPos.status] || statusConfig.occupied).bg,
+                      (statusConfig[selectedPos.status] || statusConfig.occupied).text
+                    )}>
+                      {(statusConfig[selectedPos.status] || statusConfig.occupied).label}
+                    </span>
+                  </div>
+                  {selectedPos.su_quantity != null && (
+                    <span className="text-sm font-black tabular-nums text-emerald-400">{selectedPos.su_quantity} <span className="text-[8px] text-zinc-500 font-normal">UN</span></span>
+                  )}
+                </div>
+
+                {/* Product detail fields */}
+                {selectedPos.product_name ? (
+                  <div className="px-3 py-1">
+                    {[
+                      { icon: Package, label: "Producto", value: selectedPos.product_name },
+                      { icon: Hash, label: "SKU", value: selectedPos.product_sku },
+                      { icon: Box, label: "Unidad Almacén", value: selectedPos.su_code },
+                      { icon: Tag, label: "Lote", value: selectedPos.lot_number },
+                      { icon: Layers, label: "Tipo UA", value: selectedPos.su_type },
+                    ]
+                      .filter(f => f.value)
+                      .map(f => (
+                        <div key={f.label} className="flex items-center gap-2 py-1.5 border-b border-white/3 last:border-0">
+                          <f.icon size={10} className="shrink-0 text-indigo-400/50" />
+                          <span className="text-[7px] font-semibold text-zinc-500 uppercase w-14 shrink-0">{f.label}</span>
+                          <span className="text-[10px] font-medium text-white/85 truncate">{f.value}</span>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-3">
+                    <Package size={14} className="text-zinc-600" />
+                    <div>
+                      <p className="text-[10px] text-zinc-400">Posición ocupada</p>
+                      <p className="text-[8px] text-zinc-600">Sin detalle de producto asignado</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Inventory List ── */}
+        <div className="px-4 pb-3 pt-2 border-t border-white/5 mt-2">
+          <p className="text-[8px] font-semibold text-zinc-500 uppercase tracking-[0.15em] mb-1.5">
+            Inventario · {filled.length} item{filled.length !== 1 ? "s" : ""}
+          </p>
+          {filled.length === 0 && (
+            <div className="flex flex-col items-center py-5 text-zinc-600">
+              <Package size={18} className="mb-2 opacity-30" />
+              <p className="text-[10px]">Sin inventario en este rack</p>
+            </div>
+          )}
+          <div className="space-y-1">
+            {filled.map((p) => {
+              const st = p.status || "occupied";
+              const stCfg = statusConfig[st] || statusConfig.occupied;
+              const isActive = selectedPos?.id === p.id;
               return (
-                <span key={status} className={cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[8px] font-semibold", cfg.bg, cfg.text)}>
-                  {cfg.label}: {count}
-                </span>
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPos(isActive ? null : p)}
+                  className={cn(
+                    "w-full text-left rounded-lg px-2.5 py-2 transition-all group border",
+                    isActive
+                      ? "bg-indigo-500/10 border-indigo-500/20"
+                      : "bg-white/2 border-white/3 hover:bg-indigo-500/5 hover:border-indigo-500/10"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: stCfg.color }} />
+                      <span className="text-[9px] font-mono font-bold text-indigo-200 shrink-0">F{p.row_number}C{p.column_number}</span>
+                      {p.product_name && (
+                        <span className="text-[9px] text-white/70 truncate">{p.product_name}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {p.su_quantity != null && (
+                        <span className="text-[9px] text-emerald-400 font-bold tabular-nums">{p.su_quantity}</span>
+                      )}
+                      <ChevronRight size={9} className={cn("transition-colors", isActive ? "text-indigo-400" : "text-zinc-700 group-hover:text-indigo-400")} />
+                    </div>
+                  </div>
+                </button>
               );
             })}
-        </div>
-      </div>
-
-      {/* Clickable visual grid map */}
-      <div className="px-4 py-2">
-        <p className="text-[8px] font-semibold text-zinc-500 uppercase tracking-[0.15em] mb-1.5">Mapa de Posiciones <span className="text-indigo-400/60 normal-case">· Clic para ver detalle</span></p>
-        <div
-          className="grid gap-[3px] rounded-lg overflow-hidden p-2 bg-white/2"
-          style={{ gridTemplateColumns: `repeat(${rack.columns}, 1fr)` }}
-        >
-          {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
-            const row = Math.floor(idx / rack.columns) + 1;
-            const col = (idx % rack.columns) + 1;
-            const pos = allPositions.find(p => p.row_number === row && p.column_number === col);
-            const status = pos?.status || "empty";
-            const hasItem = pos?.su_code || status === "occupied";
-            return (
-              <button
-                key={idx}
-                onClick={() => { if (pos && hasItem) setSelectedPos(pos); }}
-                disabled={!hasItem}
-                className={cn(
-                  "aspect-square rounded-[3px] transition-all flex items-center justify-center group relative",
-                  hasItem && "cursor-pointer hover:ring-1 hover:ring-indigo-400 hover:scale-110 hover:z-10",
-                  !hasItem && "cursor-default"
-                )}
-                style={{ backgroundColor: gridColors[status] || "#27272a", opacity: status === "empty" ? 0.25 : 0.85 }}
-                title={hasItem ? `${pos?.product_name || "Ocupado"} · Clic para detalle` : `Vacío (F${row} C${col})`}
-              >
-                {hasItem && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-white/30 group-hover:bg-white/60 transition-colors" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {/* Column/row labels */}
-        <div className="flex items-center justify-between mt-1.5 px-0.5">
-          <span className="text-[7px] text-zinc-600">F1</span>
-          <span className="text-[7px] text-zinc-600">Filas ↓ · Columnas →</span>
-          <span className="text-[7px] text-zinc-600">F{rack.rows}</span>
-        </div>
-      </div>
-
-      {/* Items list */}
-      <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-1.5 border-t border-white/5 pt-2">
-        <p className="text-[8px] font-semibold text-zinc-500 uppercase tracking-[0.15em] mb-1">
-          Inventario · {filled.length} item{filled.length !== 1 ? "s" : ""}
-        </p>
-        {filled.length === 0 && (
-          <div className="flex flex-col items-center py-6 text-zinc-600">
-            <Package size={20} className="mb-2 opacity-30" />
-            <p className="text-[10px]">Sin inventario en este rack</p>
           </div>
-        )}
-        {filled.map((p) => {
-          const st = p.status || "occupied";
-          const stCfg = statusColors[st] || statusColors.occupied;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setSelectedPos(p)}
-              className="w-full text-left rounded-xl bg-white/3 border border-white/4 px-3 py-2.5 hover:bg-indigo-500/8 hover:border-indigo-500/20 transition-all group"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn("inline-flex items-center rounded px-1 py-0.5 text-[7px] font-bold uppercase", stCfg.bg, stCfg.text)}>
-                    {stCfg.label}
-                  </span>
-                  {p.su_code && (
-                    <span className="text-[9px] font-mono text-cyan-400 font-medium">{p.su_code}</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {p.su_quantity != null && (
-                    <span className="text-[10px] text-emerald-400 font-bold tabular-nums">{p.su_quantity} UN</span>
-                  )}
-                  <ChevronRight size={10} className="text-zinc-700 group-hover:text-indigo-400 transition-colors" />
-                </div>
-              </div>
-              {p.product_name && (
-                <p className="text-[10px] text-white/80 truncate leading-snug">{p.product_name}</p>
-              )}
-              {!p.product_name && !p.su_code && (
-                <p className="text-[10px] text-white/40 italic">Posición ocupada (sin detalle)</p>
-              )}
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="text-[8px] text-zinc-500 font-mono">F{p.row_number} C{p.column_number}</span>
-                {p.product_sku && <span className="text-[8px] text-zinc-400 font-mono">{p.product_sku}</span>}
-                {p.lot_number && <span className="text-[8px] text-amber-500/60 font-mono">Lote: {p.lot_number}</span>}
-                {p.su_type && <span className="text-[8px] text-indigo-400/50 font-mono">{p.su_type}</span>}
-              </div>
-            </button>
-          );
-        })}
+        </div>
       </div>
     </motion.div>
   );
@@ -1001,12 +1087,17 @@ function SmartSearch3D({
   warehouses,
   onSelectWarehouse,
   onSelectRack,
+  isDark = true,
+  forceOpen = false,
 }: {
   warehouses: WarehouseOverview[];
   onSelectWarehouse: (id: string) => void;
   onSelectRack: (rack: MiniRackData, warehouseId: string) => void;
+  isDark?: boolean;
+  forceOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const isOpen = open || forceOpen;
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1050,10 +1141,9 @@ function SmartSearch3D({
       .slice(0, 12);
   }, [allItems, query]);
 
-  // Auto-focus on open
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 100);
-  }, [open]);
+    if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
+  }, [isOpen]);
 
   // Keyboard shortcut: Ctrl+K or Cmd+K
   useEffect(() => {
@@ -1081,7 +1171,12 @@ function SmartSearch3D({
       {/* Search trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0a0d1e]/75 backdrop-blur-2xl border border-white/6 text-zinc-400 hover:text-white hover:border-indigo-500/30 transition-all group"
+        className={cn(
+          "absolute top-14 right-3 z-20 flex items-center gap-2 px-3 py-2 rounded-xl backdrop-blur-2xl border transition-all group",
+          isDark
+            ? "bg-[#0a0d1e]/75 border-white/6 text-zinc-400 hover:text-white hover:border-indigo-500/30"
+            : "bg-white/80 border-zinc-200/80 text-zinc-400 hover:text-zinc-700 hover:border-indigo-400/40 shadow-sm"
+        )}
       >
         <Search size={12} className="text-indigo-400" />
         <span className="text-[9px] font-medium hidden sm:inline">Buscar</span>
@@ -1090,7 +1185,7 @@ function SmartSearch3D({
 
       {/* Search modal overlay */}
       <AnimatePresence>
-        {open && (
+        {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1108,17 +1203,22 @@ function SmartSearch3D({
               exit={{ opacity: 0, y: -8, scale: 0.97 }}
               transition={{ duration: 0.15 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-[380px] max-w-[90vw] bg-[#0a0d1e]/98 backdrop-blur-3xl border border-indigo-500/20 rounded-2xl shadow-2xl shadow-indigo-900/30 overflow-hidden"
+              className={cn(
+                "relative w-[380px] max-w-[90vw] backdrop-blur-3xl border rounded-2xl shadow-2xl overflow-hidden",
+                isDark
+                  ? "bg-[#0a0d1e]/98 border-indigo-500/20 shadow-indigo-900/30"
+                  : "bg-white/98 border-zinc-200 shadow-zinc-300/30"
+              )}
             >
               {/* Search input */}
-              <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/5">
+              <div className={cn("flex items-center gap-2.5 px-4 py-3 border-b", isDark ? "border-white/5" : "border-zinc-200")}>
                 <Search size={14} className="text-indigo-400 shrink-0" />
                 <input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Buscar almacén, rack, producto, lote, unidad..."
-                  className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 outline-none"
+                  className={cn("flex-1 bg-transparent text-sm outline-none", isDark ? "text-white placeholder:text-zinc-600" : "text-zinc-900 placeholder:text-zinc-400")}
                 />
                 {query && (
                   <button onClick={() => setQuery("")} className="text-zinc-500 hover:text-white">
@@ -1195,74 +1295,506 @@ function SmartSearch3D({
   );
 }
 
-// ─── HUD Stats Overlay ────────────────────────────────────
-function HudStats({ warehouses }: { warehouses: WarehouseOverview[] }) {
-  const totR = warehouses.reduce((s, w) => s + w.rackCount, 0);
-  const totP = warehouses.reduce((s, w) => s + w.totalPositions, 0);
-  const totO = warehouses.reduce((s, w) => s + w.occupiedPositions, 0);
-  const avgOcc = totP > 0 ? Math.round((totO / totP) * 100) : 0;
-  const occCls = avgOcc > 85 ? "text-red-400" : avgOcc > 60 ? "text-amber-400" : "text-emerald-400";
+// ─── FPS Counter ─────────────────────────────────────────
+function FpsCounter({ isDark }: { isDark: boolean }) {
+  const [fps, setFps] = useState(0);
+  const frames = useRef(0);
+  const lastTime = useRef(0);
+
+  useEffect(() => {
+    lastTime.current = performance.now();
+    let raf: number;
+    const loop = () => {
+      frames.current++;
+      const now = performance.now();
+      if (now - lastTime.current >= 1000) {
+        setFps(frames.current);
+        frames.current = 0;
+        lastTime.current = now;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const color = fps >= 50 ? "text-emerald-400" : fps >= 30 ? "text-amber-400" : "text-red-400";
+  const bg = fps >= 50 ? "bg-emerald-500/15 border-emerald-500/20" : fps >= 30 ? "bg-amber-500/15 border-amber-500/20" : "bg-red-500/15 border-red-500/20";
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 px-5 py-2.5 rounded-2xl bg-[#0a0d1e]/75 backdrop-blur-2xl border border-white/6 shadow-xl">
-      {[
-        { icon: Warehouse, value: warehouses.length, label: "almacenes", cls: "text-indigo-400" },
-        { icon: Layers, value: totR, label: "racks", cls: "text-blue-400" },
-        { icon: Box, value: totP.toLocaleString(), label: "posiciones", cls: "text-cyan-400" },
-        { icon: Activity, value: `${avgOcc}%`, label: "ocupación", cls: occCls },
-      ].map((s, i) => (
-        <React.Fragment key={s.label}>
-          {i > 0 && <div className="w-px h-4 bg-white/6" />}
-          <div className="flex items-center gap-1.5">
-            <s.icon size={11} className={s.cls} />
-            <span className={cn("text-[10px] font-bold tabular-nums", s.cls)}>{s.value}</span>
-            <span className="text-[9px] text-zinc-500">{s.label}</span>
-          </div>
-        </React.Fragment>
-      ))}
+    <div className={cn(
+      "absolute top-14 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-2xl border",
+      isDark ? bg : "bg-white/85 border-zinc-200/80"
+    )}>
+      <Gauge size={12} className={color} />
+      <span className={cn("text-xs font-black tabular-nums", color)}>{fps}</span>
+      <span className={cn("text-[8px]", isDark ? "text-zinc-500" : "text-zinc-400")}>FPS</span>
     </div>
   );
 }
 
+// ─── Guided Demo Overlay ─────────────────────────────────────
+const DEMO_STEPS = [
+  {
+    id: "welcome",
+    title: "🎬 Bienvenido al Tour 3D",
+    desc: "Te mostraremos cómo funciona cada herramienta del almacén 3D. Observa cómo la escena se mueve automáticamente en cada paso.",
+    action: "reset",
+  },
+  {
+    id: "select",
+    title: "📦 Seleccionar Almacén",
+    desc: "Se ha seleccionado automáticamente un almacén. Observa cómo se ilumina y aparece un panel lateral con información detallada.",
+    action: "select-warehouse",
+  },
+  {
+    id: "rack",
+    title: "🗄️ Explorar Rack",
+    desc: "Se ha abierto un rack dentro del almacén. Puedes ver la cuadrícula de posiciones con colores según el estado: ocupado, reservado, vencido o vacío.",
+    action: "select-rack",
+  },
+  {
+    id: "box",
+    title: "📋 Detalle de Material",
+    desc: "Al hacer clic en una posición con producto, se despliega el detalle: nombre, SKU, lote y unidad de almacén. Prueba hacerlo tú después del tour.",
+    action: "select-position",
+  },
+  {
+    id: "search",
+    title: "🔍 Búsqueda Inteligente",
+    desc: "Se ha activado la búsqueda. Usa ⌘K en cualquier momento para buscar almacenes, racks, productos o SKUs. Escribe y selecciona para navegar.",
+    action: "open-search",
+  },
+  {
+    id: "fps",
+    title: "⚡ Monitor de Rendimiento",
+    desc: "Se ha activado el contador FPS. Este indicador te muestra los cuadros por segundo en tiempo real — verde (≥50), amarillo (≥30) o rojo (<30).",
+    action: "toggle-fps",
+  },
+  {
+    id: "grid",
+    title: "🔳 Control de Cuadrícula",
+    desc: "La cuadrícula del piso se ha desactivado para ver el concreto sin líneas. Puedes togglearla cuando necesites referencias de distancias.",
+    action: "toggle-grid",
+  },
+  {
+    id: "measure",
+    title: "📏 Medición de Distancias",
+    desc: "Se ha activado el modo de medición. Haz clic en dos puntos del almacén para calcular la distancia entre ellos. Ideal para planificación de layout.",
+    action: "toggle-measure",
+  },
+  {
+    id: "done",
+    title: "✅ ¡Tour Completado!",
+    desc: "Ahora conoces todas las herramientas. La vista se ha restablecido. Explora libremente: selecciona almacenes, inspecciona racks, y usa las herramientas.",
+    action: "finish",
+  },
+];
+
+type DemoAction =
+  | { type: "reset" }
+  | { type: "select-warehouse" }
+  | { type: "select-rack" }
+  | { type: "select-position" }
+  | { type: "open-search" }
+  | { type: "close-search" }
+  | { type: "toggle-fps"; on: boolean }
+  | { type: "toggle-grid"; on: boolean }
+  | { type: "toggle-measure"; on: boolean }
+  | { type: "finish" };
+
+function GuidedDemoOverlay({
+  isDark,
+  onClose,
+  onAction,
+}: {
+  isDark: boolean;
+  onClose: () => void;
+  onAction: (action: DemoAction) => void;
+}) {
+  const [step, setStep] = useState(0);
+  const current = DEMO_STEPS[step];
+  const isLast = step >= DEMO_STEPS.length - 1;
+
+  // Execute action when step changes
+  useEffect(() => {
+    const s = DEMO_STEPS[step];
+    switch (s.action) {
+      case "reset":
+        onAction({ type: "reset" });
+        break;
+      case "select-warehouse":
+        onAction({ type: "select-warehouse" });
+        break;
+      case "select-rack":
+        onAction({ type: "select-rack" });
+        break;
+      case "select-position":
+        onAction({ type: "select-position" });
+        break;
+      case "open-search":
+        onAction({ type: "open-search" });
+        break;
+      case "toggle-fps":
+        onAction({ type: "toggle-fps", on: true });
+        break;
+      case "toggle-grid":
+        onAction({ type: "toggle-grid", on: false });
+        break;
+      case "toggle-measure":
+        onAction({ type: "toggle-measure", on: true });
+        break;
+      case "finish":
+        onAction({ type: "finish" });
+        break;
+    }
+    // Cleanup when leaving step
+    return () => {
+      switch (s.action) {
+        case "open-search":
+          onAction({ type: "close-search" });
+          break;
+        case "toggle-fps":
+          onAction({ type: "toggle-fps", on: false });
+          break;
+        case "toggle-grid":
+          onAction({ type: "toggle-grid", on: true });
+          break;
+        case "toggle-measure":
+          onAction({ type: "toggle-measure", on: false });
+          break;
+      }
+    };
+  // eslint-disable-next-line react-compiler/react-compiler
+  }, [step]);
+
+  const handleClose = useCallback(() => {
+    onAction({ type: "finish" });
+    onClose();
+  }, [onAction, onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="absolute inset-0 z-40 pointer-events-none"
+    >
+      {/* Semi-transparent overlay — NOT blocking clicks on 3D behind */}
+      <div className={cn("absolute inset-0", isDark ? "bg-black/30" : "bg-black/15")} />
+
+      {/* Animated spotlight pulse indicator */}
+      <motion.div
+        key={`pulse-${step}`}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: [0, 1.5, 1], opacity: [0, 0.6, 0] }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-indigo-500/20 pointer-events-none"
+      />
+
+      {/* Card */}
+      <motion.div
+        key={step}
+        initial={{ opacity: 0, y: 30, scale: 0.92 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -15 }}
+        transition={{ type: "spring", duration: 0.5, bounce: 0.12 }}
+        className={cn(
+          "absolute bottom-24 left-1/2 -translate-x-1/2 w-[440px] max-w-[92vw] pointer-events-auto rounded-2xl border backdrop-blur-3xl shadow-2xl overflow-hidden",
+          isDark ? "bg-[#0c1029]/95 border-indigo-500/20 shadow-indigo-900/30" : "bg-white/95 border-zinc-200 shadow-zinc-300/30"
+        )}
+      >
+        {/* Animated progress bar */}
+        <div className={cn("h-1 w-full", isDark ? "bg-white/5" : "bg-zinc-100")}>
+          <motion.div
+            className="h-full bg-linear-to-r from-indigo-500 via-cyan-400 to-emerald-400"
+            initial={{ width: 0 }}
+            animate={{ width: `${((step + 1) / DEMO_STEPS.length) * 100}%` }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          />
+        </div>
+
+        <div className="p-5">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-[9px] font-bold uppercase tracking-widest",
+                isDark ? "text-indigo-400/60" : "text-indigo-500/60"
+              )}>
+                Demo Interactiva
+              </span>
+              <span className={cn(
+                "text-[8px] font-bold rounded-full px-1.5 py-0.5",
+                isDark ? "bg-indigo-500/15 text-indigo-400" : "bg-indigo-50 text-indigo-600"
+              )}>
+                {step + 1}/{DEMO_STEPS.length}
+              </span>
+            </div>
+            <button
+              onClick={handleClose}
+              className={cn(
+                "rounded-lg p-1.5 transition-colors",
+                isDark ? "text-zinc-500 hover:text-white hover:bg-white/5" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+              )}
+            >
+              <XIcon size={14} />
+            </button>
+          </div>
+
+          {/* Step indicator — animated emoji */}
+          <motion.h3
+            key={`title-${step}`}
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className={cn("text-base font-bold mb-2", isDark ? "text-white" : "text-zinc-900")}
+          >
+            {current.title}
+          </motion.h3>
+
+          <motion.p
+            key={`desc-${step}`}
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.15 }}
+            className={cn("text-[13px] leading-relaxed mb-5", isDark ? "text-zinc-400" : "text-zinc-500")}
+          >
+            {current.desc}
+          </motion.p>
+
+          {/* Action indicator */}
+          {step > 0 && step < DEMO_STEPS.length - 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                "flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border",
+                isDark ? "bg-emerald-500/8 border-emerald-500/15" : "bg-emerald-50 border-emerald-100"
+              )}
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              <span className={cn("text-[10px] font-semibold", isDark ? "text-emerald-400/80" : "text-emerald-600")}>
+                Acción ejecutada automáticamente — observa los cambios en la escena
+              </span>
+            </motion.div>
+          )}
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => step > 0 && setStep(step - 1)}
+              disabled={step === 0}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                step === 0 ? "opacity-30 cursor-not-allowed" : "",
+                isDark ? "text-zinc-400 hover:text-white hover:bg-white/5" : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+              )}
+            >
+              ← Anterior
+            </button>
+
+            <div className="flex gap-1.5">
+              {DEMO_STEPS.map((_, i) => (
+                <motion.div
+                  key={i}
+                  animate={{
+                    scale: i === step ? 1.4 : 1,
+                    backgroundColor: i === step ? "#818cf8" : i < step ? "#818cf880" : (isDark ? "#ffffff15" : "#e5e7eb"),
+                  }}
+                  className="w-1.5 h-1.5 rounded-full"
+                />
+              ))}
+            </div>
+
+            {isLast ? (
+              <button
+                onClick={handleClose}
+                className="rounded-lg bg-linear-to-r from-emerald-500 to-cyan-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/30 active:scale-95"
+              >
+                ¡Listo! ✓
+              </button>
+            ) : (
+              <button
+                onClick={() => setStep(step + 1)}
+                className="rounded-lg bg-linear-to-r from-indigo-500 to-indigo-600 px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30 active:scale-95"
+              >
+                Siguiente →
+              </button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────
-export default function WarehouseOverview3D({ initialSelectedId }: { initialSelectedId?: string | null } = {}) {
+export default function WarehouseOverview3D({ initialSelectedId, singleWarehouseId }: { initialSelectedId?: string | null; singleWarehouseId?: string | null } = {}) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
   const [warehouses, setWarehouses] = useState<WarehouseOverview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId || null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedRack, setSelectedRack] = useState<MiniRackData | null>(null);
-
-  // Sync external initialSelectedId changes
-  useEffect(() => {
-    if (initialSelectedId) {
-      setSelectedId(initialSelectedId);
-      setSelectedRack(null);
-    }
-  }, [initialSelectedId]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showFps, setShowFps] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showDemo, setShowDemo] = useState(false);
+  const [demoSearchOpen, setDemoSearchOpen] = useState(false);
+  const [distanceMeasuring, setDistanceMeasuring] = useState(false);
+  const [clickedPosition, setClickedPosition] = useState<MiniRackPosition | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     fetchAllWarehousesOverview()
       .then((data) => {
-        console.log("[WarehouseOverview3D] Loaded", data.length, "warehouses");
         setWarehouses(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("[WarehouseOverview3D] Fetch error:", err);
         setError(err?.message || "Error al cargar almacenes");
         setLoading(false);
       });
   }, []);
 
+  // When singleWarehouseId is provided, filter to only that warehouse
+  const displayWarehouses = useMemo(() => {
+    if (!singleWarehouseId) return warehouses;
+    return warehouses.filter(w => w.id === singleWarehouseId);
+  }, [warehouses, singleWarehouseId]);
+
+  // Auto-select single warehouse when in focused mode
+  const effectiveSelectedId = singleWarehouseId || selectedId;
+
   const selected = useMemo(
-    () => warehouses.find(w => w.id === selectedId) || null,
-    [warehouses, selectedId]
+    () => displayWarehouses.find(w => w.id === effectiveSelectedId) || null,
+    [displayWarehouses, effectiveSelectedId]
   );
+
+  // ── Box Click: auto-select warehouse + rack when clicking a box in 3D
+  const handleBoxClick = useCallback((position: MiniRackPosition, rackCode: string) => {
+    for (const w of displayWarehouses) {
+      const rack = w.racks.find(r => r.code === rackCode);
+      if (rack) {
+        setSelectedId(w.id);
+        setSelectedRack(rack);
+        setClickedPosition(position);
+        break;
+      }
+    }
+  }, [displayWarehouses]);
+
+  // ── Fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const h = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+      setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
+    };
+    document.addEventListener("fullscreenchange", h);
+    return () => document.removeEventListener("fullscreenchange", h);
+  }, []);
+
+  // ── Screenshot
+  const takeScreenshot = useCallback(() => {
+    if (!canvasRef.current) return;
+    const link = document.createElement("a");
+    link.download = `grixi-3d-${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = canvasRef.current.toDataURL("image/png");
+    link.click();
+  }, []);
+
+  // ── Reset
+  const resetView = useCallback(() => {
+    setSelectedId(null);
+    setSelectedRack(null);
+    setHoveredId(null);
+  }, []);
+
+  // ── Interactive Demo Actions
+  const handleDemoAction = useCallback((action: DemoAction) => {
+    switch (action.type) {
+      case "reset":
+      case "finish":
+        setSelectedId(null);
+        setSelectedRack(null);
+        setHoveredId(null);
+        setClickedPosition(null);
+        setShowFps(false);
+        setShowGrid(true);
+        setDistanceMeasuring(false);
+        setDemoSearchOpen(false);
+        break;
+      case "select-warehouse": {
+        // Auto-select first warehouse
+        const first = displayWarehouses[0];
+        if (first) {
+          setSelectedId(first.id);
+          setSelectedRack(null);
+          setClickedPosition(null);
+        }
+        break;
+      }
+      case "select-rack": {
+        // Select first warehouse + its first rack
+        const w = displayWarehouses[0];
+        if (w && w.racks.length > 0) {
+          setSelectedId(w.id);
+          setSelectedRack(w.racks[0]);
+          setClickedPosition(null);
+        }
+        break;
+      }
+      case "select-position": {
+        // Select first warehouse + rack + first occupied position
+        const w2 = displayWarehouses[0];
+        if (w2 && w2.racks.length > 0) {
+          const rack = w2.racks[0];
+          setSelectedId(w2.id);
+          setSelectedRack(rack);
+          const occupied = rack.rack_positions.find(p => p.product_name);
+          if (occupied) setClickedPosition(occupied);
+        }
+        break;
+      }
+      case "open-search":
+        setDemoSearchOpen(true);
+        break;
+      case "close-search":
+        setDemoSearchOpen(false);
+        break;
+      case "toggle-fps":
+        setShowFps(action.on);
+        break;
+      case "toggle-grid":
+        setShowGrid(action.on);
+        break;
+      case "toggle-measure":
+        setDistanceMeasuring(action.on);
+        break;
+    }
+  }, [displayWarehouses]);
 
   if (loading) {
     return (
-      <div className="w-full h-[calc(100vh-140px)] rounded-2xl bg-[#060914] border border-indigo-500/10 flex items-center justify-center">
+      <div className="w-full h-[calc(100vh-220px)] min-h-[400px] rounded-2xl bg-[#060914] border border-indigo-500/10 flex items-center justify-center">
         <div className="flex flex-col items-center gap-5">
           <div className="relative w-16 h-16">
             <div className="absolute inset-0 border-2 border-indigo-500/20 border-t-indigo-400 rounded-full animate-spin" />
@@ -1295,76 +1827,201 @@ export default function WarehouseOverview3D({ initialSelectedId }: { initialSele
     );
   }
 
+  // ── Theme tokens ──
+  const bgBase = isDark ? "#0c1029" : "#f0f2f7";
+  const borderClr = isDark ? "border-indigo-500/10" : "border-zinc-200";
+
   return (
-    <div className="relative w-full h-[calc(100vh-140px)] rounded-2xl bg-[#0c1029] border border-indigo-500/10 overflow-hidden shadow-2xl shadow-indigo-900/20">
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative w-full overflow-hidden",
+        isDark ? "shadow-2xl shadow-indigo-900/20" : "shadow-lg shadow-zinc-300/30",
+        isFullscreen
+          ? "fixed inset-0 z-50 h-screen w-screen rounded-none"
+          : cn("h-[calc(100vh-220px)] min-h-[400px] rounded-2xl", borderClr, "border")
+      )}
+      style={{ backgroundColor: bgBase }}
+    >
       {/* WebGL Canvas */}
       <Canvas
         camera={{ position: [24, 18, 24], fov: 42, near: 0.1, far: 250 }}
         dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false, depth: true }}
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false, depth: true, preserveDrawingBuffer: true }}
         shadows={false}
         onCreated={({ gl: renderer }) => {
-          console.log("[WarehouseOverview3D] Canvas created, renderer:", renderer.info.render);
+          canvasRef.current = renderer.domElement;
         }}
         fallback={
-          <div className="w-full h-full flex items-center justify-center bg-[#0c1029]">
-            <p className="text-xs text-indigo-400/50">WebGL no disponible</p>
+          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: bgBase }}>
+            <p className={cn("text-xs", isDark ? "text-indigo-400/50" : "text-zinc-400")}>WebGL no disponible</p>
           </div>
         }
       >
-        <color attach="background" args={["#0c1029"]} />
+        <color attach="background" args={[bgBase]} />
         <Suspense fallback={null}>
           <OverviewScene
-            warehouses={warehouses}
-            selectedId={selectedId}
+            warehouses={displayWarehouses}
+            selectedId={effectiveSelectedId}
             hoveredId={hoveredId}
             onSelect={(id) => { setSelectedId(id); setSelectedRack(null); }}
             onHover={setHoveredId}
             onRackSelect={setSelectedRack}
+            onBoxClick={handleBoxClick}
+            focusedRack={selectedRack}
+            isDark={isDark}
+            showGrid={showGrid}
           />
         </Suspense>
       </Canvas>
 
-      {/* Vignette — softer */}
-      <div className="absolute inset-0 pointer-events-none" style={{
-        background: "radial-gradient(ellipse at center, transparent 60%, rgba(12,16,41,0.6) 100%)"
-      }} />
+      {/* Vignette */}
+      {isDark && (
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: "radial-gradient(ellipse at center, transparent 60%, rgba(12,16,41,0.6) 100%)"
+        }} />
+      )}
 
-      {/* Top HUD */}
-      <HudStats warehouses={warehouses} />
+      {/* ── Top Bar: HUD left + Toolbar right ── */}
+      <div className="absolute top-3 left-3 right-3 z-20 flex items-start justify-between pointer-events-none">
+        {/* HUD Stats (left) */}
+        <div className={cn(
+          "pointer-events-auto flex items-center gap-3 px-4 py-2 rounded-xl backdrop-blur-2xl border shadow-lg",
+          isDark ? "bg-[#0a0d1e]/75 border-white/6 shadow-black/20" : "bg-white/80 border-zinc-200/80 shadow-zinc-200/40"
+        )}>
+          {[
+            { icon: Warehouse, value: displayWarehouses.length, label: "almacenes", cls: isDark ? "text-indigo-400" : "text-indigo-600" },
+            { icon: Layers, value: displayWarehouses.reduce((s, w) => s + w.rackCount, 0), label: "racks", cls: isDark ? "text-blue-400" : "text-blue-600" },
+            { icon: Box, value: displayWarehouses.reduce((s, w) => s + w.totalPositions, 0).toLocaleString(), label: "posiciones", cls: isDark ? "text-cyan-400" : "text-cyan-600" },
+            { icon: Activity, value: (() => { const tp = displayWarehouses.reduce((s, w) => s + w.totalPositions, 0); const to = displayWarehouses.reduce((s, w) => s + w.occupiedPositions, 0); return tp > 0 ? `${Math.round((to / tp) * 100)}%` : "0%"; })(), label: "ocupación", cls: (() => { const tp = displayWarehouses.reduce((s, w) => s + w.totalPositions, 0); const to = displayWarehouses.reduce((s, w) => s + w.occupiedPositions, 0); const avg = tp > 0 ? Math.round((to / tp) * 100) : 0; return avg > 85 ? (isDark ? "text-red-400" : "text-red-600") : avg > 60 ? (isDark ? "text-amber-400" : "text-amber-600") : (isDark ? "text-emerald-400" : "text-emerald-600"); })() },
+          ].map((s, i) => (
+            <React.Fragment key={s.label}>
+              {i > 0 && <div className={cn("w-px h-4", isDark ? "bg-white/6" : "bg-zinc-200")} />}
+              <div className="flex items-center gap-1.5">
+                <s.icon size={11} className={s.cls} />
+                <span className={cn("text-[10px] font-bold tabular-nums", s.cls)}>{s.value}</span>
+                <span className={cn("text-[9px]", isDark ? "text-zinc-500" : "text-zinc-400")}>{s.label}</span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
 
-      {/* Smart Search */}
+        {/* Toolbar (right) */}
+        <div className={cn(
+          "pointer-events-auto flex items-center gap-0.5 px-1.5 py-1 rounded-xl backdrop-blur-2xl border shadow-lg",
+          isDark ? "bg-[#0a0d1e]/85 border-white/6 shadow-black/20" : "bg-white/85 border-zinc-200/80 shadow-zinc-200/40"
+        )}>
+          <button onClick={resetView} title="Reset vista" className={cn("flex h-8 w-8 flex-col items-center justify-center gap-0.5 rounded-lg transition-all active:scale-95", isDark ? "text-zinc-500 hover:bg-white/5 hover:text-zinc-300" : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600")}>
+            <RotateCcw size={13} />
+            <span className="text-[6px] font-semibold leading-none">Reset</span>
+          </button>
+          <div className={cn("w-px h-5", isDark ? "bg-white/6" : "bg-zinc-200")} />
+          <button onClick={toggleFullscreen} title="Pantalla completa" className={cn("flex h-8 w-8 flex-col items-center justify-center gap-0.5 rounded-lg transition-all active:scale-95", isDark ? "text-zinc-500 hover:bg-indigo-500/15 hover:text-indigo-400" : "text-zinc-400 hover:bg-indigo-50 hover:text-indigo-600")}>
+            {isFullscreen ? <Minimize size={13} /> : <Maximize size={13} />}
+            <span className="text-[6px] font-semibold leading-none">{isFullscreen ? "Salir" : "Full"}</span>
+          </button>
+          <button onClick={takeScreenshot} title="Capturar pantalla" className={cn("flex h-8 w-8 flex-col items-center justify-center gap-0.5 rounded-lg transition-all active:scale-95", isDark ? "text-zinc-500 hover:bg-cyan-500/15 hover:text-cyan-400" : "text-zinc-400 hover:bg-cyan-50 hover:text-cyan-600")}>
+            <Camera size={13} />
+            <span className="text-[6px] font-semibold leading-none">Foto</span>
+          </button>
+          <div className={cn("w-px h-5", isDark ? "bg-white/6" : "bg-zinc-200")} />
+          {/* Demo tutorial */}
+          <button onClick={() => setShowDemo(true)} title="Tutorial interactivo" className={cn("flex h-8 w-8 flex-col items-center justify-center gap-0.5 rounded-lg transition-all active:scale-95", isDark ? "text-zinc-500 hover:bg-amber-500/15 hover:text-amber-400" : "text-zinc-400 hover:bg-amber-50 hover:text-amber-600")}>
+            <Play size={13} />
+            <span className="text-[6px] font-semibold leading-none">Demo</span>
+          </button>
+          <div className={cn("w-px h-5", isDark ? "bg-white/6" : "bg-zinc-200")} />
+          {/* FPS Counter */}
+          <button onClick={() => setShowFps(f => !f)} title="Rendimiento FPS" className={cn("flex h-8 w-8 flex-col items-center justify-center gap-0.5 rounded-lg transition-all active:scale-95", showFps ? "bg-emerald-500/20 text-emerald-400 border border-emerald-400/20" : isDark ? "text-zinc-500 hover:bg-emerald-500/15 hover:text-emerald-400" : "text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600")}>
+            <Gauge size={13} />
+            <span className="text-[6px] font-semibold leading-none">FPS</span>
+          </button>
+          {/* Grid toggle */}
+          <button onClick={() => setShowGrid(g => !g)} title="Mostrar cuadrícula" className={cn("flex h-8 w-8 flex-col items-center justify-center gap-0.5 rounded-lg transition-all active:scale-95", showGrid ? (isDark ? "text-indigo-400" : "text-indigo-600") : (isDark ? "text-zinc-600" : "text-zinc-300"))}>
+            <Grid3X3 size={13} />
+            <span className="text-[6px] font-semibold leading-none">Grid</span>
+          </button>
+          {/* Ruler */}
+          <button onClick={() => setDistanceMeasuring(d => !d)} title="Medir distancias" className={cn("flex h-8 w-8 flex-col items-center justify-center gap-0.5 rounded-lg transition-all active:scale-95", distanceMeasuring ? "bg-red-500/20 text-red-400 border border-red-400/20" : isDark ? "text-zinc-500 hover:bg-red-500/15 hover:text-red-400" : "text-zinc-400 hover:bg-red-50 hover:text-red-600")}>
+            <Ruler size={13} />
+            <span className="text-[6px] font-semibold leading-none">Medir</span>
+          </button>
+          {selectedRack && (
+            <>
+              <div className={cn("w-px h-5", isDark ? "bg-white/6" : "bg-zinc-200")} />
+              <button onClick={() => setSelectedRack(null)} title="Vista general" className="flex h-8 w-8 flex-col items-center justify-center gap-0.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-400/20 transition-all active:scale-95">
+                <Eye size={13} />
+                <span className="text-[6px] font-semibold leading-none">Vista</span>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* FPS Counter overlay */}
+      {showFps && <FpsCounter isDark={isDark} />}
+
+      {/* Distance measuring HUD */}
+      {distanceMeasuring && (
+        <div className={cn(
+          "absolute left-1/2 top-14 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-md border",
+          isDark ? "bg-red-500/20 border-red-500/30" : "bg-red-50/90 border-red-200"
+        )}>
+          <Ruler size={12} className="text-red-400" />
+          <span className={cn("text-[10px] font-semibold", isDark ? "text-red-300" : "text-red-600")}>Haz clic en 2 puntos para medir distancia</span>
+          <button onClick={() => setDistanceMeasuring(false)} className={cn("rounded px-2 py-0.5 text-[8px] font-bold transition-colors", isDark ? "bg-white/10 text-red-300 hover:bg-white/20" : "bg-red-100 text-red-600 hover:bg-red-200")}>Cerrar</button>
+        </div>
+      )}
+
       <SmartSearch3D
-        warehouses={warehouses}
+        warehouses={displayWarehouses}
         onSelectWarehouse={(id) => { setSelectedId(id); setSelectedRack(null); }}
         onSelectRack={(rack) => setSelectedRack(rack)}
+        isDark={isDark}
+        forceOpen={demoSearchOpen}
       />
 
-      {/* Bottom warehouse nav */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[#0a0d1e]/75 backdrop-blur-2xl border border-white/6">
-        {warehouses.map((w) => {
+      {/* Guided Demo Overlay */}
+      <AnimatePresence>
+        {showDemo && (
+          <GuidedDemoOverlay
+            isDark={isDark}
+            onClose={() => setShowDemo(false)}
+            onAction={handleDemoAction}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Bottom warehouse nav — hidden in single warehouse mode */}
+      {!singleWarehouseId && <div className={cn(
+        "absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-2 rounded-2xl backdrop-blur-2xl border",
+        isDark ? "bg-[#0a0d1e]/75 border-white/6" : "bg-white/80 border-zinc-200/80 shadow-lg shadow-zinc-200/20"
+      )}>
+        {displayWarehouses.map((w) => {
           const p = HOLO_COLORS[w.type] || HOLO_COLORS.standard;
-          const active = selectedId === w.id;
+          const active = effectiveSelectedId === w.id;
           return (
             <button
               key={w.id}
               onClick={() => { setSelectedId(active ? null : w.id); setSelectedRack(null); }}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-medium transition-all",
-                active ? "text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/3"
+                active
+                  ? (isDark ? "text-white" : "text-zinc-900")
+                  : (isDark ? "text-zinc-500 hover:text-zinc-300 hover:bg-white/3" : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100")
               )}
               style={active ? {
-                backgroundColor: p.base + "20",
-                border: `1px solid ${p.base}40`,
+                backgroundColor: p.base + (isDark ? "20" : "15"),
+                border: `1px solid ${p.base}${isDark ? "40" : "30"}`,
                 boxShadow: `0 0 12px ${p.base}15`,
               } : {}}
             >
-              <span className="w-1.5 h-1.5 rounded-full transition-colors" style={{ backgroundColor: active ? p.glow : "#3f3f46" }} />
+              <span className="w-1.5 h-1.5 rounded-full transition-colors" style={{ backgroundColor: active ? p.glow : (isDark ? "#3f3f46" : "#d1d5db") }} />
               {w.name.length > 16 ? w.name.slice(0, 16) + "…" : w.name}
             </button>
           );
         })}
-      </div>
+      </div>}
 
       {/* Detail Panels */}
       <AnimatePresence>
@@ -1378,17 +2035,18 @@ export default function WarehouseOverview3D({ initialSelectedId }: { initialSele
         )}
         {selectedRack && (
           <RackDetailPanel
-            key="rkp"
+            key={`rkp-${selectedRack.code}`}
             rack={selectedRack}
-            onClose={() => setSelectedRack(null)}
+            onClose={() => { setSelectedRack(null); setClickedPosition(null); }}
+            initialPosition={clickedPosition}
           />
         )}
       </AnimatePresence>
 
       {/* Help text */}
-      {!selectedId && (
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 text-[9px] text-zinc-600 font-medium tracking-wide">
-          Selecciona un almacén · Arrastra para rotar · Scroll para zoom
+      {!effectiveSelectedId && (
+        <div className={cn("absolute bottom-16 left-1/2 -translate-x-1/2 z-10 text-[9px] font-medium tracking-wide", isDark ? "text-zinc-600" : "text-zinc-400")}>
+          Selecciona un almacén · Arrastra para rotar · Scroll para zoom · Click en cajas para detalle · ⌘K buscar
         </div>
       )}
     </div>

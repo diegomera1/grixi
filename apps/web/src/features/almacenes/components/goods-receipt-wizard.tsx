@@ -380,8 +380,32 @@ export function GoodsReceiptWizard({ open, onClose, warehouseId, warehouses }: G
               </button>
             ) : step < 4 ? (
               <button
-                onClick={() => {
-                  if (step === 2) { loadSuggestions(); }
+                onClick={async () => {
+                  if (step === 2) {
+                    // Auto-generate lot numbers for items missing them before moving to Step 3
+                    const needLots = items.filter(i => !i.lot_number && i.quantity_received > 0);
+                    if (needLots.length > 0) {
+                      try {
+                        const resp = await fetch(`/api/wms/generate-lot?count=${needLots.length}`);
+                        const res = await resp.json();
+                        if (res.success && res.lots) {
+                          const newItems = [...items];
+                          let lotIdx = 0;
+                          for (let i = 0; i < newItems.length; i++) {
+                            if (!newItems[i].lot_number && newItems[i].quantity_received > 0 && lotIdx < res.lots.length) {
+                              newItems[i] = { ...newItems[i], lot_number: res.lots[lotIdx] };
+                              lotIdx++;
+                            }
+                          }
+                          setItems(newItems);
+                          toast.success(`${lotIdx} lote${lotIdx !== 1 ? "s" : ""} generado${lotIdx !== 1 ? "s" : ""} automáticamente`);
+                        }
+                      } catch {
+                        console.error("[GR Wizard] Error auto-generating lots");
+                      }
+                    }
+                    loadSuggestions();
+                  }
                   setStep((step + 1) as WizardStep);
                 }}
                 disabled={step === 1 && !selectedPO}

@@ -68,27 +68,68 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
 
     const { data: allRacks } = await supabase
       .from("racks")
-      .select("id, warehouse_id, code")
+      .select("id, warehouse_id, code, rows, columns")
       .limit(500);
 
     // Build occupancy map per warehouse
     const rackToWarehouse = new Map<string, string>();
     for (const r of allRacks || []) rackToWarehouse.set(r.id, r.warehouse_id);
 
-    const warehouseOccupancy = new Map<string, { total: number; occupied: number }>();
+    const warehouseOccupancy = new Map<string, { total: number; occupied: number; reserved: number; expired: number; quarantine: number }>();
     for (const p of allPositions || []) {
       const whId = rackToWarehouse.get(p.rack_id);
       if (!whId) continue;
-      if (!warehouseOccupancy.has(whId)) warehouseOccupancy.set(whId, { total: 0, occupied: 0 });
+      if (!warehouseOccupancy.has(whId)) warehouseOccupancy.set(whId, { total: 0, occupied: 0, reserved: 0, expired: 0, quarantine: 0 });
       const s = warehouseOccupancy.get(whId)!;
       s.total++;
-      if (p.status === "occupied") s.occupied++;
+      if (p.status === "occupied" || p.status === "active") s.occupied++;
+      if (p.status === "reserved") s.reserved++;
+      if (p.status === "expired") s.expired++;
+      if (p.status === "quarantine") s.quarantine++;
     }
 
-    const occupancySummary = (warehouseDetails || []).map(w => {
-      const occ = warehouseOccupancy.get(w.id) || { total: 0, occupied: 0 };
+    // Build per-warehouse detail for chart data and navigation
+    const warehouseChartData = (warehouseDetails || []).map(w => {
+      const occ = warehouseOccupancy.get(w.id) || { total: 0, occupied: 0, reserved: 0, expired: 0, quarantine: 0 };
       const pct = occ.total > 0 ? Math.round((occ.occupied / occ.total) * 100) : 0;
-      return `${w.name} (${w.sap_plant_code || w.type}): ${pct}% ocupado (${occ.occupied}/${occ.total} posiciones)`;
+      const rackCodes = (allRacks || []).filter(r => r.warehouse_id === w.id).map(r => r.code);
+      return { id: w.id, name: w.name, type: w.type, pct, occupied: occ.occupied, total: occ.total, reserved: occ.reserved, expired: occ.expired, quarantine: occ.quarantine, rackCodes };
+    });
+
+    const occupancySummary = warehouseChartData.map(w =>
+      `${w.name} (id:${w.id}, tipo:${w.type}): ${w.pct}% ocupado (${w.occupied}/${w.total} posiciones, ${w.reserved} reservadas, ${w.expired} vencidas, ${w.quarantine} cuarentena) — Racks: ${w.rackCodes.join(", ") || "N/A"}`
+    ).join("\n  ");
+
+    // Pre-built chart data for the AI to use directly
+    const chartDataJson = JSON.stringify(warehouseChartData.map(w => ({
+      name: w.name.length > 18 ? w.name.slice(0, 18) + "…" : w.name,
+      ocupacion: w.pct,
+      ocupadas: w.occupied,
+      vacias: w.total - w.occupied,
+    })));
+
+    // Top storage units with location detail
+    const { data: topSUs } = await supabase
+      .from("storage_units")
+      .select("su_code, su_type, quantity, product_id, rack_position_id, products(name, sku)")
+      .order("created_at", { ascending: false })
+      .limit(15);
+
+    // Map SU rack positions to rack codes
+    const suPositionIds = (topSUs || []).map(su => su.rack_position_id).filter(Boolean);
+    const { data: suPositions } = suPositionIds.length > 0
+      ? await supabase.from("rack_positions").select("id, rack_id, row_number, column_number, status").in("id", suPositionIds)
+      : { data: [] };
+    const posMap = new Map((suPositions || []).map(p => [p.id, p]));
+    const rackMap = new Map((allRacks || []).map(r => [r.id, r]));
+    const whMap = new Map((warehouseDetails || []).map(w => [w.id, w]));
+
+    const suSummary = (topSUs || []).slice(0, 10).map(su => {
+      const prod = (su as unknown as { products: { name: string; sku: string } | null }).products;
+      const pos = posMap.get(su.rack_position_id);
+      const rack = pos ? rackMap.get(pos.rack_id) : null;
+      const wh = rack ? whMap.get(rackToWarehouse.get(rack.id) || "") : null;
+      return `${su.su_code} (${prod?.name || "?"} [${prod?.sku || "?"}], qty:${su.quantity}, tipo:${su.su_type}) → ${wh?.name || "?"} / ${rack?.code || "?"} F${pos?.row_number || "?"}C${pos?.column_number || "?"}`;
     }).join("; ");
 
     // Expiring lots
@@ -120,11 +161,15 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
       .limit(5);
 
     moduleContext += `
-## Datos de Almacenes (WMS)
-- Almacenes: ${occupancySummary || "N/A"}
+## Datos de Almacenes (WMS) — Contexto en Tiempo Real
+- Almacenes con detalle:
+  ${occupancySummary || "N/A"}
+- DATOS PARA GRAFICO (usa estos valores EXACTOS para generar charts de ocupación):
+  ${chartDataJson}
 - Productos catalogados: ${productCount || 0}
 - Productos ejemplo: ${products?.map((p) => `${p.name} [${p.sku}] (cat: ${p.category || "—"}, min_stock: ${p.min_stock || "N/A"})`).join(", ") || "N/A"}
 - Productos con stock mínimo configurado: ${lowStock?.length || 0}
+- Top Unidades de Almacén (SUs): ${suSummary || "Sin datos"}
 - Lotes próximos a vencer (30d): ${expiringLots?.map(l => {
       const prod = (l as unknown as { products: { name: string; sku: string } | null }).products;
       return `${l.lot_number} (${prod?.name || "?"} [${prod?.sku || "?"}], qty: ${l.remaining_quantity}, vence: ${l.expiry_date})`;
@@ -297,39 +342,54 @@ Modulo(s) activo(s): ${isGeneral ? "Vista general (todos los modulos)" : modules
 
 ## Capacidades Especiales de Visualización
 
-### Gráficos Interactivos
-Cuando el usuario pida gráficos, dashboards, o visualizaciones de datos, genera un bloque especial con este formato EXACTO:
-<!--CHART:{"type":"bar","title":"Título del gráfico","description":"Descripción breve","data":[{"name":"Ene","valor":100},{"name":"Feb","valor":200}],"xKey":"name","yKeys":[{"key":"valor","label":"Valor","color":"#7C3AED"}]}-->
+### Gráficos Interactivos (MUY IMPORTANTE)
+SIEMPRE que hables de datos numéricos, ocupación, tendencias, o el usuario pida gráficos, DEBES usar este formato HTML comment EXACTO. NUNCA uses emojis como 📊 ni texto plano para representar gráficos:
+<!--CHART:{"type":"bar","title":"Título","description":"Descripción","data":[{"name":"A","valor":100}],"xKey":"name","yKeys":[{"key":"valor","label":"Valor","color":"#7C3AED"}]}-->
 
-Tipos disponibles: "bar", "line", "area", "pie"
-- Para "pie": usa un solo yKey y el xKey para las etiquetas
-- Siempre usa data real del sistema cuando esté disponible
-- Si no tienes datos exactos, genera datos de ejemplo realistas basados en el contexto
-- Puedes generar MÚLTIPLES gráficos en una misma respuesta
-- Los colores disponibles: #7C3AED (morado), #06B6D4 (cyan), #10B981 (verde), #F59E0B (ámbar), #F43F5E (rosa), #8B5CF6 (violeta), #F97316 (naranja)
+Tipos: "bar", "line", "area", "pie"
+- Para "pie": un solo yKey, xKey para etiquetas
+- Usa SIEMPRE los datos reales del sistema (proporcionados arriba) cuando estén disponibles
+- Colores: #7C3AED (morado), #06B6D4 (cyan), #10B981 (verde), #F59E0B (ámbar), #F43F5E (rosa), #8B5CF6 (violeta), #F97316 (naranja)
+- Puedes generar MÚLTIPLES gráficos en una respuesta
+- CRITICO: El formato DEBE ser exactamente <!--CHART:{json}-->  — sin espacios extra, sin saltos de linea dentro del JSON
+
+### Navegación al Visor 3D
+Cuando menciones almacenes, racks, o items específicos, incluye links de navegación para que el usuario pueda ir directamente al visor 3D:
+<!--NAVIGATE:{"type":"warehouse","id":"uuid-del-almacen","label":"🏭 Ver Almacén en 3D"}-->
+<!--NAVIGATE:{"type":"rack","warehouseId":"uuid","rackCode":"RA-01","label":"🗄️ Ver Rack RA-01 en 3D"}-->
+
+- Usa los IDs reales de almacenes proporcionados en los datos
+- Solo incluye links NAVIGATE cuando tengas el ID real del almacén (está en los datos como "id:...")
+- Los links se renderizan como botones clicables que abren el visor 3D
 
 ### Generación de Imágenes
 Cuando el usuario pida una imagen, diagrama visual, o ilustración, genera:
 <!--IMAGE:descripción detallada en inglés de la imagen a generar-->
 
 ### Tablas
-Usa tablas markdown estándar cuando necesites mostrar datos tabulares:
+Usa tablas markdown estándar para datos tabulares:
 | Columna 1 | Columna 2 |
 |-----------|-----------|
 | dato 1    | dato 2    |
 
-Reglas:
+## Reglas Críticas
 - Siempre responde en español
 - Sé conciso pero informativo
-- Usa formato Markdown cuando sea apropiado (listas, negritas, tablas, headers)
-- Si el usuario pregunta sobre datos específicos que tienes, responde con precisión
+- Usa formato Markdown (listas, negritas, tablas, headers)
+- Si el usuario pregunta sobre datos, responde con los datos REALES proporcionados
 - Si no tienes información suficiente, sugiere dónde encontrarla en la plataforma
-- No inventes datos que no se te hayan proporcionado (excepto para gráficos de ejemplo)
-- Puedes analizar imágenes y archivos adjuntos si el usuario los envía
-- Al final de cada respuesta, genera EXACTAMENTE 3 sugerencias de seguimiento relevantes en un bloque JSON especial con este formato:
+- No inventes datos (excepto para gráficos de ejemplo cuando no haya datos reales)
+- Cuando el módulo sea "almacenes" y el usuario pregunte sobre estado general, SIEMPRE incluye un chart de ocupación y links NAVIGATE a los almacenes
+- Al final de cada respuesta, genera EXACTAMENTE 3 sugerencias de seguimiento en este formato:
 <!--SUGGESTIONS-->
 ["sugerencia 1", "sugerencia 2", "sugerencia 3"]
-<!--/SUGGESTIONS-->`;
+<!--/SUGGESTIONS-->
+
+Las sugerencias DEBEN ser:
+- Específicas al módulo activo y a los datos reales (nombres de almacenes, racks, productos reales)
+- Accionables desde el chat (preguntas que tú puedes responder con datos)
+- NUNCA genéricas como "Generar orden de compra" — deben ser consultas analíticas
+- Ejemplos buenos para almacenes: "¿Qué racks tienen posiciones vencidas?", "Muéstrame ocupación de [nombre almacén real] en detalle", "¿Cuántas operaciones pendientes hay hoy?"`;
 }
 
 /** Generate a short title for a conversation based on the first message */

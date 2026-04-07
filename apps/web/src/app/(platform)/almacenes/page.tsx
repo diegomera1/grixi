@@ -197,6 +197,12 @@ export default async function WarehousesPage() {
   }));
 
   // ── Map goods issues ──────────────────────────
+  // Build SO number lookup for reference_so resolution
+  const soNumberLookup = new Map<string, string>();
+  for (const so of salesOrders || []) {
+    soNumberLookup.set(so.id, so.so_number);
+  }
+
   const enrichedGoodsIssues: GoodsIssueRow[] = (goodsIssues || []).map((gi) => ({
     id: gi.id,
     issue_number: gi.issue_number,
@@ -206,6 +212,7 @@ export default async function WarehousesPage() {
     movement_type: gi.movement_type,
     sap_document_id: gi.sap_document_id,
     created_at: gi.created_at,
+    reference_so: gi.reference_id ? soNumberLookup.get(gi.reference_id) : undefined,
     warehouse_name: (gi as unknown as { warehouses: { name: string } | null }).warehouses?.name || undefined,
   }));
 

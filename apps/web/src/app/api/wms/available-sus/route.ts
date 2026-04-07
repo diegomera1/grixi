@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createClient();
 
+    // Use the same join pattern as ai-picking to get rack code from racks table
     let query = supabase
       .from("storage_units")
       .select(`
@@ -37,14 +38,14 @@ export async function GET(req: NextRequest) {
         position_id,
         lot_id,
         created_at,
-        warehouses!inner(name),
-        rack_positions!inner(rack_code, row_number, column_number, position_label),
+        warehouses(name),
+        rack_positions(row_number, column_number, rack_id, racks(code, warehouse_id, warehouses(name))),
         lot_tracking(lot_number, expiry_date, status)
       `)
       .eq("org_id", DEMO_ORG_ID)
       .eq("product_id", productId)
       .in("status", ["available", "reserved"])
-      .gt("quantity", 0)
+      .gt("available_quantity", 0)
       .order("created_at", { ascending: true });
 
     if (warehouseId) {
@@ -58,17 +59,21 @@ export async function GET(req: NextRequest) {
     // Transform to flat structure for frontend
     const sus = (data || []).map((su) => {
       const wh = su.warehouses as unknown as { name: string } | null;
-      const pos = su.rack_positions as unknown as {
-        rack_code: string;
+      const rp = su.rack_positions as unknown as {
         row_number: number;
         column_number: number;
-        position_label: string;
+        racks: { code: string; warehouses: { name: string } } | null;
       } | null;
       const lot = su.lot_tracking as unknown as {
         lot_number: string;
         expiry_date: string | null;
         status: string;
       } | null;
+
+      const rackCode = rp?.racks?.code || "";
+      const rowNum = rp?.row_number || 0;
+      const colNum = rp?.column_number || 0;
+      const posLabel = rackCode && rowNum && colNum ? `${rackCode}-${rowNum}-${colNum}` : "Sin ubicación";
 
       return {
         su_id: su.id,
@@ -79,11 +84,11 @@ export async function GET(req: NextRequest) {
         reserved_quantity: Number(su.reserved_quantity),
         status: su.status,
         warehouse_id: su.warehouse_id,
-        warehouse_name: wh?.name || "—",
-        rack_code: pos?.rack_code || "",
-        row_number: pos?.row_number || 0,
-        column_number: pos?.column_number || 0,
-        position_label: pos?.position_label || "",
+        warehouse_name: wh?.name || rp?.racks?.warehouses?.name || "—",
+        rack_code: rackCode,
+        row_number: rowNum,
+        column_number: colNum,
+        position_label: posLabel,
         lot_number: lot?.lot_number || "",
         expiry_date: lot?.expiry_date || null,
         lot_status: lot?.status || "",

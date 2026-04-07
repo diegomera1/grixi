@@ -494,7 +494,7 @@ export default function PutawaySelector3D({
       <div className="bg-[#0d0f1e] border border-emerald-500/20 rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-emerald-500/15 bg-linear-to-r from-emerald-500/5 to-transparent">
           <Warehouse className="w-4 h-4 text-emerald-400" />
-          <span className="text-sm font-semibold text-text-primary">{warehouseName}</span>
+          <span className="text-sm font-semibold text-white/90">{warehouseName}</span>
         </div>
         <div className="h-[280px] flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
@@ -514,8 +514,8 @@ export default function PutawaySelector3D({
       <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-500/15 bg-linear-to-r from-emerald-500/8 via-transparent to-cyan-500/5">
         <div className="flex items-center gap-2">
           <Warehouse className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="text-xs font-semibold text-text-primary">{warehouseName}</span>
-          <span className="text-[9px] text-emerald-400/40 font-mono">PUTAWAY</span>
+          <span className="text-xs font-semibold text-white/90">{warehouseName}</span>
+          <span className="text-[9px] text-emerald-400/50 font-mono">PUTAWAY</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">

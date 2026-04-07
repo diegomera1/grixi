@@ -247,7 +247,7 @@ export function OperationProfileDrawer({
                               "w-full flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all group/pos",
                               isActive
                                 ? "border-indigo-500/40 bg-indigo-500/5 shadow-sm shadow-indigo-500/10"
-                                : "border-border bg-surface hover:border-indigo-500/30 hover:bg-indigo-500/[0.02]"
+                                : "border-border bg-surface hover:border-indigo-500/30 hover:bg-indigo-500/2"
                             )}
                           >
                             <div className={cn(
