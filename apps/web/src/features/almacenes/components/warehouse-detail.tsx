@@ -13,7 +13,6 @@ import {
   Cuboid,
   BarChart3,
   Clock,
-  Thermometer,
   X,
   Maximize2,
   Minimize2,
@@ -21,9 +20,9 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
-// Dynamic import for 3D scene (no SSR)
-const Warehouse3DScene = dynamic(
-  () => import("./warehouse-3d").then((mod) => mod.Warehouse3DScene),
+// Dynamic import — new holographic single-warehouse 3D (no SSR)
+const WarehouseSingle3D = dynamic(
+  () => import("./warehouse-single-3d").then((mod) => mod.WarehouseSingle3D),
   { ssr: false, loading: () => (
     <div className="flex h-full items-center justify-center">
       <div className="text-center">
@@ -282,7 +281,7 @@ export function WarehouseDetail({ warehouse, racks, stats, initialView = "2d" }:
               )}
             >
               <Cuboid size={14} />
-              Ver 3D
+              Vista 3D
             </button>
           </div>
         </div>
@@ -444,10 +443,11 @@ export function WarehouseDetail({ warehouse, racks, stats, initialView = "2d" }:
                   <Maximize2 size={12} />
                   Pantalla Completa
                 </button>
-                <Warehouse3DScene
-                  racks={racks}
+                <WarehouseSingle3D
                   warehouse={warehouse}
-                  onRackSelect={(rack) => setSelectedRack(rack as unknown as Rack)}
+                  racks={racks}
+                  onRackSelect={(rack) => setSelectedRack(rack)}
+                  selectedRackId={selectedRack?.id || null}
                 />
               </motion.div>
             )}
@@ -505,7 +505,7 @@ export function WarehouseDetail({ warehouse, racks, stats, initialView = "2d" }:
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-100 bg-black"
+            className="fixed inset-0 z-100 bg-[#0a0e1a]"
           >
             {/* Top bar */}
             <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 bg-linear-to-b from-black/80 to-transparent">
@@ -515,7 +515,7 @@ export function WarehouseDetail({ warehouse, racks, stats, initialView = "2d" }:
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white">{warehouse.name}</p>
-                  <p className="text-[10px] text-white/50">Vista 3D Inmersiva</p>
+                  <p className="text-[10px] text-white/50">Vista 3D Holográfica</p>
                 </div>
               </div>
               <button
@@ -527,10 +527,11 @@ export function WarehouseDetail({ warehouse, racks, stats, initialView = "2d" }:
               </button>
             </div>
             {/* 3D Scene */}
-            <Warehouse3DScene
-              racks={racks}
+            <WarehouseSingle3D
               warehouse={warehouse}
-              onRackSelect={(rack) => setSelectedRack(rack as unknown as Rack)}
+              racks={racks}
+              onRackSelect={(rack) => setSelectedRack(rack)}
+              selectedRackId={selectedRack?.id || null}
             />
           </motion.div>
         )}
