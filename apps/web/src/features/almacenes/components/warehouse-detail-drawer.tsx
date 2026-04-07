@@ -7,13 +7,17 @@ import {
   Layers,
   Package,
   Box,
-  BarChart3,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Search,
   AlertTriangle,
   Thermometer,
   Warehouse as WarehouseIcon,
+  Hash,
+  Tag,
+  Grid3x3,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { fetchWarehouseRacksForPreview } from "../actions/stock-hierarchy-actions";
@@ -22,13 +26,16 @@ import type { MiniRack, MiniRackPosition } from "../actions/stock-hierarchy-acti
 // ─── Status Configs ─────────────────────────────────────
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
   occupied: { label: "Ocupado", color: "#10B981", bg: "bg-emerald-500/10" },
+  active:   { label: "Activo",  color: "#10B981", bg: "bg-emerald-500/10" },
   empty:    { label: "Vacío",   color: "#71717A", bg: "bg-zinc-500/10" },
   reserved: { label: "Reservado", color: "#3B82F6", bg: "bg-blue-500/10" },
   blocked:  { label: "Bloqueado", color: "#EF4444", bg: "bg-red-500/10" },
+  expired:  { label: "Vencido", color: "#F97316", bg: "bg-orange-500/10" },
+  quarantine: { label: "Cuarentena", color: "#A855F7", bg: "bg-purple-500/10" },
 };
 
 const TYPE_CFG: Record<string, { label: string; icon: typeof WarehouseIcon; color: string }> = {
-  standard:      { label: "Estántandard", icon: WarehouseIcon, color: "text-indigo-500" },
+  standard:      { label: "Estándar", icon: WarehouseIcon, color: "text-indigo-500" },
   cross_docking: { label: "Cross-Docking", icon: Layers, color: "text-amber-500" },
   cold_storage:  { label: "Cámara Fría", icon: Thermometer, color: "text-cyan-500" },
 };
@@ -45,9 +52,132 @@ type WarehouseDetailDrawerProps = {
   onClose: () => void;
 };
 
+// ─── Position Detail Inline ─────────────────────────────
+function PositionDetailPanel({
+  pos,
+  rackCode,
+  rack,
+  onBack,
+}: {
+  pos: MiniRackPosition;
+  rackCode: string;
+  rack: MiniRack;
+  onBack: () => void;
+}) {
+  const stCfg = STATUS_CFG[pos.status || "occupied"] || STATUS_CFG.occupied;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      className="px-4 pb-4"
+    >
+      {/* Nav & Header */}
+      <div className="flex items-center gap-2 mb-3 pt-1">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium text-text-muted hover:text-text-primary hover:bg-muted transition-colors"
+        >
+          <ArrowLeft size={12} />
+          {rackCode}
+        </button>
+        <ChevronRight size={10} className="text-text-muted" />
+        <span className="text-[10px] font-semibold text-text-primary">
+          F{pos.row_number} C{pos.column_number}
+        </span>
+      </div>
+
+      {/* Status & Quantity header */}
+      <div className="flex items-center justify-between mb-4">
+        <div
+          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold"
+          style={{ color: stCfg.color, backgroundColor: stCfg.color + "18" }}
+        >
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: stCfg.color }} />
+          {stCfg.label}
+        </div>
+        {pos.su_quantity != null && (
+          <div className="text-right">
+            <span className="text-xl font-black tabular-nums text-text-primary">{pos.su_quantity}</span>
+            <span className="text-[10px] text-text-muted ml-1">UN</span>
+          </div>
+        )}
+      </div>
+
+      {/* Product Info Fields */}
+      {pos.product_name ? (
+        <div className="rounded-xl border border-border bg-primary overflow-hidden">
+          {[
+            { icon: Package, label: "Producto", value: pos.product_name },
+            { icon: Hash, label: "SKU", value: pos.product_sku || "—" },
+            { icon: Box, label: "UA Código", value: pos.su_code || "—" },
+            { icon: Tag, label: "Tipo UA", value: pos.su_type || "—" },
+            { icon: Layers, label: "Lote", value: pos.lot_number || "—" },
+            { icon: Grid3x3, label: "Posición", value: `Fila ${pos.row_number}, Columna ${pos.column_number}` },
+          ].map((f, idx) => (
+            <div key={f.label} className={cn("flex items-center gap-3 px-4 py-3", idx > 0 && "border-t border-border")}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/8 shrink-0">
+                <f.icon size={14} className="text-brand" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[8px] font-semibold uppercase tracking-wider text-text-muted">{f.label}</p>
+                <p className="text-[12px] font-semibold text-text-primary truncate">{f.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center py-8 text-text-muted">
+          <Package size={28} className="mb-3 opacity-30" />
+          <p className="text-sm font-medium">Posición Ocupada</p>
+          <p className="text-[10px] mt-1">Sin detalle de producto asignado</p>
+        </div>
+      )}
+
+      {/* Mini rack context map — highlight selected position */}
+      <div className="mt-4 rounded-xl border border-border bg-primary p-3">
+        <p className="text-[8px] font-semibold uppercase tracking-widest text-text-muted mb-2">Ubicación en Rack {rackCode}</p>
+        <div
+          className="grid gap-[3px] mx-auto max-w-[280px]"
+          style={{ gridTemplateColumns: `repeat(${rack.columns}, 1fr)` }}
+        >
+          {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
+            const row = Math.floor(idx / rack.columns) + 1;
+            const col = (idx % rack.columns) + 1;
+            const p = rack.rack_positions.find(rp => rp.row_number === row && rp.column_number === col);
+            const hasProduct = p?.su_code;
+            const isSelected = p?.id === pos.id;
+            const cfg = STATUS_CFG[p?.status || "empty"] || STATUS_CFG.empty;
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  "aspect-square rounded-[3px] flex items-center justify-center transition-all",
+                  isSelected && "ring-2 ring-brand ring-offset-1 ring-offset-surface scale-110 z-10"
+                )}
+                style={{
+                  backgroundColor: hasProduct ? cfg.color + (isSelected ? "50" : "20") : "var(--muted)",
+                  opacity: isSelected ? 1 : hasProduct ? 0.6 : 0.3,
+                }}
+              >
+                <div
+                  className="w-2.5 h-2.5 rounded-[2px]"
+                  style={{ backgroundColor: isSelected ? cfg.color : hasProduct ? cfg.color + "80" : "var(--border)" }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Rack Accordion ─────────────────────────────────────
 function RackRow({ rack, defaultOpen }: { rack: MiniRack; defaultOpen: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [selectedPos, setSelectedPos] = useState<MiniRackPosition | null>(null);
   const occupied = rack.rack_positions.filter(p => p.status === "occupied" || p.su_code).length;
   const total = rack.rows * rack.columns;
   const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
@@ -72,7 +202,7 @@ function RackRow({ rack, defaultOpen }: { rack: MiniRack; defaultOpen: boolean }
   return (
     <div className="border-b border-border last:border-b-0">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => { setOpen(!open); setSelectedPos(null); }}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
       >
         {open ? <ChevronDown size={14} className="text-text-muted shrink-0" /> : <ChevronRight size={14} className="text-text-muted shrink-0" />}
@@ -104,68 +234,105 @@ function RackRow({ rack, defaultOpen }: { rack: MiniRack; defaultOpen: boolean }
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-3">
-              {/* Position grid */}
-              <div
-                className="grid gap-[3px] mx-auto max-w-sm"
-                style={{ gridTemplateColumns: `repeat(${rack.columns}, 1fr)` }}
-              >
-                {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
-                  const row = Math.floor(idx / rack.columns) + 1;
-                  const col = (idx % rack.columns) + 1;
-                  const pos = rack.rack_positions.find(p => p.row_number === row && p.column_number === col);
-                  const hasProduct = pos?.su_code;
-                  const cfg = STATUS_CFG[pos?.status || "empty"] || STATUS_CFG.empty;
-                  return (
+            <AnimatePresence mode="wait">
+              {selectedPos ? (
+                <PositionDetailPanel
+                  key="detail"
+                  pos={selectedPos}
+                  rackCode={rack.code}
+                  rack={rack}
+                  onBack={() => setSelectedPos(null)}
+                />
+              ) : (
+                <motion.div
+                  key="grid"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="px-4 pb-4 space-y-3"
+                >
+                  {/* Clickable Position grid */}
+                  <div>
+                    <p className="text-[8px] font-semibold uppercase tracking-wider text-text-muted mb-1.5">
+                      Mapa de Posiciones <span className="text-brand/60 normal-case">· Clic para detalle</span>
+                    </p>
                     <div
-                      key={idx}
-                      className="group relative aspect-square rounded-[4px] flex items-center justify-center transition-all hover:ring-1 hover:ring-brand/30"
-                      style={{ backgroundColor: hasProduct ? cfg.color + "25" : "var(--muted)" }}
-                      title={hasProduct ? `${pos?.product_name || "Producto"} · ${pos?.su_quantity || 0} uds` : `Vacío (${row}-${col})`}
+                      className="grid gap-[3px] mx-auto max-w-sm"
+                      style={{ gridTemplateColumns: `repeat(${rack.columns}, 1fr)` }}
                     >
-                      <div
-                        className="w-2.5 h-2.5 rounded-[2px]"
-                        style={{ backgroundColor: hasProduct ? cfg.color : "var(--border)" }}
-                      />
-                      {/* Tooltip on hover */}
-                      {hasProduct && (
-                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-50 hidden group-hover:block">
-                          <div className="whitespace-nowrap rounded-lg bg-elevated border border-border px-2.5 py-1.5 text-[9px] shadow-lg">
-                            <p className="font-semibold text-text-primary">{pos?.product_name}</p>
-                            <p className="text-text-muted">{pos?.product_sku} · {pos?.su_quantity} uds</p>
-                            {pos?.lot_number && <p className="text-brand">Lote: {pos.lot_number}</p>}
+                      {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
+                        const row = Math.floor(idx / rack.columns) + 1;
+                        const col = (idx % rack.columns) + 1;
+                        const pos = rack.rack_positions.find(p => p.row_number === row && p.column_number === col);
+                        const hasProduct = pos?.su_code || pos?.status === "occupied";
+                        const cfg = STATUS_CFG[pos?.status || "empty"] || STATUS_CFG.empty;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => { if (pos && hasProduct) setSelectedPos(pos); }}
+                            disabled={!hasProduct}
+                            className={cn(
+                              "group relative aspect-square rounded-[4px] flex items-center justify-center transition-all",
+                              hasProduct && "cursor-pointer hover:ring-2 hover:ring-brand/40 hover:scale-110 hover:z-10",
+                              !hasProduct && "cursor-default"
+                            )}
+                            style={{ backgroundColor: hasProduct ? cfg.color + "25" : "var(--muted)" }}
+                            title={hasProduct ? `${pos?.product_name || "Ocupado"} · Clic` : `Vacío (${row}-${col})`}
+                          >
+                            <div
+                              className={cn("w-2.5 h-2.5 rounded-[2px] transition-all", hasProduct && "group-hover:scale-125")}
+                              style={{ backgroundColor: hasProduct ? cfg.color : "var(--border)" }}
+                            />
+                            {/* Tooltip on hover */}
+                            {hasProduct && (
+                              <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-50 hidden group-hover:block">
+                                <div className="whitespace-nowrap rounded-lg bg-elevated border border-border px-2.5 py-1.5 text-[9px] shadow-lg">
+                                  <p className="font-semibold text-text-primary">{pos?.product_name || "Ocupado"}</p>
+                                  <p className="text-text-muted">{pos?.product_sku} · {pos?.su_quantity} uds</p>
+                                  {pos?.lot_number && <p className="text-brand">Lote: {pos.lot_number}</p>}
+                                  <p className="text-brand/60 mt-0.5">Clic para ver detalle →</p>
+                                </div>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center justify-between mt-1 px-0.5">
+                      <span className="text-[7px] text-text-muted">F1</span>
+                      <span className="text-[7px] text-text-muted">Filas ↓ · Columnas →</span>
+                      <span className="text-[7px] text-text-muted">F{rack.rows}</span>
+                    </div>
+                  </div>
+
+                  {/* Products in this rack */}
+                  {productsList.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[9px] font-semibold uppercase tracking-wider text-text-muted">
+                        Productos · {productsList.length}
+                      </p>
+                      {productsList.map(p => (
+                        <div key={p.sku} className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+                          <Package size={12} className="text-brand shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-medium text-text-primary truncate">{p.name}</p>
+                            <p className="text-[9px] text-text-muted">{p.sku} · {p.lots.size} lote{p.lots.size !== 1 ? "s" : ""}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-[11px] font-bold tabular-nums text-text-primary">{p.qty.toLocaleString()}</p>
+                            <p className="text-[9px] text-text-muted">{p.positions} pos</p>
                           </div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
+                  )}
 
-              {/* Products in this rack */}
-              {productsList.length > 0 && (
-                <div className="space-y-1.5">
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-text-muted">Productos</p>
-                  {productsList.map(p => (
-                    <div key={p.sku} className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
-                      <Package size={12} className="text-brand shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-medium text-text-primary truncate">{p.name}</p>
-                        <p className="text-[9px] text-text-muted">{p.sku} · {p.lots.size} lote{p.lots.size !== 1 ? "s" : ""}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-[11px] font-bold tabular-nums text-text-primary">{p.qty.toLocaleString()}</p>
-                        <p className="text-[9px] text-text-muted">{p.positions} pos</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                  {productsList.length === 0 && (
+                    <p className="text-center text-[10px] text-text-muted py-2">Sin productos en este rack</p>
+                  )}
+                </motion.div>
               )}
-
-              {productsList.length === 0 && (
-                <p className="text-center text-[10px] text-text-muted py-2">Sin productos en este rack</p>
-              )}
-            </div>
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
@@ -363,7 +530,9 @@ export function WarehouseDetailDrawer({
                   Racks · {filteredRacks.length} de {racks.length}
                 </p>
                 <div className="flex gap-1.5">
-                  {Object.entries(STATUS_CFG).map(([key, cfg]) => (
+                  {Object.entries(STATUS_CFG)
+                    .filter(([k]) => k !== "active" && k !== "quarantine" && k !== "expired")
+                    .map(([key, cfg]) => (
                     <div key={key} className="flex items-center gap-1">
                       <div className="h-2 w-2 rounded-sm" style={{ backgroundColor: cfg.color }} />
                       <span className="text-[8px] text-text-muted">{cfg.label}</span>

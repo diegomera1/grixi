@@ -4,11 +4,11 @@ import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, mem
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Text, Line, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { Warehouse, MapPin, Box, X as XIcon, Layers, ChevronRight, Package, Activity, Search } from "lucide-react";
+import { Warehouse, MapPin, Box, X as XIcon, Layers, ChevronRight, ChevronLeft, Package, Activity, Search, Hash, Tag, Grid3x3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils/cn";
 import { fetchAllWarehousesOverview } from "../actions/stock-hierarchy-actions";
-import type { WarehouseOverview, MiniRack as MiniRackData } from "../actions/stock-hierarchy-actions";
+import type { WarehouseOverview, MiniRack as MiniRackData, MiniRackPosition } from "../actions/stock-hierarchy-actions";
 
 // ─── Color Palette ────────────────────────────────────────
 const HOLO_COLORS: Record<string, { base: string; glow: string; edge: string; hex: number }> = {
@@ -603,8 +603,8 @@ function OverviewScene({
   );
 }
 
-// ─── Rack Detail Panel (HTML overlay) ─────────────────────
 function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () => void }) {
+  const [selectedPos, setSelectedPos] = useState<MiniRackPosition | null>(null);
   const allPositions = rack.rack_positions;
   const filled = allPositions.filter(p => p.su_code || p.status === "occupied");
   const total = rack.rows * rack.columns;
@@ -637,6 +637,110 @@ function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () =>
     blocked: "#f97316",
   };
 
+  // ── Item Detail View ──────────────────────
+  if (selectedPos) {
+    const st = selectedPos.status || "occupied";
+    const stCfg = statusColors[st] || statusColors.occupied;
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 16 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 16 }}
+        className="absolute top-4 right-4 w-[310px] max-h-[calc(100%-32px)] bg-[#0a0d1e]/95 backdrop-blur-2xl border border-indigo-500/20 rounded-2xl shadow-2xl shadow-indigo-500/10 z-30 flex flex-col overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedPos(null)}
+              className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-zinc-500 hover:text-indigo-400 transition-colors"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <div>
+              <span className="text-sm font-bold text-white">Detalle de Posición</span>
+              <p className="text-[9px] text-indigo-300/50">
+                {rack.code} · Fila {selectedPos.row_number}, Col {selectedPos.column_number}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-zinc-500 hover:text-white transition-colors">
+            <XIcon size={14} />
+          </button>
+        </div>
+
+        {/* Detail content */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Status badge */}
+          <div className="px-4 pt-4 pb-2">
+            <div className="flex items-center justify-between">
+              <span className={cn("inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-bold", stCfg.bg, stCfg.text)}>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: gridColors[st] || "#22c55e" }} />
+                {stCfg.label}
+              </span>
+              {selectedPos.su_quantity != null && (
+                <span className="text-lg font-black tabular-nums text-emerald-400">{selectedPos.su_quantity} <span className="text-[10px] text-zinc-500 font-normal">UN</span></span>
+              )}
+            </div>
+          </div>
+
+          {/* Product Info */}
+          {selectedPos.product_name ? (
+            <div className="px-4 space-y-0">
+              {[
+                { icon: Package, label: "Producto", value: selectedPos.product_name },
+                { icon: Hash, label: "SKU", value: selectedPos.product_sku || "—" },
+                { icon: Box, label: "Unidad Almacén", value: selectedPos.su_code || "—" },
+                { icon: Layers, label: "Tipo UA", value: selectedPos.su_type || "—" },
+                { icon: Tag, label: "Lote", value: selectedPos.lot_number || "—" },
+                { icon: Grid3x3, label: "Posición", value: `F${selectedPos.row_number} C${selectedPos.column_number}` },
+              ].map(f => (
+                <div key={f.label} className="flex items-start gap-2.5 border-b border-white/5 py-2.5 last:border-0">
+                  <f.icon size={12} className="mt-0.5 shrink-0 text-indigo-400/60" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[8px] font-semibold uppercase tracking-wider text-zinc-500">{f.label}</p>
+                    <p className="text-[11px] font-semibold text-white/90 truncate">{f.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-10 px-4">
+              <Package size={24} className="text-zinc-600 mb-3" />
+              <p className="text-[11px] text-zinc-400 font-medium">Posición Ocupada</p>
+              <p className="text-[9px] text-zinc-600 mt-1">Sin detalle de producto asignado</p>
+            </div>
+          )}
+
+          {/* Mini rack context - highlight selected position */}
+          <div className="px-4 py-3 mt-2 border-t border-white/5">
+            <p className="text-[8px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Ubicación en Rack</p>
+            <div
+              className="grid gap-[2px] rounded-lg overflow-hidden p-1.5 bg-white/2"
+              style={{ gridTemplateColumns: `repeat(${rack.columns}, 1fr)` }}
+            >
+              {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
+                const row = Math.floor(idx / rack.columns) + 1;
+                const col = (idx % rack.columns) + 1;
+                const pos = allPositions.find(p => p.row_number === row && p.column_number === col);
+                const status = pos?.status || "empty";
+                const isSelected = pos?.id === selectedPos.id;
+                return (
+                  <div
+                    key={idx}
+                    className={cn("aspect-square rounded-[2px] transition-all", isSelected && "ring-1 ring-indigo-400 ring-offset-1 ring-offset-[#0a0d1e]")}
+                    style={{ backgroundColor: gridColors[status] || "#27272a", opacity: isSelected ? 1 : status === "empty" ? 0.2 : 0.5 }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ── Rack Overview View (original + clickable grid) ──────
   return (
     <motion.div
       initial={{ opacity: 0, x: 16 }}
@@ -697,11 +801,11 @@ function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () =>
         </div>
       </div>
 
-      {/* Visual grid map */}
+      {/* Clickable visual grid map */}
       <div className="px-4 py-2">
-        <p className="text-[8px] font-semibold text-zinc-500 uppercase tracking-[0.15em] mb-1.5">Mapa de posiciones</p>
+        <p className="text-[8px] font-semibold text-zinc-500 uppercase tracking-[0.15em] mb-1.5">Mapa de Posiciones <span className="text-indigo-400/60 normal-case">· Clic para ver detalle</span></p>
         <div
-          className="grid gap-[2px] rounded-lg overflow-hidden p-1.5 bg-white/2"
+          className="grid gap-[3px] rounded-lg overflow-hidden p-2 bg-white/2"
           style={{ gridTemplateColumns: `repeat(${rack.columns}, 1fr)` }}
         >
           {Array.from({ length: rack.rows * rack.columns }, (_, idx) => {
@@ -709,15 +813,32 @@ function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () =>
             const col = (idx % rack.columns) + 1;
             const pos = allPositions.find(p => p.row_number === row && p.column_number === col);
             const status = pos?.status || "empty";
+            const hasItem = pos?.su_code || status === "occupied";
             return (
-              <div
+              <button
                 key={idx}
-                className="aspect-square rounded-[2px] transition-colors"
-                style={{ backgroundColor: gridColors[status] || "#27272a", opacity: status === "empty" ? 0.3 : 0.8 }}
-                title={`F${row} C${col}: ${statusColors[status]?.label || status}`}
-              />
+                onClick={() => { if (pos && hasItem) setSelectedPos(pos); }}
+                disabled={!hasItem}
+                className={cn(
+                  "aspect-square rounded-[3px] transition-all flex items-center justify-center group relative",
+                  hasItem && "cursor-pointer hover:ring-1 hover:ring-indigo-400 hover:scale-110 hover:z-10",
+                  !hasItem && "cursor-default"
+                )}
+                style={{ backgroundColor: gridColors[status] || "#27272a", opacity: status === "empty" ? 0.25 : 0.85 }}
+                title={hasItem ? `${pos?.product_name || "Ocupado"} · Clic para detalle` : `Vacío (F${row} C${col})`}
+              >
+                {hasItem && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/30 group-hover:bg-white/60 transition-colors" />
+                )}
+              </button>
             );
           })}
+        </div>
+        {/* Column/row labels */}
+        <div className="flex items-center justify-between mt-1.5 px-0.5">
+          <span className="text-[7px] text-zinc-600">F1</span>
+          <span className="text-[7px] text-zinc-600">Filas ↓ · Columnas →</span>
+          <span className="text-[7px] text-zinc-600">F{rack.rows}</span>
         </div>
       </div>
 
@@ -736,7 +857,11 @@ function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () =>
           const st = p.status || "occupied";
           const stCfg = statusColors[st] || statusColors.occupied;
           return (
-            <div key={p.id} className="rounded-xl bg-white/3 border border-white/4 px-3 py-2.5 hover:bg-indigo-500/5 transition-colors">
+            <button
+              key={p.id}
+              onClick={() => setSelectedPos(p)}
+              className="w-full text-left rounded-xl bg-white/3 border border-white/4 px-3 py-2.5 hover:bg-indigo-500/8 hover:border-indigo-500/20 transition-all group"
+            >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
                   <span className={cn("inline-flex items-center rounded px-1 py-0.5 text-[7px] font-bold uppercase", stCfg.bg, stCfg.text)}>
@@ -746,9 +871,12 @@ function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () =>
                     <span className="text-[9px] font-mono text-cyan-400 font-medium">{p.su_code}</span>
                   )}
                 </div>
-                {p.su_quantity != null && (
-                  <span className="text-[10px] text-emerald-400 font-bold tabular-nums">{p.su_quantity} UN</span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {p.su_quantity != null && (
+                    <span className="text-[10px] text-emerald-400 font-bold tabular-nums">{p.su_quantity} UN</span>
+                  )}
+                  <ChevronRight size={10} className="text-zinc-700 group-hover:text-indigo-400 transition-colors" />
+                </div>
               </div>
               {p.product_name && (
                 <p className="text-[10px] text-white/80 truncate leading-snug">{p.product_name}</p>
@@ -762,7 +890,7 @@ function RackDetailPanel({ rack, onClose }: { rack: MiniRackData; onClose: () =>
                 {p.lot_number && <span className="text-[8px] text-amber-500/60 font-mono">Lote: {p.lot_number}</span>}
                 {p.su_type && <span className="text-[8px] text-indigo-400/50 font-mono">{p.su_type}</span>}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
