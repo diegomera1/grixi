@@ -109,28 +109,33 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
     })));
 
     // Top storage units with location detail
-    const { data: topSUs } = await supabase
-      .from("storage_units")
-      .select("su_code, su_type, quantity, product_id, rack_position_id, products(name, sku)")
-      .order("created_at", { ascending: false })
-      .limit(15);
-
-    // Map SU rack positions to rack codes
-    const suPositionIds = (topSUs || []).map(su => su.rack_position_id).filter(Boolean);
-    const { data: suPositions } = suPositionIds.length > 0
-      ? await supabase.from("rack_positions").select("id, rack_id, row_number, column_number, status").in("id", suPositionIds)
-      : { data: [] };
-    const posMap = new Map((suPositions || []).map(p => [p.id, p]));
-    const rackMap = new Map((allRacks || []).map(r => [r.id, r]));
     const whMap = new Map((warehouseDetails || []).map(w => [w.id, w]));
+    let suSummary = "Sin datos";
+    try {
+      const { data: topSUs } = await supabase
+        .from("storage_units")
+        .select("su_code, su_type, quantity, product_id, position_id, warehouse_id, products(name, sku)")
+        .order("created_at", { ascending: false })
+        .limit(15);
 
-    const suSummary = (topSUs || []).slice(0, 10).map(su => {
-      const prod = (su as unknown as { products: { name: string; sku: string } | null }).products;
-      const pos = posMap.get(su.rack_position_id);
-      const rack = pos ? rackMap.get(pos.rack_id) : null;
-      const wh = rack ? whMap.get(rackToWarehouse.get(rack.id) || "") : null;
-      return `${su.su_code} (${prod?.name || "?"} [${prod?.sku || "?"}], qty:${su.quantity}, tipo:${su.su_type}) → ${wh?.name || "?"} / ${rack?.code || "?"} F${pos?.row_number || "?"}C${pos?.column_number || "?"}`;
-    }).join("; ");
+      // Map SU rack positions to rack codes
+      const suPositionIds = (topSUs || []).map(su => su.position_id).filter(Boolean);
+      const { data: suPositions } = suPositionIds.length > 0
+        ? await supabase.from("rack_positions").select("id, rack_id, row_number, column_number, status").in("id", suPositionIds)
+        : { data: [] };
+      const posMap = new Map((suPositions || []).map(p => [p.id, p]));
+      const rackMap = new Map((allRacks || []).map(r => [r.id, r]));
+
+      suSummary = (topSUs || []).slice(0, 10).map(su => {
+        const prod = (su as unknown as { products: { name: string; sku: string } | null }).products;
+        const pos = posMap.get(su.position_id);
+        const rack = pos ? rackMap.get(pos.rack_id) : null;
+        const wh = whMap.get(su.warehouse_id);
+        return `${su.su_code} (${prod?.name || "?"} [${prod?.sku || "?"}], qty:${su.quantity}, tipo:${su.su_type}) → ${wh?.name || "?"} / ${rack?.code || "?"} F${pos?.row_number || "?"}C${pos?.column_number || "?"}`;
+      }).join("; ") || "Sin datos";
+    } catch {
+      // Non-critical — continue without SU data
+    }
 
     // Expiring lots
     const expiryDate = new Date();
