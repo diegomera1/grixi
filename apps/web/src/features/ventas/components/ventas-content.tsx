@@ -35,8 +35,7 @@ import { CotizacionesTab } from "./cotizaciones-tab";
 import { ReportesTab } from "./reportes-tab";
 import { NuevaVentaModal } from "./nueva-venta-modal";
 import { ROLE_PERMISSIONS } from "../types";
-import { DemoTourProvider, useDemoTour } from "./demo-tour-provider";
-import { DemoAiPanel } from "./demo-ai-panel";
+import { VentasTour } from "./ventas-tour";
 
 type Tab = "dashboard" | "clientes" | "ventas" | "pipeline" | "cotizaciones" | "reportes";
 
@@ -116,22 +115,12 @@ export function VentasContent({
     setAlerts((prev) => prev.filter((a) => a.id !== alertId));
   }, []);
 
+  const [tourOpen, setTourOpen] = useState(false);
+
   return (
-    <DemoTourProvider
-      onTabChange={(tab) => setActiveTab(tab as Tab)}
-      dataContext={{
-        kpis: initialKPIs,
-        customers,
-        opportunities,
-        invoices,
-        quotes,
-        stages: initialPipelineStages,
-        topProducts: initialTopProducts,
-      }}
-    >
     <div className="w-full space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div data-tour="ventas-header" className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-sm font-bold text-[var(--text-primary)]">
             Ventas & CRM
@@ -150,9 +139,15 @@ export function VentasContent({
               Nueva Venta
             </button>
           )}
-          <DemoButton />
+          <button
+            onClick={() => setTourOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] px-3 py-1.5 text-[10px] font-bold text-white shadow-lg shadow-[#8B5CF6]/25 transition-all hover:shadow-[#8B5CF6]/40 hover:scale-[1.02]"
+          >
+            <Sparkles size={12} />
+            Demo IA
+          </button>
           <RoleSwitcher activeRole={demoRole} onRoleChange={setDemoRole} />
-          <div className="grid grid-cols-3 gap-0.5 border-b border-[var(--border)] sm:flex sm:items-center sm:gap-1 md:grid-cols-6">
+          <div data-tour="ventas-tabs" className="grid grid-cols-3 gap-0.5 border-b border-[var(--border)] sm:flex sm:items-center sm:gap-1 md:grid-cols-6">
             {visibleTabs.map((tab) => (
               <button
                 key={tab.id}
@@ -188,6 +183,7 @@ export function VentasContent({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2 }}
+          data-tour="ventas-content"
         >
           {activeTab === "dashboard" && (
             <DashboardTab
@@ -250,36 +246,32 @@ export function VentasContent({
           customers={customers}
           onClose={() => setShowNuevaVenta(false)}
           onSave={() => {
-            // In a real app this would call a server action
             setShowNuevaVenta(false);
           }}
           demoRole={demoRole}
         />
       )}
-      {/* AI Demo Panel */}
-      <DemoAiPanel />
+
+      {/* Driver.js Tour with AI */}
+      <VentasTour
+        isOpen={tourOpen}
+        onClose={() => setTourOpen(false)}
+        setActiveTab={setActiveTab}
+        dataContext={{
+          kpis: initialKPIs,
+          customers,
+          opportunities,
+          invoices,
+          quotes,
+          stages: initialPipelineStages,
+          topProducts: initialTopProducts,
+        }}
+      />
     </div>
-    </DemoTourProvider>
   );
 }
 
-// ── Demo Button (must be child of DemoTourProvider) ───
 
-function DemoButton() {
-  const { status, startDemo } = useDemoTour();
-
-  if (status !== "idle") return null;
-
-  return (
-    <button
-      onClick={startDemo}
-      className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] px-3 py-1.5 text-[10px] font-bold text-white shadow-lg shadow-[#8B5CF6]/25 transition-all hover:shadow-[#8B5CF6]/40 hover:scale-[1.02]"
-    >
-      <Sparkles size={12} />
-      Demo IA
-    </button>
-  );
-}
 
 // ── Role-based data filtering (demo only) ─────────
 
