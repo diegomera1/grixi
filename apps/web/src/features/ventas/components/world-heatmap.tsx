@@ -441,10 +441,6 @@ export function WorldHeatmap({ invoices, customers }: Props) {
       geo: {
         map: "world",
         roam: true, // Enable zoom + pan
-        projection: {
-          project: (point: number[]) => [point[0] / 180 * Math.PI, -Math.log(Math.tan((Math.PI / 2 + point[1] / 180 * Math.PI) / 2))],
-          unproject: (point: number[]) => [point[0] * 180 / Math.PI, 2 * 180 / Math.PI * Math.atan(Math.exp(point[1])) - 90],
-        },
         scaleLimit: {
           min: 1,
           max: 12,

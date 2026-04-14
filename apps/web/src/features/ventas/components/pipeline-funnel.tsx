@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import * as echarts from "echarts/core";
 import { FunnelChart } from "echarts/charts";
 import {
@@ -10,7 +11,19 @@ import {
   TitleComponent,
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
-import { TrendingDown, DollarSign, Target, Percent } from "lucide-react";
+import {
+  TrendingDown,
+  DollarSign,
+  Target,
+  Percent,
+  ChevronRight,
+  ChevronDown,
+  User,
+  Calendar,
+  ArrowRight,
+  Zap,
+} from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 import type { SalesPipelineStage, SalesOpportunity } from "../types";
 
 // Register ECharts components (tree-shakeable)
@@ -35,6 +48,7 @@ type StageMetric = {
   amount: number;
   weighted: number;
   conversionFromPrev: number;
+  opportunities: SalesOpportunity[];
 };
 
 // ── Funnel Component ──────────────────────────────
@@ -42,7 +56,9 @@ type StageMetric = {
 export function PipelineFunnel({ stages, opportunities }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
+  const router = useRouter();
   const [hoveredStage, setHoveredStage] = useState<string | null>(null);
+  const [expandedStage, setExpandedStage] = useState<string | null>(null);
 
   // Compute metrics per stage
   const metrics: StageMetric[] = useMemo(() => {
@@ -69,7 +85,7 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
           prevCount > 0 ? Math.round((count / prevCount) * 100) : 0;
       }
 
-      return { stage, count, amount, weighted, conversionFromPrev };
+      return { stage, count, amount, weighted, conversionFromPrev, opportunities: stageOpps };
     });
   }, [stages, opportunities]);
 
@@ -85,6 +101,11 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
           (metrics[metrics.length - 1].count / metrics[0].count) * 100
         )
       : 0;
+
+  // Toggle stage expand
+  const toggleStage = useCallback((stageId: string) => {
+    setExpandedStage((prev) => (prev === stageId ? null : stageId));
+  }, []);
 
   // ECharts option
   const chartOption = useMemo(() => {
@@ -106,7 +127,7 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
           const m = metrics[params.dataIndex];
           if (!m) return "";
           return `
-            <div style="min-width: 160px;">
+            <div style="min-width: 180px;">
               <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                 <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${params.color}"></span>
                 <span style="font-weight:700;font-size:12px;">${params.name}</span>
@@ -120,6 +141,9 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                 <span style="font-weight:600;text-align:right;color:#10b981;">$${(m.weighted / 1000).toFixed(0)}K</span>
                 <span style="color:#94a3b8;">Conversión</span>
                 <span style="font-weight:600;text-align:right;">${m.conversionFromPrev}%</span>
+              </div>
+              <div style="margin-top:8px;font-size:9px;color:#94a3b8;font-style:italic;">
+                Click para ver oportunidades ➜
               </div>
             </div>
           `;
@@ -212,7 +236,17 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
 
     chartInstance.current.setOption(chartOption, true);
 
+    // Click to expand stage
+    chartInstance.current.off("click");
+    chartInstance.current.on("click", (params: { dataIndex?: number }) => {
+      if (params.dataIndex !== undefined && metrics[params.dataIndex]) {
+        toggleStage(metrics[params.dataIndex].stage.id);
+      }
+    });
+
     // Hover events
+    chartInstance.current.off("mouseover");
+    chartInstance.current.off("mouseout");
     chartInstance.current.on("mouseover", (params: { dataIndex?: number }) => {
       if (params.dataIndex !== undefined && metrics[params.dataIndex]) {
         setHoveredStage(metrics[params.dataIndex].stage.id);
@@ -230,10 +264,8 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
 
     return () => {
       obs.disconnect();
-      chartInstance.current?.off("mouseover");
-      chartInstance.current?.off("mouseout");
     };
-  }, [chartOption, metrics]);
+  }, [chartOption, metrics, toggleStage]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -285,60 +317,144 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
         </div>
 
         {/* Stage breakdown sidebar */}
-        <div className="w-[260px] border-l border-[var(--border)] p-3 space-y-1.5 overflow-y-auto">
-          {metrics.map((m, i) => (
-            <motion.div
-              key={m.stage.id}
-              initial={{ opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className={`rounded-lg px-3 py-2 transition-all duration-200 ${
-                hoveredStage === m.stage.id
-                  ? "bg-[var(--bg-muted)] ring-1 ring-[var(--brand)]/20"
-                  : "bg-transparent hover:bg-[var(--bg-muted)]/60"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: m.stage.color }}
-                />
-                <span className="text-[9px] font-semibold text-[var(--text-primary)] flex-1">
-                  {m.stage.name}
-                </span>
-                <span className="text-[9px] font-bold text-[var(--text-primary)] tabular-nums">
-                  {m.count}
-                </span>
-              </div>
+        <div className="w-[280px] border-l border-[var(--border)] overflow-y-auto max-h-[220px]">
+          {metrics.map((m, i) => {
+            const isExpanded = expandedStage === m.stage.id;
+            return (
+              <div key={m.stage.id}>
+                <motion.button
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => toggleStage(m.stage.id)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 transition-all duration-200 border-b border-[var(--border)]/50",
+                    hoveredStage === m.stage.id || isExpanded
+                      ? "bg-[var(--bg-muted)]"
+                      : "hover:bg-[var(--bg-muted)]/60"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: m.stage.color }}
+                    />
+                    <span className="text-[9px] font-semibold text-[var(--text-primary)] flex-1">
+                      {m.stage.name}
+                    </span>
+                    <span className="text-[9px] font-bold text-[var(--text-primary)] tabular-nums mr-1">
+                      {m.count}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronDown size={10} className="text-[var(--text-muted)]" />
+                    ) : (
+                      <ChevronRight size={10} className="text-[var(--text-muted)]" />
+                    )}
+                  </div>
 
-              {/* Progress bar */}
-              <div className="mt-1.5 flex items-center gap-2">
-                <div className="flex-1 h-1 rounded-full bg-[var(--bg-muted)] overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{
-                      width: `${totalDeals > 0 ? (m.count / totalDeals) * 100 : 0}%`,
-                    }}
-                    transition={{ duration: 0.8, delay: i * 0.08 }}
-                    className="h-full rounded-full"
-                    style={{ backgroundColor: m.stage.color }}
-                  />
-                </div>
-                <span className="text-[7px] text-[var(--text-muted)] tabular-nums w-8 text-right">
-                  ${(m.amount / 1000).toFixed(0)}K
-                </span>
-              </div>
+                  {/* Progress bar */}
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="flex-1 h-1 rounded-full bg-[var(--bg-muted)] overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${totalDeals > 0 ? (m.count / totalDeals) * 100 : 0}%`,
+                        }}
+                        transition={{ duration: 0.8, delay: i * 0.08 }}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: m.stage.color }}
+                      />
+                    </div>
+                    <span className="text-[7px] text-[var(--text-muted)] tabular-nums w-10 text-right">
+                      ${(m.amount / 1000).toFixed(0)}K
+                    </span>
+                  </div>
 
-              {/* Conversion arrow from previous */}
-              {i > 0 && (
-                <div className="mt-1 flex items-center gap-1">
-                  <span className="text-[7px] text-[var(--text-muted)]">
-                    ↓ {m.conversionFromPrev}% conversión
-                  </span>
-                </div>
-              )}
-            </motion.div>
-          ))}
+                  {/* Conversion arrow from previous */}
+                  {i > 0 && (
+                    <div className="mt-1 flex items-center gap-1">
+                      <span className="text-[7px] text-[var(--text-muted)]">
+                        ↓ {m.conversionFromPrev}% conversión
+                      </span>
+                    </div>
+                  )}
+                </motion.button>
+
+                {/* Expanded: show individual opportunities */}
+                <AnimatePresence>
+                  {isExpanded && m.opportunities.length > 0 && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden bg-[var(--bg-primary)]"
+                    >
+                      <div className="px-2 py-1.5 space-y-1">
+                        {m.opportunities
+                          .sort((a, b) => Number(b.amount) - Number(a.amount))
+                          .slice(0, 8)
+                          .map((opp, j) => (
+                          <motion.button
+                            key={opp.id}
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: j * 0.03 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/ventas?tab=pipeline&deal=${opp.id}`);
+                            }}
+                            className="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[var(--bg-muted)] transition-all group"
+                          >
+                            <Zap size={8} style={{ color: m.stage.color }} className="shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[8px] font-semibold text-[var(--text-primary)] truncate">
+                                {opp.name}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {opp.customer && (
+                                  <span className="flex items-center gap-0.5 text-[7px] text-[var(--text-muted)]">
+                                    <User size={6} />
+                                    {opp.customer.trade_name || opp.customer.business_name}
+                                  </span>
+                                )}
+                                {opp.expected_close_date && (
+                                  <span className="flex items-center gap-0.5 text-[7px] text-[var(--text-muted)]">
+                                    <Calendar size={6} />
+                                    {new Date(opp.expected_close_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span
+                                className="rounded-full px-1.5 py-0.5 text-[7px] font-semibold"
+                                style={{
+                                  backgroundColor: `${m.stage.color}20`,
+                                  color: m.stage.color,
+                                }}
+                              >
+                                {opp.probability}%
+                              </span>
+                              <span className="text-[8px] font-bold text-emerald-500 tabular-nums">
+                                ${(Number(opp.amount) / 1000).toFixed(0)}K
+                              </span>
+                              <ArrowRight size={8} className="text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </motion.button>
+                        ))}
+                        {m.opportunities.length > 8 && (
+                          <p className="text-center text-[7px] text-[var(--text-muted)] py-1">
+                            +{m.opportunities.length - 8} más oportunidades
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
