@@ -8,7 +8,8 @@ export type AiModule =
   | "usuarios"
   | "dashboard"
   | "administracion"
-  | "flota";
+  | "flota"
+  | "ventas";
 
 export type Attachment = {
   id: string;

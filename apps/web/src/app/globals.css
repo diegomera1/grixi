@@ -8,6 +8,7 @@
   --bg-surface: #FFFFFF;
   --bg-elevated: #FFFFFF;
   --bg-muted: #F4F4F5;
+  --bg-card: #FFFFFF;
 
   /* Borders */
   --border: #E4E4E7;
@@ -69,6 +70,7 @@
   --bg-surface: #111113;
   --bg-elevated: #1A1A1D;
   --bg-muted: #27272A;
+  --bg-card: #18181B;
 
   --border: #27272A;
   --border-hover: #3F3F46;
@@ -144,6 +146,17 @@ body {
   input, textarea, select {
     font-size: 16px !important;
   }
+}
+
+/* Fix transparent native dropdowns in dark mode */
+select {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 /* Smooth scroll for Lenis */

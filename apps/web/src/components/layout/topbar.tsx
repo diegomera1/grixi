@@ -11,6 +11,12 @@ const routeTitles: Record<string, string> = {
   "/usuarios/roles": "Roles y Permisos",
   "/administracion": "Administración",
   "/almacenes": "Almacenes",
+  "/finanzas": "Finanzas",
+  "/compras": "Compras",
+  "/ventas": "Ventas",
+  "/flota": "Flota",
+  "/rrhh": "Recursos Humanos",
+  "/command-center": "Centro de Comando",
   "/ai": "GRIXI AI",
 };
 

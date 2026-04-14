@@ -38,6 +38,7 @@ const MODULE_COLORS: Record<AiModule, string> = {
   dashboard: "#06B6D4",
   administracion: "#F43F5E",
   flota: "#0EA5E9",
+  ventas: "#3B82F6",
 };
 
 const MODULE_LABELS: Record<AiModule, string> = {
@@ -49,6 +50,7 @@ const MODULE_LABELS: Record<AiModule, string> = {
   dashboard: "Dashboard",
   administracion: "Admin",
   flota: "Flota",
+  ventas: "Ventas",
 };
 
 function groupConversations(conversations: Conversation[]) {

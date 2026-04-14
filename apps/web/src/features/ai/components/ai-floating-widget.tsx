@@ -13,6 +13,7 @@ import { createConversation } from "../actions/conversations";
 function detectModule(pathname: string): AiModule {
   if (pathname.includes("/almacenes")) return "almacenes";
   if (pathname.includes("/compras")) return "compras";
+  if (pathname.includes("/ventas")) return "ventas";
   if (pathname.includes("/finanzas") || pathname.includes("/finance"))
     return "finanzas";
   if (pathname.includes("/usuarios") || pathname.includes("/users"))
@@ -37,6 +38,7 @@ const MODULE_LABELS: Record<AiModule, string> = {
   dashboard: "Dashboard",
   administracion: "Admin",
   flota: "Flota",
+  ventas: "Ventas",
 };
 
 const MODULE_COLORS: Record<AiModule, string> = {
@@ -48,6 +50,7 @@ const MODULE_COLORS: Record<AiModule, string> = {
   dashboard: "#06B6D4",
   administracion: "#F43F5E",
   flota: "#0EA5E9",
+  ventas: "#3B82F6",
 };
 
 export function AiFloatingWidget() {
@@ -200,7 +203,11 @@ export function AiFloatingWidget() {
   }, [input, isStreaming, convId, module]);
 
   const handleOpenFull = () => {
-    const url = convId ? `/ai?c=${convId}` : "/ai";
+    const params = new URLSearchParams();
+    if (convId) params.set("c", convId);
+    if (module !== "general") params.set("module", module);
+    const qs = params.toString();
+    const url = qs ? `/ai?${qs}` : "/ai";
     router.push(url);
     setIsOpen(false);
   };

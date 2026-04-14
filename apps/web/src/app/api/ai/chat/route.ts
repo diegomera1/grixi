@@ -322,6 +322,76 @@ async function buildSystemPrompt(modules: string[]): Promise<string> {
 `;
   }
 
+  if (modules.includes("ventas") || isGeneral) {
+    const { count: customerCount } = await supabase
+      .from("sales_customers")
+      .select("*", { count: "exact", head: true });
+
+    const { data: topClients } = await supabase
+      .from("sales_customers")
+      .select("business_name, trade_name, code, total_revenue, total_orders, segment, country")
+      .order("total_revenue", { ascending: false })
+      .limit(5);
+
+    const { count: invoiceCount } = await supabase
+      .from("sales_invoices")
+      .select("*", { count: "exact", head: true });
+
+    const { data: recentInvoices } = await supabase
+      .from("sales_invoices")
+      .select("invoice_number, total_usd, status, sale_date, currency")
+      .order("sale_date", { ascending: false })
+      .limit(5);
+
+    const { count: paidCount } = await supabase
+      .from("sales_invoices")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "paid");
+
+    const { count: overdueCount } = await supabase
+      .from("sales_invoices")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "overdue");
+
+    const { count: quoteCount } = await supabase
+      .from("sales_quotes")
+      .select("*", { count: "exact", head: true });
+
+    const { count: pendingQuotes } = await supabase
+      .from("sales_quotes")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["draft", "sent"]);
+
+    const { count: oppCount } = await supabase
+      .from("sales_opportunities")
+      .select("*", { count: "exact", head: true });
+
+    const { data: pipelineSummary } = await supabase
+      .from("sales_pipeline_stages")
+      .select("name, color, position")
+      .order("position");
+
+    // Revenue total
+    const { data: revData } = await supabase
+      .from("sales_invoices")
+      .select("total_usd")
+      .in("status", ["paid", "invoiced", "confirmed"]);
+
+    const totalRevenue = (revData || []).reduce((sum, r) => sum + Number(r.total_usd || 0), 0);
+
+    moduleContext += `
+## Datos de Ventas & CRM
+- Clientes registrados: ${customerCount || 0}
+- Revenue total (pagadas + facturadas): $${totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+- Top 5 clientes por revenue: ${topClients?.map((c) => `${c.trade_name || c.business_name} [${c.code}] ($${(c.total_revenue / 1000).toFixed(1)}K, ${c.total_orders} pedidos, segmento: ${c.segment}, ${c.country})`).join("; ") || "N/A"}
+- Total facturas: ${invoiceCount || 0} (pagadas: ${paidCount || 0}, vencidas: ${overdueCount || 0})
+- Últimas facturas: ${recentInvoices?.map((i) => `${i.invoice_number} [$${Number(i.total_usd).toLocaleString()}, ${i.status}, ${i.sale_date}]`).join("; ") || "N/A"}
+- Cotizaciones: ${quoteCount || 0} total, ${pendingQuotes || 0} pendientes (draft/sent)
+- Oportunidades en pipeline: ${oppCount || 0}
+- Etapas del pipeline: ${pipelineSummary?.map((s) => s.name).join(" → ") || "N/A"}
+`;
+  }
+
   return `Eres GRIXI AI, el asistente inteligente de la plataforma GRIXI — una plataforma enterprise SaaS multi-tenant.
 
 Tu rol:

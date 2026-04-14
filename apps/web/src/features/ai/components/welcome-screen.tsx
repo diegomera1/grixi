@@ -20,6 +20,8 @@ import {
   Anchor,
   Wrench,
   Fuel,
+  Receipt,
+  Target,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GrixiAiLogo } from "./grixi-ai-logo";
@@ -215,6 +217,28 @@ const MODULE_PROMPTS: Record<AiModule, QuickPrompt[]> = {
       icon: Anchor,
     },
   ],
+  ventas: [
+    {
+      label: "Estado del pipeline",
+      prompt: "¿Cómo va el pipeline comercial este mes? ¿Cuántas oportunidades hay en cada etapa y cuál es el valor total ponderado?",
+      icon: Target,
+    },
+    {
+      label: "Top clientes",
+      prompt: "Muéstrame los top 5 clientes por revenue con su segmento, país, total de pedidos y tendencia de compra.",
+      icon: Users,
+    },
+    {
+      label: "Cotizaciones pendientes",
+      prompt: "¿Cuántas cotizaciones están pendientes de aprobación? ¿Cuáles son las de mayor monto y cuánto tiempo llevan sin respuesta?",
+      icon: Receipt,
+    },
+    {
+      label: "Análisis de ventas",
+      prompt: "Dame un análisis de las ventas del mes: revenue total, ticket promedio, tasa de conversión y comparación vs mes anterior.",
+      icon: TrendingUp,
+    },
+  ],
 };
 
 const MODULE_DESCRIPTIONS: Record<AiModule, string> = {
@@ -226,6 +250,7 @@ const MODULE_DESCRIPTIONS: Record<AiModule, string> = {
   dashboard: "Asistente especializado en métricas clave, KPIs, resúmenes ejecutivos y análisis de tendencias.",
   administracion: "Asistente especializado en auditoría, configuración del sistema, permisos y seguridad.",
   flota: "Asistente especializado en mantenimiento naval, equipos del buque, órdenes de trabajo, combustible, certificados, tripulación y KPIs operativos.",
+  ventas: "Asistente especializado en ventas, pipeline comercial, clientes, cotizaciones, facturación y análisis de revenue.",
 };
 
 export function WelcomeScreen({ module, onPrompt, userName, greeting }: WelcomeScreenProps) {

@@ -102,6 +102,11 @@ export function AiChatContent({
     if (convId && convId !== activeConvId) {
       handleSelect(convId);
     }
+    // Read module param from URL (passed by floating widget)
+    const moduleParam = searchParams.get("module") as AiModule | null;
+    if (moduleParam && moduleParam !== "general") {
+      setModules([moduleParam]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 

@@ -3,6 +3,7 @@ import {
   DollarSign,
   Warehouse,
   ShoppingCart,
+  TrendingUp,
   Users,
   Users2,
   Shield,
@@ -28,6 +29,7 @@ export const PRIMARY_TABS: NavItem[] = [
   { label: "Finanzas", href: "/finanzas", icon: DollarSign, color: "#8B5CF6" },
   { label: "Almacenes", href: "/almacenes", icon: Warehouse, color: "#10B981" },
   { label: "Compras", href: "/compras", icon: ShoppingCart, color: "#F97316" },
+  { label: "Ventas", href: "/ventas", icon: TrendingUp, color: "#3B82F6" },
 ];
 
 // ── Secondary Items ("Más" drawer on mobile) ─────

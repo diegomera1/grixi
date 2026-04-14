@@ -10,11 +10,17 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
+
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error("Missing Supabase env vars in auth callback");
       return NextResponse.redirect(`${origin}/login?error=config`);
     }
+
+    // Debug: log all cookies arriving at the callback
+    const allCookies = request.cookies.getAll();
+    console.log("[auth/callback] Cookies received:", allCookies.map(c => c.name));
+    const hasCodeVerifier = allCookies.some(c => c.name.includes("code-verifier"));
+    console.log("[auth/callback] Has PKCE code verifier:", hasCodeVerifier);
 
     const response = NextResponse.redirect(`${origin}${next}`);
 
@@ -32,9 +38,11 @@ export async function GET(request: NextRequest) {
     });
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     if (error) {
-      console.error("Auth callback error:", error.message);
+      console.error("[auth/callback] Exchange error:", error.message);
+      // If PKCE verifier is missing, it's likely a stale cookie issue —
+      // redirect cleanly so the user can retry with a fresh flow.
       return NextResponse.redirect(`${origin}/login?error=auth`);
     }
 

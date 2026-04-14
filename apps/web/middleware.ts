@@ -1,6 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  // Skip middleware for auth callback — the route handler needs
+  // the PKCE code verifier cookie intact (middleware's getUser()
+  // can consume it before exchangeCodeForSession runs).
+  if (request.nextUrl.pathname.startsWith("/auth/callback")) {
+    return NextResponse.next();
+  }
+
   try {
     // Dynamic import to prevent Edge Runtime crash if module has issues
     const { updateSession } = await import("@/lib/supabase/middleware");

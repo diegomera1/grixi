@@ -22,6 +22,7 @@ import {
   Sun,
   Ship,
   ShoppingCart,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { createClient } from "@/lib/supabase/client";
@@ -95,6 +96,13 @@ const NAV_GROUPS: NavGroup[] = [
         icon: ShoppingCart,
         color: "#F59E0B",
         glowColor: "rgba(245,158,11,0.25)",
+      },
+      {
+        label: "Ventas",
+        href: "/ventas",
+        icon: TrendingUp,
+        color: "#EF4444",
+        glowColor: "rgba(239,68,68,0.25)",
       },
     ],
   },
