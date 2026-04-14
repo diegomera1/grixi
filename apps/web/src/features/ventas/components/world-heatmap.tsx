@@ -26,6 +26,7 @@ import {
   Layers,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { SalesInvoice, SalesCustomer } from "../types";
@@ -1090,7 +1091,7 @@ function CountryDetailDrawer({
             <div ref={barRef} className="w-full h-36" />
           </motion.div>
 
-          {/* Client List */}
+          {/* Client List — inline expandable */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1104,140 +1105,28 @@ function CountryDetailDrawer({
             </div>
             <div className="space-y-1.5">
               {data.clients.map((client, i) => (
-                <motion.button
-                  key={client.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6 + i * 0.04 }}
-                  onClick={() => {
-                    onClose();
-                    router.push(`/ventas?tab=clientes&cliente=${client.id}`);
-                  }}
-                  className="flex w-full items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-left transition-all hover:bg-[var(--bg-muted)] hover:border-[#06B6D4]/30 hover:shadow-sm group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {client.logo_url ? (
-                      <img
-                        src={client.logo_url}
-                        alt=""
-                        className="h-6 w-6 rounded-md object-cover ring-1 ring-[var(--border)]"
-                      />
-                    ) : (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--bg-muted)]">
-                        <Users size={10} className="text-[var(--text-muted)]" />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-semibold text-[var(--text-primary)] truncate">
-                        {client.trade_name || client.business_name}
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="inline-block h-1.5 w-1.5 rounded-full"
-                          style={{ backgroundColor: SEGMENT_COLORS[client.segment] || '#6B7280' }}
-                        />
-                        <p className="text-[8px] text-[var(--text-muted)]">
-                          {SEGMENT_LABELS[client.segment] || client.segment}
-                        </p>
-                        <span className="text-[7px] text-[var(--text-muted)]">·</span>
-                        <p className="text-[8px] font-medium tabular-nums" style={{
-                          color: client.health_score >= 80 ? '#10B981' : client.health_score >= 50 ? '#F59E0B' : '#EF4444'
-                        }}>
-                          {client.health_score}pts
-                        </p>
-                        {client.total_revenue > 0 && (
-                          <>
-                            <span className="text-[7px] text-[var(--text-muted)]">·</span>
-                            <p className="text-[8px] font-bold text-emerald-500 tabular-nums">
-                              ${(client.total_revenue / 1000).toFixed(0)}K
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <ChevronRight size={12} className="shrink-0 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
-                </motion.button>
+                <ClientExpandableCard key={client.id} client={client} index={i} />
               ))}
             </div>
           </motion.div>
 
-          {/* Recent Invoices — clickable */}
+          {/* Recent Invoices — inline expandable */}
           {countryInvoices.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.65 }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <FileText size={10} className="text-[#F59E0B]" />
-                  <h4 className="text-[10px] font-semibold text-[var(--text-primary)]">
-                    Facturas Recientes ({countryInvoices.length})
-                  </h4>
-                </div>
-                <button
-                  onClick={() => {
-                    onClose();
-                    router.push('/ventas?tab=facturas');
-                  }}
-                  className="flex items-center gap-1 text-[8px] text-[#3B82F6] hover:text-[#60a5fa] transition-colors"
-                >
-                  Ver todas
-                  <ExternalLink size={8} />
-                </button>
+              <div className="flex items-center gap-1.5 mb-2">
+                <FileText size={10} className="text-[#F59E0B]" />
+                <h4 className="text-[10px] font-semibold text-[var(--text-primary)]">
+                  Facturas Recientes ({countryInvoices.length})
+                </h4>
               </div>
               <div className="space-y-1">
-                {countryInvoices.slice(0, 8).map((inv, i) => {
-                  const status = inv.status as InvoiceStatus;
-                  const statusColor = INVOICE_STATUS_COLORS[status] || '#6B7280';
-                  const statusLabel = INVOICE_STATUS_LABELS[status] || inv.status;
-                  return (
-                    <motion.button
-                      key={inv.id}
-                      initial={{ opacity: 0, x: -6 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.7 + i * 0.03 }}
-                      onClick={() => {
-                        onClose();
-                        router.push(`/ventas?tab=facturas&factura=${inv.id}`);
-                      }}
-                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 bg-[var(--bg-muted)]/50 hover:bg-[var(--bg-muted)] transition-all hover:shadow-sm group text-left"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex h-5 w-5 items-center justify-center rounded bg-[#3B82F6]/10">
-                          <FileText size={9} className="text-[#3B82F6]" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-semibold text-[#3B82F6]">
-                            {inv.invoice_number}
-                          </p>
-                          <p className="text-[7px] text-[var(--text-muted)] truncate">
-                            {inv.customer?.trade_name || inv.customer?.business_name || 'Cliente'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className="rounded-full px-1.5 py-0.5 text-[7px] font-medium"
-                          style={{ backgroundColor: `${statusColor}15`, color: statusColor }}
-                        >
-                          {statusLabel}
-                        </span>
-                        <span className="text-[8px] text-[var(--text-muted)] tabular-nums">
-                          {new Date(inv.sale_date).toLocaleDateString("es-EC", {
-                            day: "2-digit",
-                            month: "short",
-                          })}
-                        </span>
-                        <span className="text-[9px] font-bold text-emerald-500 tabular-nums">
-                          ${Number(inv.total_usd).toLocaleString("en")}
-                        </span>
-                        <ChevronRight size={10} className="text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </motion.button>
-                  );
-                })}
+                {countryInvoices.slice(0, 8).map((inv, i) => (
+                  <InvoiceExpandableCard key={inv.id} invoice={inv} index={i} />
+                ))}
               </div>
             </motion.div>
           )}
@@ -1246,3 +1135,248 @@ function CountryDetailDrawer({
     </>
   );
 }
+
+// ── Client Expandable Card ────────────────────────
+
+function ClientExpandableCard({ client, index }: { client: SalesCustomer; index: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  const initials = (client.trade_name || client.business_name)
+    .split(" ")
+    .map(w => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.6 + index * 0.04 }}
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-lg border bg-[var(--bg-card)] px-3 py-2.5 text-left transition-all group",
+          expanded
+            ? "border-[#06B6D4]/40 shadow-sm"
+            : "border-[var(--border)] hover:bg-[var(--bg-muted)] hover:border-[#06B6D4]/30 hover:shadow-sm"
+        )}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          {client.logo_url && !imgError ? (
+            <img
+              src={client.logo_url}
+              alt=""
+              onError={() => setImgError(true)}
+              className="h-6 w-6 rounded-md object-cover ring-1 ring-[var(--border)]"
+            />
+          ) : (
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-[#3B82F6]/20 to-[#06B6D4]/20 text-[7px] font-bold text-[#3B82F6]">
+              {initials}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold text-[var(--text-primary)] truncate">
+              {client.trade_name || client.business_name}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-block h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: SEGMENT_COLORS[client.segment] || '#6B7280' }}
+              />
+              <p className="text-[8px] text-[var(--text-muted)]">
+                {SEGMENT_LABELS[client.segment] || client.segment}
+              </p>
+              <span className="text-[7px] text-[var(--text-muted)]">·</span>
+              <p className="text-[8px] font-medium tabular-nums" style={{
+                color: client.health_score >= 80 ? '#10B981' : client.health_score >= 50 ? '#F59E0B' : '#EF4444'
+              }}>
+                {client.health_score}pts
+              </p>
+              {client.total_revenue > 0 && (
+                <>
+                  <span className="text-[7px] text-[var(--text-muted)]">·</span>
+                  <p className="text-[8px] font-bold text-emerald-500 tabular-nums">
+                    ${(client.total_revenue / 1000).toFixed(0)}K
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        {expanded ? (
+          <ChevronDown size={12} className="shrink-0 text-[#06B6D4]" />
+        ) : (
+          <ChevronRight size={12} className="shrink-0 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+        )}
+      </button>
+
+      {/* Expanded detail */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="mx-1 mt-1 rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-3 space-y-2">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <DetailRow label="Razón Social" value={client.business_name} />
+                <DetailRow label="Nombre Comercial" value={client.trade_name || "—"} />
+                <DetailRow label="Sector" value={client.sector || "—"} />
+                <DetailRow label="Tamaño" value={client.company_size || "—"} />
+                <DetailRow label="Ciudad" value={client.city || "—"} />
+                <DetailRow label="País" value={client.country} />
+                {client.address && <DetailRow label="Dirección" value={client.address} span2 />}
+                <DetailRow label="Tax ID" value={client.tax_id || "—"} />
+                <DetailRow label="Crédito" value={`$${Number(client.credit_limit).toLocaleString("en")}`} />
+                <DetailRow label="Total Órdenes" value={String(client.total_orders)} />
+                <DetailRow label="Revenue" value={`$${Number(client.total_revenue).toLocaleString("en")}`} />
+              </div>
+              {client.website && (
+                <a
+                  href={client.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[8px] text-[#3B82F6] hover:underline"
+                >
+                  <ExternalLink size={8} />
+                  {client.website}
+                </a>
+              )}
+              {/* Health bar */}
+              <div className="flex items-center gap-2">
+                <span className="text-[7px] text-[var(--text-muted)]">Health</span>
+                <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-muted)] overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${client.health_score}%`,
+                      backgroundColor: client.health_score >= 80 ? '#10B981' : client.health_score >= 50 ? '#F59E0B' : '#EF4444',
+                    }}
+                  />
+                </div>
+                <span className="text-[8px] font-bold tabular-nums" style={{
+                  color: client.health_score >= 80 ? '#10B981' : client.health_score >= 50 ? '#F59E0B' : '#EF4444'
+                }}>
+                  {client.health_score}/100
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ── Invoice Expandable Card ───────────────────────
+
+function InvoiceExpandableCard({ invoice, index }: { invoice: SalesInvoice; index: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const status = invoice.status as InvoiceStatus;
+  const statusColor = INVOICE_STATUS_COLORS[status] || '#6B7280';
+  const statusLabel = INVOICE_STATUS_LABELS[status] || invoice.status;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.7 + index * 0.03 }}
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-lg px-3 py-2 transition-all group text-left",
+          expanded
+            ? "bg-[var(--bg-muted)] shadow-sm"  
+            : "bg-[var(--bg-muted)]/50 hover:bg-[var(--bg-muted)] hover:shadow-sm"
+        )}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex h-5 w-5 items-center justify-center rounded bg-[#3B82F6]/10">
+            <FileText size={9} className="text-[#3B82F6]" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold text-[#3B82F6]">
+              {invoice.invoice_number}
+            </p>
+            <p className="text-[7px] text-[var(--text-muted)] truncate">
+              {invoice.customer?.trade_name || invoice.customer?.business_name || 'Cliente'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className="rounded-full px-1.5 py-0.5 text-[7px] font-medium"
+            style={{ backgroundColor: `${statusColor}15`, color: statusColor }}
+          >
+            {statusLabel}
+          </span>
+          <span className="text-[9px] font-bold text-emerald-500 tabular-nums">
+            ${Number(invoice.total_usd).toLocaleString("en")}
+          </span>
+          {expanded ? (
+            <ChevronDown size={10} className="text-[#3B82F6]" />
+          ) : (
+            <ChevronRight size={10} className="text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+          )}
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="mx-1 mt-1 rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 p-3 space-y-2">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <DetailRow label="Factura" value={invoice.invoice_number} />
+                <DetailRow label="Status" value={statusLabel} />
+                <DetailRow label="Fecha de Venta" value={new Date(invoice.sale_date).toLocaleDateString("es-EC", { day: "2-digit", month: "long", year: "numeric" })} />
+                {invoice.due_date && (
+                  <DetailRow label="Vencimiento" value={new Date(invoice.due_date).toLocaleDateString("es-EC", { day: "2-digit", month: "long", year: "numeric" })} />
+                )}
+                <DetailRow label="Cliente" value={invoice.customer?.trade_name || invoice.customer?.business_name || "—"} />
+                <DetailRow label="País" value={invoice.customer?.country || "—"} />
+                <DetailRow label="Moneda" value={invoice.currency || "USD"} />
+                <DetailRow label="Cantidad Items" value={String(invoice.items?.length || "—")} />
+              </div>
+              <div className="flex items-center justify-between pt-1.5 border-t border-[var(--border)]">
+                <span className="text-[8px] font-semibold text-[var(--text-muted)]">TOTAL</span>
+                <span className="text-[11px] font-bold text-emerald-500 tabular-nums">
+                  ${Number(invoice.total_usd).toLocaleString("en")}
+                </span>
+              </div>
+              {invoice.notes && (
+                <p className="text-[8px] text-[var(--text-muted)] italic">
+                  {invoice.notes}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ── Detail Row helper ─────────────────────────────
+
+function DetailRow({ label, value, span2 }: { label: string; value: string; span2?: boolean }) {
+  return (
+    <div className={span2 ? "col-span-2" : ""}>
+      <span className="text-[7px] text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
+      <p className="text-[9px] font-medium text-[var(--text-primary)] truncate">{value}</p>
+    </div>
+  );
+}
+
