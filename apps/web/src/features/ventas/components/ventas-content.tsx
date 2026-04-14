@@ -10,6 +10,7 @@ import {
   FileText,
   BarChart3,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type {
@@ -34,6 +35,8 @@ import { CotizacionesTab } from "./cotizaciones-tab";
 import { ReportesTab } from "./reportes-tab";
 import { NuevaVentaModal } from "./nueva-venta-modal";
 import { ROLE_PERMISSIONS } from "../types";
+import { DemoTourProvider, useDemoTour } from "./demo-tour-provider";
+import { DemoAiPanel } from "./demo-ai-panel";
 
 type Tab = "dashboard" | "clientes" | "ventas" | "pipeline" | "cotizaciones" | "reportes";
 
@@ -114,6 +117,18 @@ export function VentasContent({
   }, []);
 
   return (
+    <DemoTourProvider
+      onTabChange={(tab) => setActiveTab(tab as Tab)}
+      dataContext={{
+        kpis: initialKPIs,
+        customers,
+        opportunities,
+        invoices,
+        quotes,
+        stages: initialPipelineStages,
+        topProducts: initialTopProducts,
+      }}
+    >
     <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -135,6 +150,7 @@ export function VentasContent({
               Nueva Venta
             </button>
           )}
+          <DemoButton />
           <RoleSwitcher activeRole={demoRole} onRoleChange={setDemoRole} />
           <div className="grid grid-cols-3 gap-0.5 border-b border-[var(--border)] sm:flex sm:items-center sm:gap-1 md:grid-cols-6">
             {visibleTabs.map((tab) => (
@@ -240,7 +256,28 @@ export function VentasContent({
           demoRole={demoRole}
         />
       )}
+      {/* AI Demo Panel */}
+      <DemoAiPanel />
     </div>
+    </DemoTourProvider>
+  );
+}
+
+// ── Demo Button (must be child of DemoTourProvider) ───
+
+function DemoButton() {
+  const { status, startDemo } = useDemoTour();
+
+  if (status !== "idle") return null;
+
+  return (
+    <button
+      onClick={startDemo}
+      className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] px-3 py-1.5 text-[10px] font-bold text-white shadow-lg shadow-[#8B5CF6]/25 transition-all hover:shadow-[#8B5CF6]/40 hover:scale-[1.02]"
+    >
+      <Sparkles size={12} />
+      Demo IA
+    </button>
   );
 }
 
