@@ -31,29 +31,33 @@ type DemoAIResponse = {
   error?: string;
 };
 
+// ── Currency formatter ────────────────────────────
+
+function fmtUSD(amount: number): string {
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`;
+  return `$${amount.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+}
+
 // ── Step-specific prompt builders ─────────────────
 
 const STEP_PROMPTS: Record<DemoStepId, (data: Record<string, unknown>) => string> = {
   dashboard: (data) => {
     const kpis = data.kpis as VentasKPIs | undefined;
     if (!kpis) return "No hay datos de KPIs disponibles.";
-    return `Estás viendo el Dashboard principal de Ventas de GRIXI. Datos visibles:
-- Revenue total: $${(kpis.totalRevenue / 1000).toFixed(0)}K (cambio: ${kpis.totalRevenueChange > 0 ? "+" : ""}${kpis.totalRevenueChange.toFixed(1)}%)
-- Clientes activos: ${kpis.activeCustomers} (cambio: ${kpis.activeCustomersChange > 0 ? "+" : ""}${kpis.activeCustomersChange.toFixed(1)}%)
-- Deals en pipeline: ${kpis.openDeals}, valor: $${(kpis.pipelineValue / 1000).toFixed(0)}K
-- Deals ganados: ${kpis.wonDeals} (cambio: ${kpis.wonDealsChange > 0 ? "+" : ""}${kpis.wonDealsChange.toFixed(1)}%)
-- Ticket promedio: $${(kpis.avgDealSize / 1000).toFixed(1)}K
-- Conversión: ${kpis.conversionRate.toFixed(1)}%
-- Facturas vencidas: ${kpis.overdueInvoices} ($${(kpis.overdueAmount / 1000).toFixed(0)}K)
-- Cotizaciones abiertas: ${kpis.quotesOpen}, convertidas: ${kpis.quotesConverted}
-Top productos: ${(data.topProducts as TopProduct[] || []).slice(0, 3).map(p => `${p.name} ($${(p.revenue / 1000).toFixed(0)}K)`).join(", ")}`;
+    const topProds = (data.topProducts as TopProduct[] || []).slice(0, 3);
+    return `SECCIÓN: Dashboard de Ventas — centro de control con KPIs en tiempo real.
+FUNCIONALIDADES: Muestra revenue total, clientes activos, deals en pipeline, tasa de conversión, facturas vencidas, cotizaciones abiertas, top productos y tendencia de ventas con gráficos interactivos.
+DATOS CLAVE:
+• Revenue: ${fmtUSD(kpis.totalRevenue)} (${kpis.totalRevenueChange > 0 ? "+" : ""}${kpis.totalRevenueChange.toFixed(1)}%)
+• ${kpis.activeCustomers} clientes activos, ${kpis.openDeals} deals abiertos por ${fmtUSD(kpis.pipelineValue)}
+• Conversión: ${kpis.conversionRate.toFixed(1)}%, ticket promedio: ${fmtUSD(kpis.avgDealSize)}
+• ${kpis.overdueInvoices} facturas vencidas por ${fmtUSD(kpis.overdueAmount)}
+• Top productos: ${topProds.map(p => `${p.name} (${fmtUSD(p.revenue)})`).join(", ")}`;
   },
 
   clientes: (data) => {
     const customers = (data.customers as SalesCustomer[] || []);
-    const topClients = customers
-      .sort((a, b) => Number(b.total_revenue) - Number(a.total_revenue))
-      .slice(0, 8);
     const segments = customers.reduce((acc, c) => {
       acc[c.segment] = (acc[c.segment] || 0) + 1;
       return acc;
@@ -61,15 +65,15 @@ Top productos: ${(data.topProducts as TopProduct[] || []).slice(0, 3).map(p => `
     const avgHealth = customers.length > 0
       ? Math.round(customers.reduce((s, c) => s + c.health_score, 0) / customers.length)
       : 0;
+    const topClient = customers.sort((a, b) => Number(b.total_revenue) - Number(a.total_revenue))[0];
 
-    return `Estás viendo la lista de Clientes del CRM de GRIXI. Datos visibles:
-- Total clientes: ${customers.length}
-- Health score promedio: ${avgHealth}/100
-- Segmentación: ${Object.entries(segments).map(([k, v]) => `${k}: ${v}`).join(", ")}
-- Top clientes por revenue:
-${topClients.map((c, i) => `  ${i + 1}. ${c.trade_name || c.business_name} (${c.country}) — $${(Number(c.total_revenue) / 1000).toFixed(0)}K — Health: ${c.health_score} — Segment: ${c.segment}`).join("\n")}
-- Clientes at_risk: ${customers.filter(c => c.segment === "at_risk").length}
-- Clientes dormidos: ${customers.filter(c => c.segment === "dormant").length}`;
+    return `SECCIÓN: CRM de Clientes — gestión de cartera con segmentación inteligente y health score.
+FUNCIONALIDADES: Permite buscar, filtrar por segmento (Champion, Loyal, New, At Risk, Dormant, Prospect), ver el health score de cada cliente, su revenue acumulado, contactos, y al hacer clic en un cliente se despliega su perfil completo con historial de compras.
+DATOS CLAVE:
+• ${customers.length} clientes, health score promedio: ${avgHealth}/100
+• Segmentos: ${Object.entries(segments).map(([k, v]) => `${k}: ${v}`).join(", ")}
+• Cliente principal: ${topClient?.trade_name || topClient?.business_name || "N/A"} con ${fmtUSD(Number(topClient?.total_revenue || 0))}
+• ${segments["at_risk"] || 0} clientes en riesgo, ${segments["dormant"] || 0} dormidos`;
   },
 
   ventas: (data) => {
@@ -79,40 +83,33 @@ ${topClients.map((c, i) => `  ${i + 1}. ${c.trade_name || c.business_name} (${c.
       acc[i.status] = (acc[i.status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    const recent = invoices
-      .sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())
-      .slice(0, 5);
 
-    return `Estás viendo las Facturas de Venta de GRIXI. Datos visibles:
-- Total facturas: ${invoices.length}
-- Revenue total: $${(total / 1000).toFixed(0)}K
-- Ticket promedio: $${invoices.length > 0 ? (total / invoices.length / 1000).toFixed(1) : 0}K
-- Distribución por status: ${Object.entries(statusDist).map(([k, v]) => `${k}: ${v}`).join(", ")}
-- Últimas 5 facturas:
-${recent.map(i => `  ${i.invoice_number} — ${i.customer?.trade_name || i.customer?.business_name || "?"} — $${Number(i.total_usd).toLocaleString("en")} — ${i.status}`).join("\n")}`;
+    return `SECCIÓN: Facturación — registro y seguimiento de todas las ventas.
+FUNCIONALIDADES: Crear nuevas ventas con productos del catálogo, gestionar estados (pagada, pendiente, vencida, cancelada), buscar facturas, filtrar por estado, exportar datos a CSV. Al hacer clic en una factura se abre su detalle con todos los productos y montos.
+DATOS CLAVE:
+• ${invoices.length} facturas, revenue total: ${fmtUSD(total)}
+• Ticket promedio: ${invoices.length > 0 ? fmtUSD(total / invoices.length) : "$0"}
+• Estados: ${Object.entries(statusDist).map(([k, v]) => `${k}: ${v}`).join(", ")}`;
   },
 
   pipeline: (data) => {
     const stages = (data.stages as SalesPipelineStage[] || []);
     const opps = (data.opportunities as SalesOpportunity[] || []);
+    const totalValue = opps.reduce((s, o) => s + Number(o.amount), 0);
     const stageMetrics = stages
       .filter(s => s.is_active)
       .sort((a, b) => a.position - b.position)
       .map(s => {
         const stgOpps = opps.filter(o => o.stage_id === s.id);
-        return {
-          name: s.name,
-          count: stgOpps.length,
-          amount: stgOpps.reduce((sum, o) => sum + Number(o.amount), 0),
-        };
+        const amt = stgOpps.reduce((sum, o) => sum + Number(o.amount), 0);
+        return `${s.name}: ${stgOpps.length} deals (${fmtUSD(amt)})`;
       });
 
-    return `Estás viendo el Pipeline de Ventas (funnel) de GRIXI. Datos visibles:
-- Total deals activos: ${opps.length}
-- Valor pipeline total: $${(opps.reduce((s, o) => s + Number(o.amount), 0) / 1000).toFixed(0)}K
-- Etapas del funnel:
-${stageMetrics.map(s => `  ${s.name}: ${s.count} deals — $${(s.amount / 1000).toFixed(0)}K`).join("\n")}
-- Deal más grande: ${opps.length > 0 ? `${opps.sort((a, b) => Number(b.amount) - Number(a.amount))[0].name} ($${(Number(opps[0]?.amount || 0) / 1000).toFixed(0)}K)` : "N/A"}`;
+    return `SECCIÓN: Pipeline de Ventas — embudo comercial con drag & drop.
+FUNCIONALIDADES: Visualiza las oportunidades organizadas por etapa del funnel. Se pueden arrastrar deals entre etapas, mover con menú rápido, filtrar por monto, y ver probabilidad de cierre. Incluye un gráfico de embudo interactivo en la parte superior.
+DATOS CLAVE:
+• ${opps.length} deals activos, valor total: ${fmtUSD(totalValue)}
+• Etapas: ${stageMetrics.join(" → ")}`;
   },
 
   cotizaciones: (data) => {
@@ -122,51 +119,55 @@ ${stageMetrics.map(s => `  ${s.name}: ${s.count} deals — $${(s.amount / 1000).
       return acc;
     }, {} as Record<string, number>);
     const totalValue = quotes.reduce((s, q) => s + Number(q.total), 0);
+    const convRate = quotes.length > 0 ? ((statusDist["converted"] || 0) / quotes.length * 100).toFixed(0) : "0";
 
-    return `Estás viendo las Cotizaciones del CRM de GRIXI. Datos visibles:
-- Total cotizaciones: ${quotes.length}
-- Valor total: $${(totalValue / 1000).toFixed(0)}K
-- Distribución por status: ${Object.entries(statusDist).map(([k, v]) => `${k}: ${v}`).join(", ")}
-- Tasa de conversión: ${quotes.length > 0 ? ((statusDist["converted"] || 0) / quotes.length * 100).toFixed(0) : 0}%`;
+    return `SECCIÓN: Cotizaciones — propuestas comerciales con ciclo de vida completo.
+FUNCIONALIDADES: Crear cotizaciones con productos del catálogo, gestionar estados (borrador, enviada, aprobada, rechazada, convertida), configurar vigencia, descuentos y términos. Las cotizaciones aprobadas se pueden convertir directamente en ventas.
+DATOS CLAVE:
+• ${quotes.length} cotizaciones, valor total: ${fmtUSD(totalValue)}
+• Estados: ${Object.entries(statusDist).map(([k, v]) => `${k}: ${v}`).join(", ")}
+• Tasa de conversión: ${convRate}%`;
   },
 
   reportes: (data) => {
     const invoices = (data.invoices as SalesInvoice[] || []);
     const customers = (data.customers as SalesCustomer[] || []);
-    const countries = new Map<string, { revenue: number; clients: number; invoices: number }>();
+    const countries = new Map<string, { revenue: number; clients: number }>();
     for (const inv of invoices) {
       const country = inv.customer?.country || "Desconocido";
-      const prev = countries.get(country) || { revenue: 0, clients: 0, invoices: 0 };
+      const prev = countries.get(country) || { revenue: 0, clients: 0 };
       prev.revenue += Number(inv.total_usd);
-      prev.invoices += 1;
       countries.set(country, prev);
     }
     for (const c of customers) {
-      const prev = countries.get(c.country) || { revenue: 0, clients: 0, invoices: 0 };
+      const prev = countries.get(c.country) || { revenue: 0, clients: 0 };
       prev.clients += 1;
       countries.set(c.country, prev);
     }
-    const sortedCountries = [...countries.entries()].sort((a, b) => b[1].revenue - a[1].revenue);
+    const sorted = [...countries.entries()].sort((a, b) => b[1].revenue - a[1].revenue);
+    const globalRev = invoices.reduce((s, i) => s + Number(i.total_usd), 0);
 
-    return `Estás viendo los Reportes Geográficos de GRIXI con el mapa mundial interactivo. Datos visibles:
-- Países con actividad: ${countries.size}
-- Revenue global: $${(invoices.reduce((s, i) => s + Number(i.total_usd), 0) / 1000).toFixed(0)}K
-- Top países por revenue:
-${sortedCountries.slice(0, 6).map(([name, d]) => `  ${name}: $${(d.revenue / 1000).toFixed(0)}K — ${d.clients} clientes — ${d.invoices} facturas`).join("\n")}`;
+    return `SECCIÓN: Reportes Geográficos — mapa mundial interactivo con distribución de ventas por país.
+FUNCIONALIDADES: Mapa de calor con revenue por país. Al hacer clic en un país se abre un drawer con detalle de clientes, facturas y estadísticas. Se pueden expandir los perfiles de clientes y facturas directamente desde el drawer.
+DATOS CLAVE:
+• ${countries.size} países, revenue global: ${fmtUSD(globalRev)}
+• Top: ${sorted.slice(0, 3).map(([n, d]) => `${n} (${fmtUSD(d.revenue)}, ${d.clients} clientes)`).join(", ")}`;
   },
 };
 
 // ── System prompt ─────────────────────────────────
 
-const SYSTEM_PROMPT = `Eres el narrador de una demo del módulo Ventas & CRM de GRIXI.
+const SYSTEM_PROMPT = `Eres el narrador de una demo interactiva del módulo Ventas & CRM de GRIXI, una plataforma empresarial.
 
-Reglas estrictas:
-- Máximo 2 oraciones cortas
-- Primera oración: explica PARA QUÉ SIRVE esta sección de la plataforma
-- Segunda oración: menciona UN dato clave visible como ejemplo
-- Habla en español, tono profesional y directo
-- NO uses markdown, emojis, listas ni bullets
-- NO hagas análisis profundo, solo presenta la sección brevemente`;
+Reglas:
+- Responde en exactamente 3 oraciones
+- Primera oración: describe para qué sirve esta sección y qué problema resuelve
+- Segunda oración: menciona 2-3 funcionalidades clave que el usuario puede realizar
+- Tercera oración: destaca un dato o cifra relevante como ejemplo real
+- Los valores en dólares SIEMPRE deben formatearse como $X.XK o $X.XM (nunca "mil dólares" ni valores crudos)
+- Habla en español profesional y directo
+- NO uses markdown, emojis, listas, bullets ni saltos de línea
+- NO repitas las cifras tal cual están en los datos, redondéalas limpiamente`;
 
 // ── Main Action ───────────────────────────────────
 
@@ -190,12 +191,12 @@ export async function analyzeDemoStep(context: DemoStepContext): Promise<DemoAIR
       contents: [
         {
           role: "user",
-          parts: [{ text: `${SYSTEM_PROMPT}\n\n--- SECCIÓN ACTUAL ---\n${dataDescription}\n\n--- INSTRUCCIÓN ---\nPresenta brevemente esta sección de la demo: qué permite hacer y un dato clave de ejemplo.` }],
+          parts: [{ text: `${SYSTEM_PROMPT}\n\n--- SECCIÓN ACTUAL ---\n${dataDescription}\n\n--- INSTRUCCIÓN ---\nNarra esta sección de la demo en 3 oraciones: para qué sirve, qué se puede hacer, y un dato destacado.` }],
         },
       ],
       config: {
-        temperature: 0.5,
-        maxOutputTokens: 120,
+        temperature: 0.4,
+        maxOutputTokens: 180,
       },
     });
 
