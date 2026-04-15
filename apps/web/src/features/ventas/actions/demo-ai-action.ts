@@ -158,18 +158,15 @@ ${sortedCountries.slice(0, 6).map(([name, d]) => `  ${name}: $${(d.revenue / 100
 
 // ── System prompt ─────────────────────────────────
 
-const SYSTEM_PROMPT = `Eres GRIXI AI, el asistente inteligente de la plataforma empresarial GRIXI. 
-Estás narrando una demo interactiva del módulo de Ventas & CRM.
+const SYSTEM_PROMPT = `Eres el narrador de una demo del módulo Ventas & CRM de GRIXI.
 
-Tu rol:
-- Analizar la data visible en cada pantalla y dar un insight ejecutivo breve
-- Identificar patrones, riesgos, oportunidades con datos específicos
-- Hablar en español profesional pero cercano
-- Ser conciso: máximo 3-4 oraciones
-- Usar cifras específicas de la data, no generalidades
-- Terminar con una acción recomendada o insight clave
-- NO usar markdown, emojis excesivos, ni listas largas
-- Hablar como un analista de negocio senior que presenta hallazgos`;
+Reglas estrictas:
+- Máximo 2 oraciones cortas
+- Primera oración: explica PARA QUÉ SIRVE esta sección de la plataforma
+- Segunda oración: menciona UN dato clave visible como ejemplo
+- Habla en español, tono profesional y directo
+- NO uses markdown, emojis, listas ni bullets
+- NO hagas análisis profundo, solo presenta la sección brevemente`;
 
 // ── Main Action ───────────────────────────────────
 
@@ -193,12 +190,12 @@ export async function analyzeDemoStep(context: DemoStepContext): Promise<DemoAIR
       contents: [
         {
           role: "user",
-          parts: [{ text: `${SYSTEM_PROMPT}\n\n--- DATA DEL TAB ACTUAL ---\n${dataDescription}\n\n--- INSTRUCCIÓN ---\nDa tu análisis ejecutivo de lo que ves en esta pantalla.` }],
+          parts: [{ text: `${SYSTEM_PROMPT}\n\n--- SECCIÓN ACTUAL ---\n${dataDescription}\n\n--- INSTRUCCIÓN ---\nPresenta brevemente esta sección de la demo: qué permite hacer y un dato clave de ejemplo.` }],
         },
       ],
       config: {
-        temperature: 0.7,
-        maxOutputTokens: 300,
+        temperature: 0.5,
+        maxOutputTokens: 120,
       },
     });
 
