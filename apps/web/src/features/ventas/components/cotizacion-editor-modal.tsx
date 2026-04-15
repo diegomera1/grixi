@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
@@ -70,6 +70,80 @@ type Props = {
   onConvertToSale?: (quoteId: string) => void;
   demoRole: DemoRole;
 };
+
+// ── Product Cell with anchor ref ──────────────────
+
+function QuoteProductCell({
+  index,
+  item,
+  products,
+  activeProductRow,
+  productSearch,
+  register,
+  setActiveProductRow,
+  setProductSearch,
+  selectProduct,
+}: {
+  index: number;
+  item: QuoteItemForm | undefined;
+  products: ProductOption[];
+  activeProductRow: number | null;
+  productSearch: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  register: any;
+  setActiveProductRow: (v: number | null) => void;
+  setProductSearch: (v: string) => void;
+  selectProduct: (rowIndex: number, product: ProductOption) => void;
+}) {
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const selectedProd = products.find((p) => p.id === item?.product_id);
+
+  return (
+    <td className="px-3 py-1.5 relative">
+      <div ref={anchorRef} className="relative">
+        <div className="flex items-center gap-2">
+          {selectedProd?.image_url ? (
+            <img
+              src={selectedProd.image_url}
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-lg object-cover ring-1 ring-[var(--border)] bg-white"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-muted)]">
+              <Package size={12} className="text-[var(--text-muted)]" />
+            </div>
+          )}
+          <input
+            {...register(`items.${index}.description`)}
+            placeholder="Click para buscar..."
+            className="w-full bg-[var(--bg-card)] text-[10px] font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none cursor-pointer"
+            onFocus={() => {
+              setActiveProductRow(index);
+              setProductSearch("");
+            }}
+            readOnly={!!item?.product_id}
+            onClick={() => {
+              setActiveProductRow(index);
+              setProductSearch("");
+            }}
+          />
+        </div>
+        <AnimatePresence>
+          {activeProductRow === index && (
+            <ProductPicker
+              products={products}
+              search={productSearch}
+              onSearchChange={setProductSearch}
+              onSelect={(p) => selectProduct(index, p)}
+              onClose={() => setActiveProductRow(null)}
+              anchorRef={anchorRef}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </td>
+  );
+}
 
 export function CotizacionEditorModal({
   customers,
@@ -425,51 +499,17 @@ export function CotizacionEditorModal({
                       return (
                         <tr key={field.id} className="border-b border-[var(--border)] last:border-0 group">
                           <td className="px-3 py-2 text-[9px] text-[var(--text-muted)]">{index + 1}</td>
-                          <td className="px-3 py-1.5 relative">
-                            <div className="relative">
-                              <div className="flex items-center gap-2">
-                                {(() => {
-                                  const selectedProd = products.find((p) => p.id === item?.product_id);
-                                  return selectedProd?.image_url ? (
-                                    <img
-                                      src={selectedProd.image_url}
-                                      alt=""
-                                      className="h-8 w-8 shrink-0 rounded-lg object-cover ring-1 ring-[var(--border)] bg-white"
-                                    />
-                                  ) : (
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-muted)]">
-                                      <Package size={12} className="text-[var(--text-muted)]" />
-                                    </div>
-                                  );
-                                })()}
-                                <input
-                                  {...register(`items.${index}.description`)}
-                                  placeholder="Click para buscar..."
-                                  className="w-full bg-[var(--bg-card)] text-[10px] font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none cursor-pointer"
-                                  onFocus={() => {
-                                    setActiveProductRow(index);
-                                    setProductSearch("");
-                                  }}
-                                  readOnly={!!item?.product_id}
-                                  onClick={() => {
-                                    setActiveProductRow(index);
-                                    setProductSearch("");
-                                  }}
-                                />
-                              </div>
-                              <AnimatePresence>
-                                {activeProductRow === index && (
-                                  <ProductPicker
-                                    products={products}
-                                    search={productSearch}
-                                    onSearchChange={setProductSearch}
-                                    onSelect={(p) => selectProduct(index, p)}
-                                    onClose={() => setActiveProductRow(null)}
-                                  />
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          </td>
+                          <QuoteProductCell
+                            index={index}
+                            item={item}
+                            products={products}
+                            activeProductRow={activeProductRow}
+                            productSearch={productSearch}
+                            register={register}
+                            setActiveProductRow={setActiveProductRow}
+                            setProductSearch={setProductSearch}
+                            selectProduct={selectProduct}
+                          />
                           <td className="px-2 py-1.5">
                             <input
                               type="number"
