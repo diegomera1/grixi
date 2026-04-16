@@ -25,6 +25,10 @@ import {
   Briefcase,
   UserCheck,
   Star,
+  Award,
+  Sparkles,
+  ExternalLink,
+  Maximize,
 } from "lucide-react";
 import {
   AreaChart,
@@ -84,9 +88,10 @@ const ACTIVITY_ICONS: Record<string, typeof Mail> = {
 
 // ── Tab Type ──────────────────────────────────────
 
-type DetailTab = "general" | "contactos" | "timeline" | "ventas" | "analisis" | "oportunidades";
+type DetailTab = "general" | "contactos" | "timeline" | "ventas" | "analisis" | "oportunidades" | "presentacion";
 
 const DETAIL_TABS: { id: DetailTab; label: string; icon: typeof Building2 }[] = [
+  { id: "presentacion", label: "Presentación", icon: Award },
   { id: "general", label: "General", icon: Building2 },
   { id: "contactos", label: "Contactos", icon: Users },
   { id: "timeline", label: "Timeline", icon: Clock },
@@ -476,8 +481,16 @@ function VentasDetailTab({ invoices, customer }: { invoices: SalesInvoice[]; cus
 // ── Análisis Tab ──────────────────────────────────
 
 function AnalisisTab({ invoices }: { invoices: SalesInvoice[] }) {
-  // Calculate frequency (invoices per month)
   const frequency = invoices.length > 0 ? (invoices.length / 6).toFixed(1) : "0";
+
+  // Status distribution for bar chart
+  const statusData = Object.entries(
+    invoices.reduce<Record<string, number>>((acc, inv) => {
+      const label = INVOICE_STATUS_LABELS[inv.status] || inv.status;
+      acc[label] = (acc[label] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, count]) => ({ name, count }));
 
   return (
     <div className="space-y-4">
@@ -492,6 +505,22 @@ function AnalisisTab({ invoices }: { invoices: SalesInvoice[] }) {
         </div>
       </div>
 
+      {statusData.length > 0 && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <h4 className="mb-2 text-[10px] font-semibold text-[var(--text-primary)]">Distribución por Estado</h4>
+          <div className="h-32">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={statusData} layout="vertical">
+                <XAxis type="number" tick={{ fontSize: 8, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 8, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} width={80} />
+                <Tooltip contentStyle={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10 }} />
+                <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
         <h4 className="mb-2 text-[10px] font-semibold text-[var(--text-primary)]">
           Análisis de compra por disponibilidad de datos
@@ -500,6 +529,348 @@ function AnalisisTab({ invoices }: { invoices: SalesInvoice[] }) {
           El análisis de productos más comprados requiere datos de invoice_items asociados a este cliente.
           Se muestran las métricas de frecuencia y tendencia disponibles.
         </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Presentación Tab ──────────────────────────────
+
+function PresentacionTab({
+  customer,
+  contacts,
+  invoices,
+  opportunities,
+}: {
+  customer: SalesCustomer;
+  contacts: SalesContact[];
+  invoices: SalesInvoice[];
+  opportunities: SalesOpportunity[];
+}) {
+  function fmtUSD(v: number): string {
+    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
+    return `$${v.toLocaleString()}`;
+  }
+
+  const avgTicket = invoices.length > 0
+    ? invoices.reduce((s, inv) => s + Number(inv.total_usd), 0) / invoices.length
+    : 0;
+
+  const creditUsedPct = Math.min(100, (customer.credit_used / Math.max(customer.credit_limit, 1)) * 100);
+
+  const paidCount = invoices.filter((i) => i.status === "paid").length;
+
+  // Monthly revenue
+  const monthlyRevenue = invoices.reduce<Record<string, number>>((acc, inv) => {
+    const d = new Date(inv.sale_date);
+    const key = d.toLocaleDateString("es-EC", { month: "short", year: "2-digit" });
+    acc[key] = (acc[key] || 0) + Number(inv.total_usd);
+    return acc;
+  }, {});
+  const revenueChart = Object.entries(monthlyRevenue).map(([month, revenue]) => ({ month, revenue }));
+
+  return (
+    <div className="space-y-5 pb-4">
+      {/* ── HERO IDENTITY ── */}
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-muted)]/30 p-6">
+        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[var(--brand)]/5 blur-3xl" />
+        <div className="relative flex items-start gap-5">
+          {/* Logo */}
+          <div className="shrink-0">
+            {customer.logo_url ? (
+              <img src={customer.logo_url} alt="" className="h-16 w-16 rounded-2xl object-cover shadow-md ring-2 ring-[var(--border)]" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand)] to-[#8B5CF6] text-lg font-bold text-white shadow-md">
+                {(customer.trade_name || customer.business_name).substring(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base font-bold text-[var(--text-primary)]">
+              {customer.trade_name || customer.business_name}
+            </h2>
+            <p className="text-[10px] text-[var(--text-secondary)]">{customer.business_name}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                <MapPin size={10} />{customer.city}, {customer.province || ""}, {customer.country}
+              </span>
+              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                <Globe size={10} />{customer.sector}
+              </span>
+              {customer.phone && (
+                <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                  <Phone size={10} />{customer.phone}
+                </span>
+              )}
+              {customer.email && (
+                <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                  <Mail size={10} />{customer.email}
+                </span>
+              )}
+            </div>
+            {/* Tags */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span
+                className="rounded-full px-2 py-0.5 text-[8px] font-bold"
+                style={{ backgroundColor: `${SEGMENT_COLORS[customer.segment]}15`, color: SEGMENT_COLORS[customer.segment] }}
+              >
+                {SEGMENT_LABELS[customer.segment]}
+              </span>
+              {customer.sap_customer_code && (
+                <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">
+                  {customer.sap_customer_code}
+                </span>
+              )}
+              <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">
+                RUC: {customer.tax_id || "—"}
+              </span>
+              {customer.website && (
+                <a href={customer.website} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-0.5 rounded-full bg-[var(--brand)]/10 px-2 py-0.5 text-[8px] font-medium text-[var(--brand)] hover:bg-[var(--brand)]/20">
+                  <ExternalLink size={8} />Web
+                </a>
+              )}
+            </div>
+            {/* Company details */}
+            <div className="mt-2 flex items-center gap-4">
+              {customer.founded_year && (
+                <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                  <Calendar size={10} />Fundada en {customer.founded_year}
+                </span>
+              )}
+              {customer.employee_count && (
+                <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                  <Users size={10} />{customer.employee_count.toLocaleString()} empleados
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Health Score */}
+          <div className="shrink-0 text-center">
+            <HealthGauge score={customer.health_score} />
+            <p className="mt-1 text-[8px] text-[var(--text-muted)]">Health Score</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── GEOLOCATION + STREET VIEW ── */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
+          <MapPin size={12} className="text-[var(--brand)]" />Ubicación y Street View
+        </h4>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="overflow-hidden rounded-xl border border-[var(--border)]">
+            {customer.lat && customer.lng ? (
+              <iframe
+                src={`https://www.google.com/maps?q=${customer.lat},${customer.lng}&z=15&output=embed`}
+                width="100%" height="220" style={{ border: 0 }} loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade" className="rounded-xl"
+              />
+            ) : (
+              <div className="flex h-[220px] items-center justify-center bg-[var(--bg-muted)] text-[10px] text-[var(--text-muted)]">Sin coordenadas</div>
+            )}
+          </div>
+          <div className="overflow-hidden rounded-xl border border-[var(--border)]">
+            {customer.lat && customer.lng ? (
+              <iframe
+                src={`https://www.google.com/maps?q=${customer.lat},${customer.lng}&layer=c&cbll=${customer.lat},${customer.lng}&cbp=11,0,0,0,0&output=svembed`}
+                width="100%" height="220" style={{ border: 0 }} loading="lazy" className="rounded-xl"
+              />
+            ) : (
+              <div className="flex h-[220px] items-center justify-center bg-[var(--bg-muted)] text-[10px] text-[var(--text-muted)]">Street View no disponible</div>
+            )}
+          </div>
+        </div>
+        <p className="mt-2 flex items-center gap-1 text-[9px] text-[var(--text-secondary)]">
+          <MapPin size={10} className="text-[var(--brand)]" />
+          {customer.address || "—"} · {customer.city}, {customer.province || ""}, {customer.country}
+        </p>
+      </div>
+
+      {/* ── KPIs ── */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {[
+          { label: "Ingresos Totales", value: fmtUSD(customer.total_revenue), icon: DollarSign, color: "#10B981" },
+          { label: "Total Pedidos", value: customer.total_orders.toLocaleString(), icon: Package, color: "#3B82F6" },
+          { label: "Ticket Promedio", value: fmtUSD(avgTicket), icon: TrendingUp, color: "#8B5CF6" },
+          { label: "Facturas", value: invoices.length.toString(), icon: FileText, color: "#F59E0B" },
+        ].map((kpi) => (
+          <div key={kpi.label} className="group rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 transition-shadow hover:shadow-sm">
+            <div className="flex items-center gap-1.5">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md" style={{ backgroundColor: `${kpi.color}15` }}>
+                <kpi.icon size={12} style={{ color: kpi.color }} />
+              </div>
+              <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
+            </div>
+            <p className="mt-2 text-lg font-bold text-[var(--text-primary)]">{kpi.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── FINANCIAL HEALTH ── */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
+          <Shield size={12} className="text-[var(--brand)]" />Salud Financiera
+        </h4>
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Credit bar */}
+          <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
+            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Cupo de Crédito</p>
+            <div className="mt-2 flex justify-between text-[9px]">
+              <span className="text-[var(--text-secondary)]">Utilizado: <strong>{fmtUSD(customer.credit_used)}</strong></span>
+              <span className="text-[var(--text-muted)]">Límite: {fmtUSD(customer.credit_limit)}</span>
+            </div>
+            <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[var(--border)]">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${creditUsedPct}%`,
+                  background: creditUsedPct > 80 ? "linear-gradient(90deg,#F59E0B,#EF4444)"
+                    : creditUsedPct > 50 ? "linear-gradient(90deg,#3B82F6,#F59E0B)"
+                    : "linear-gradient(90deg,#10B981,#3B82F6)",
+                }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between">
+              <span className="text-[9px] font-bold text-[var(--text-primary)]">{fmtUSD(customer.credit_limit - customer.credit_used)} disponible</span>
+              <span className="text-[9px] font-semibold" style={{ color: creditUsedPct > 80 ? "#EF4444" : "#10B981" }}>
+                {creditUsedPct.toFixed(0)}%
+              </span>
+            </div>
+          </div>
+          {/* Payment stats */}
+          <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
+            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Comportamiento de Pago</p>
+            <div className="mt-2 space-y-2">
+              {[
+                { label: "Términos de pago", value: `${customer.payment_terms} días` },
+                { label: "Moneda preferida", value: customer.preferred_currency },
+                { label: "Facturas pagadas", value: `${paidCount} / ${invoices.length}`, highlight: true },
+                { label: "Última compra", value: customer.last_purchase_at
+                  ? new Date(customer.last_purchase_at).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" })
+                  : "—" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between text-[9px]">
+                  <span className="text-[var(--text-secondary)]">{item.label}</span>
+                  <span className={cn("font-bold", item.highlight ? "text-emerald-500" : "text-[var(--text-primary)]")}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── REVENUE CHART ── */}
+      {revenueChart.length > 0 && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
+            <BarChart3 size={12} className="text-[var(--brand)]" />Evolución de Ingresos
+          </h4>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueChart}>
+                <defs>
+                  <linearGradient id="presRevGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--brand)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="month" tick={{ fontSize: 9, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} tickFormatter={(v) => fmtUSD(v)} />
+                <Tooltip contentStyle={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10 }} formatter={(v: unknown) => [fmtUSD(Number(v)), "Ingresos"]} />
+                <Area type="monotone" dataKey="revenue" stroke="var(--brand)" strokeWidth={2} fill="url(#presRevGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI RECOMMENDATIONS ── */}
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--brand)]/20 bg-gradient-to-br from-[var(--brand)]/5 to-[#8B5CF6]/5 p-4">
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[var(--brand)]/10 blur-3xl" />
+        <div className="relative">
+          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
+            <Sparkles size={12} className="text-[var(--brand)]" />Recomendaciones GRIXI AI
+          </h4>
+          <div className="grid gap-2 md:grid-cols-3">
+            {[
+              {
+                tag: "Venta Cruzada",
+                title: "Expansión de línea",
+                desc: `${customer.trade_name || "Cliente"} podría beneficiarse de productos complementarios basados en ${customer.total_orders} pedidos registrados.`,
+              },
+              {
+                tag: "Financiero",
+                title: "Optimización de crédito",
+                desc: creditUsedPct < 50
+                  ? `Tiene ${(100 - creditUsedPct).toFixed(0)}% de crédito disponible. Oportunidad de incrementar volumen.`
+                  : `Uso al ${creditUsedPct.toFixed(0)}%. Considerar ampliación de cupo.`,
+              },
+              {
+                tag: "Retención",
+                title: "Frecuencia de compra",
+                desc: invoices.length > 0
+                  ? `Promedio de ${(invoices.length / 6).toFixed(1)} compras/mes. Programa de fidelización recomendado.`
+                  : "Sin historial reciente. Activar con oferta introductoria.",
+              },
+            ].map((rec, i) => (
+              <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3">
+                <span className="rounded-full bg-[var(--brand)]/10 px-1.5 py-0.5 text-[7px] font-bold text-[var(--brand)]">{rec.tag}</span>
+                <p className="mt-1.5 text-[9px] font-semibold text-[var(--text-primary)]">{rec.title}</p>
+                <p className="mt-1 text-[8px] leading-relaxed text-[var(--text-secondary)]">{rec.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── CONTACTS GRID ── */}
+      {contacts.length > 0 && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
+            <Users size={12} className="text-[var(--brand)]" />Contactos ({contacts.length})
+          </h4>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {contacts.map((c) => (
+              <div key={c.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 p-3">
+                <div className="flex items-center gap-2">
+                  {c.avatar_url ? (
+                    <img src={c.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[8px] font-bold text-[var(--brand)]">
+                      {c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-[9px] font-semibold text-[var(--text-primary)]">{c.full_name}</p>
+                    {c.role && (
+                      <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[7px] text-[var(--text-muted)]">
+                        {CONTACT_ROLE_LABELS[c.role]}
+                      </span>
+                    )}
+                  </div>
+                  {c.is_primary && <Star size={10} className="text-amber-500 fill-amber-500" />}
+                </div>
+                <div className="mt-2 space-y-1">
+                  {c.email && <p className="flex items-center gap-1 text-[8px] text-[var(--text-secondary)]"><Mail size={8} />{c.email}</p>}
+                  {c.phone && <p className="flex items-center gap-1 text-[8px] text-[var(--text-secondary)]"><Phone size={8} />{c.phone}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── FOOTER ── */}
+      <div className="flex items-center gap-2 py-3 text-[var(--text-muted)]">
+        <div className="h-px flex-1 bg-[var(--border)]" />
+        <span className="text-[8px]">Presentación generada por GRIXI · {new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "long", year: "numeric" })}</span>
+        <div className="h-px flex-1 bg-[var(--border)]" />
       </div>
     </div>
   );
@@ -596,7 +967,7 @@ type Props = {
 };
 
 export function ClienteDetailModal({ customerId, onClose, demoRole }: Props) {
-  const [tab, setTab] = useState<DetailTab>("general");
+  const [tab, setTab] = useState<DetailTab>("presentacion");
   const [customer, setCustomer] = useState<SalesCustomer | null>(null);
   const [contacts, setContacts] = useState<SalesContact[]>([]);
   const [activities, setActivities] = useState<SalesActivity[]>([]);
@@ -733,6 +1104,9 @@ export function ClienteDetailModal({ customerId, onClose, demoRole }: Props) {
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.15 }}
                 >
+                  {tab === "presentacion" && (
+                    <PresentacionTab customer={customer} contacts={contacts} invoices={invoices} opportunities={opportunities} />
+                  )}
                   {tab === "general" && <GeneralTab customer={customer} />}
                   {tab === "contactos" && <ContactosTab contacts={contacts} />}
                   {tab === "timeline" && <TimelineTab activities={activities} />}

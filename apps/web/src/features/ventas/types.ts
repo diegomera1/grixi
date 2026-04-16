@@ -114,6 +114,14 @@ export type SalesCustomer = {
   total_orders: number;
   founded_year: number | null;
   employee_count: number | null;
+  industry_code: string | null;
+  annual_revenue_usd: number;
+  nps_score: number;
+  churn_risk: 'low' | 'medium' | 'high' | 'critical';
+  last_contact_date: string | null;
+  primary_product_line: string | null;
+  avg_order_value: number;
+  retention_rate: number;
   created_at: string;
   // Joined fields
   assigned_seller?: { id: string; full_name: string; avatar_url: string | null };
