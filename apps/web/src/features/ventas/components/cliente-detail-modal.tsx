@@ -41,6 +41,8 @@ import {
   BarChart,
   Bar,
   Cell,
+  PieChart,
+  Pie,
 } from "recharts";
 import { cn } from "@/lib/utils/cn";
 import type {
@@ -536,6 +538,8 @@ function AnalisisTab({ invoices }: { invoices: SalesInvoice[] }) {
 
 // ── Presentación Tab ──────────────────────────────
 
+const DONUT_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444"];
+
 function PresentacionTab({
   customer,
   contacts,
@@ -558,25 +562,85 @@ function PresentacionTab({
     : 0;
 
   const creditUsedPct = Math.min(100, (customer.credit_used / Math.max(customer.credit_limit, 1)) * 100);
-
   const paidCount = invoices.filter((i) => i.status === "paid").length;
+  const overdueCount = invoices.filter((i) => i.status === "overdue").length;
+  const pendingCount = invoices.filter((i) => i.status === "draft" || i.status === "confirmed" || i.status === "invoiced" || i.status === "partially_paid").length;
 
-  // Monthly revenue
+  const relationYears = customer.first_purchase_date
+    ? Math.max(1, Math.floor((Date.now() - new Date(customer.first_purchase_date).getTime()) / (365.25 * 86400000)))
+    : 0;
+
   const monthlyRevenue = invoices.reduce<Record<string, number>>((acc, inv) => {
     const d = new Date(inv.sale_date);
-    const key = d.toLocaleDateString("es-EC", { month: "short", year: "2-digit" });
+    const key = d.toLocaleDateString("es-EC", { month: "short" });
     acc[key] = (acc[key] || 0) + Number(inv.total_usd);
     return acc;
   }, {});
   const revenueChart = Object.entries(monthlyRevenue).map(([month, revenue]) => ({ month, revenue }));
 
+  const categories = Array.isArray(customer.top_categories) ? customer.top_categories : [];
+  const catTotal = categories.length;
+  const donutData = categories.map((cat, i) => ({
+    name: cat as string,
+    value: catTotal > 0 ? Math.round(100 / catTotal) + (i === 0 ? 100 % catTotal : 0) : 0,
+  }));
+
+  const statusPie = [
+    { name: "Pagadas", value: paidCount, color: "#10B981" },
+    { name: "Pendientes", value: pendingCount, color: "#F59E0B" },
+    { name: "Vencidas", value: overdueCount, color: "#EF4444" },
+  ].filter(s => s.value > 0);
+
+  const pipelineTotal = opportunities.reduce((s, o) => s + Number(o.amount), 0);
+
+  const daysSinceContact = customer.last_contact_date
+    ? Math.floor((Date.now() - new Date(customer.last_contact_date).getTime()) / 86400000)
+    : null;
+
+  const contractDaysLeft = customer.contract_end_date
+    ? Math.max(0, Math.floor((new Date(customer.contract_end_date).getTime() - Date.now()) / 86400000))
+    : null;
+
+  function PresentacionStars({ rating }: { rating: number }) {
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((s) => (
+          <Star key={s} size={12}
+            className={cn(s <= Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-[var(--border)]")} />
+        ))}
+        <span className="ml-1 text-[10px] font-bold text-[var(--text-primary)]">{rating.toFixed(1)}</span>
+      </div>
+    );
+  }
+
+  function MiniGauge({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
+    const pct = Math.min(100, (value / max) * 100);
+    const circ = 2 * Math.PI * 22;
+    const off = circ - (pct / 100) * circ;
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <div className="relative">
+          <svg width="52" height="52" className="-rotate-90">
+            <circle cx="26" cy="26" r="22" fill="none" stroke="var(--border)" strokeWidth="3" />
+            <circle cx="26" cy="26" r="22" fill="none" stroke={color} strokeWidth="3"
+              strokeDasharray={circ} strokeDashoffset={off} strokeLinecap="round" className="transition-all duration-1000" />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold" style={{ color }}>
+            {Math.round(pct)}%
+          </span>
+        </div>
+        <span className="text-[7px] text-[var(--text-muted)] text-center leading-tight">{label}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 pb-4">
-      {/* ── HERO IDENTITY ── */}
-      <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-muted)]/30 p-6">
-        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[var(--brand)]/5 blur-3xl" />
+      {/* ═══ B1: HERO IDENTITY ═══ */}
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--bg-card)] via-[var(--bg-card)] to-[var(--bg-muted)]/40 p-6">
+        <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--brand)]/5 blur-3xl" />
+        <div className="absolute -left-12 -bottom-12 h-40 w-40 rounded-full bg-[#8B5CF6]/5 blur-3xl" />
         <div className="relative flex items-start gap-5">
-          {/* Logo */}
           <div className="shrink-0">
             {customer.logo_url ? (
               <img src={customer.logo_url} alt="" className="h-16 w-16 rounded-2xl object-cover shadow-md ring-2 ring-[var(--border)]" />
@@ -586,241 +650,260 @@ function PresentacionTab({
               </div>
             )}
           </div>
-
-          {/* Info */}
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-[var(--text-primary)]">
-              {customer.trade_name || customer.business_name}
-            </h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-bold text-[var(--text-primary)]">{customer.trade_name || customer.business_name}</h2>
+              {relationYears > 0 && (
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[7px] font-bold text-emerald-600">
+                  ✦ Cliente {relationYears} {relationYears === 1 ? "año" : "años"}
+                </span>
+              )}
+            </div>
             <p className="text-[10px] text-[var(--text-secondary)]">{customer.business_name}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
-                <MapPin size={10} />{customer.city}, {customer.province || ""}, {customer.country}
-              </span>
-              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
-                <Globe size={10} />{customer.sector}
-              </span>
-              {customer.phone && (
-                <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
-                  <Phone size={10} />{customer.phone}
-                </span>
-              )}
-              {customer.email && (
-                <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
-                  <Mail size={10} />{customer.email}
-                </span>
-              )}
+              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><MapPin size={10} />{customer.city}, {customer.province || ""}, {customer.country}</span>
+              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Globe size={10} />{customer.sector}</span>
+              {customer.phone && <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Phone size={10} />{customer.phone}</span>}
+              {customer.email && <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Mail size={10} />{customer.email}</span>}
             </div>
-            {/* Tags */}
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span
-                className="rounded-full px-2 py-0.5 text-[8px] font-bold"
-                style={{ backgroundColor: `${SEGMENT_COLORS[customer.segment]}15`, color: SEGMENT_COLORS[customer.segment] }}
-              >
-                {SEGMENT_LABELS[customer.segment]}
-              </span>
-              {customer.sap_customer_code && (
-                <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">
-                  {customer.sap_customer_code}
-                </span>
-              )}
-              <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">
-                RUC: {customer.tax_id || "—"}
-              </span>
-              {customer.website && (
-                <a href={customer.website} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-0.5 rounded-full bg-[var(--brand)]/10 px-2 py-0.5 text-[8px] font-medium text-[var(--brand)] hover:bg-[var(--brand)]/20">
-                  <ExternalLink size={8} />Web
-                </a>
-              )}
+              <span className="rounded-full px-2 py-0.5 text-[8px] font-bold" style={{ backgroundColor: `${SEGMENT_COLORS[customer.segment]}15`, color: SEGMENT_COLORS[customer.segment] }}>{SEGMENT_LABELS[customer.segment]}</span>
+              {customer.sap_customer_code && <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">SAP {customer.sap_customer_code}</span>}
+              <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">RUC: {customer.tax_id || "—"}</span>
+              <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">{customer.primary_product_line}</span>
+              {customer.contract_type !== "Spot" && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[8px] font-bold text-blue-600">📋 {customer.contract_type}</span>}
+              {customer.website && <a href={customer.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 rounded-full bg-[var(--brand)]/10 px-2 py-0.5 text-[8px] font-medium text-[var(--brand)] hover:bg-[var(--brand)]/20"><ExternalLink size={8} />Web</a>}
             </div>
-            {/* Company details */}
             <div className="mt-2 flex items-center gap-4">
-              {customer.founded_year && (
-                <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
-                  <Calendar size={10} />Fundada en {customer.founded_year}
-                </span>
-              )}
-              {customer.employee_count && (
-                <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
-                  <Users size={10} />{customer.employee_count.toLocaleString()} empleados
-                </span>
-              )}
+              {customer.founded_year && <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Calendar size={10} />Fundada {customer.founded_year}</span>}
+              {customer.employee_count && <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Users size={10} />{customer.employee_count.toLocaleString()} empleados</span>}
+              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Briefcase size={10} />{customer.industry_code}</span>
             </div>
           </div>
-
-          {/* Health Score */}
-          <div className="shrink-0 text-center">
-            <HealthGauge score={customer.health_score} />
-            <p className="mt-1 text-[8px] text-[var(--text-muted)]">Health Score</p>
+          <div className="shrink-0 flex items-center gap-4">
+            <div className="text-center"><HealthGauge score={customer.health_score} /><p className="mt-1 text-[7px] text-[var(--text-muted)]">Health</p></div>
+            <div className="text-center"><HealthGauge score={customer.nps_score} /><p className="mt-1 text-[7px] text-[var(--text-muted)]">NPS</p></div>
+            <div className="text-center"><PresentacionStars rating={customer.satisfaction_rating} /><p className="mt-1 text-[7px] text-[var(--text-muted)]">Satisfacción</p></div>
           </div>
         </div>
       </div>
 
-      {/* ── GEOLOCATION + STREET VIEW ── */}
+      {/* ═══ B2: GEOLOCATION ═══ */}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
-          <MapPin size={12} className="text-[var(--brand)]" />Ubicación y Street View
-        </h4>
+        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><MapPin size={12} className="text-[var(--brand)]" />Ubicación y Street View</h4>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="overflow-hidden rounded-xl border border-[var(--border)]">
             {customer.lat && customer.lng ? (
-              <iframe
-                src={`https://www.google.com/maps?q=${customer.lat},${customer.lng}&z=15&output=embed`}
-                width="100%" height="220" style={{ border: 0 }} loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade" className="rounded-xl"
-              />
-            ) : (
-              <div className="flex h-[220px] items-center justify-center bg-[var(--bg-muted)] text-[10px] text-[var(--text-muted)]">Sin coordenadas</div>
-            )}
+              <iframe src={`https://www.google.com/maps?q=${customer.lat},${customer.lng}&z=15&output=embed`} width="100%" height="200" style={{ border: 0 }} loading="lazy" className="rounded-xl" />
+            ) : <div className="flex h-[200px] items-center justify-center bg-[var(--bg-muted)] text-[10px] text-[var(--text-muted)]">Sin coordenadas</div>}
           </div>
           <div className="overflow-hidden rounded-xl border border-[var(--border)]">
             {customer.lat && customer.lng ? (
-              <iframe
-                src={`https://www.google.com/maps?q=${customer.lat},${customer.lng}&layer=c&cbll=${customer.lat},${customer.lng}&cbp=11,0,0,0,0&output=svembed`}
-                width="100%" height="220" style={{ border: 0 }} loading="lazy" className="rounded-xl"
-              />
-            ) : (
-              <div className="flex h-[220px] items-center justify-center bg-[var(--bg-muted)] text-[10px] text-[var(--text-muted)]">Street View no disponible</div>
-            )}
+              <iframe src={`https://www.google.com/maps?q=${customer.lat},${customer.lng}&layer=c&cbll=${customer.lat},${customer.lng}&cbp=11,0,0,0,0&output=svembed`} width="100%" height="200" style={{ border: 0 }} loading="lazy" className="rounded-xl" />
+            ) : <div className="flex h-[200px] items-center justify-center bg-[var(--bg-muted)] text-[10px] text-[var(--text-muted)]">Street View no disponible</div>}
           </div>
         </div>
-        <p className="mt-2 flex items-center gap-1 text-[9px] text-[var(--text-secondary)]">
-          <MapPin size={10} className="text-[var(--brand)]" />
-          {customer.address || "—"} · {customer.city}, {customer.province || ""}, {customer.country}
-        </p>
+        <p className="mt-2 flex items-center gap-1 text-[9px] text-[var(--text-secondary)]"><MapPin size={10} className="text-[var(--brand)]" />{customer.address || "—"} · {customer.city}, {customer.province || ""}, {customer.country}</p>
       </div>
 
-      {/* ── KPIs ── */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      {/* ═══ B3: SCORECARD 6 KPIs ═══ */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {[
           { label: "Ingresos Totales", value: fmtUSD(customer.total_revenue), icon: DollarSign, color: "#10B981" },
           { label: "Total Pedidos", value: customer.total_orders.toLocaleString(), icon: Package, color: "#3B82F6" },
           { label: "Ticket Promedio", value: fmtUSD(avgTicket), icon: TrendingUp, color: "#8B5CF6" },
-          { label: "Facturas", value: invoices.length.toString(), icon: FileText, color: "#F59E0B" },
+          { label: "Crecimiento YoY", value: `${customer.yoy_growth_pct > 0 ? "+" : ""}${customer.yoy_growth_pct.toFixed(1)}%`, icon: TrendingUp, color: customer.yoy_growth_pct >= 0 ? "#10B981" : "#EF4444" },
+          { label: "NPS Score", value: `${customer.nps_score}/100`, icon: Star, color: "#F59E0B" },
+          { label: "Satisfacción", value: `${customer.satisfaction_rating.toFixed(1)}/5`, icon: Star, color: "#F59E0B" },
         ].map((kpi) => (
-          <div key={kpi.label} className="group rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 transition-shadow hover:shadow-sm">
-            <div className="flex items-center gap-1.5">
-              <div className="flex h-6 w-6 items-center justify-center rounded-md" style={{ backgroundColor: `${kpi.color}15` }}>
-                <kpi.icon size={12} style={{ color: kpi.color }} />
-              </div>
-              <p className="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
-            </div>
-            <p className="mt-2 text-lg font-bold text-[var(--text-primary)]">{kpi.value}</p>
+          <div key={kpi.label} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 transition-shadow hover:shadow-sm">
+            <div className="flex items-center gap-1.5"><div className="flex h-6 w-6 items-center justify-center rounded-md" style={{ backgroundColor: `${kpi.color}15` }}><kpi.icon size={12} style={{ color: kpi.color }} /></div></div>
+            <p className="mt-2 text-sm font-bold text-[var(--text-primary)]">{kpi.value}</p>
+            <p className="text-[7px] font-medium text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
           </div>
         ))}
       </div>
 
-      {/* ── FINANCIAL HEALTH ── */}
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
-          <Shield size={12} className="text-[var(--brand)]" />Salud Financiera
-        </h4>
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Credit bar */}
-          <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
-            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Cupo de Crédito</p>
-            <div className="mt-2 flex justify-between text-[9px]">
-              <span className="text-[var(--text-secondary)]">Utilizado: <strong>{fmtUSD(customer.credit_used)}</strong></span>
-              <span className="text-[var(--text-muted)]">Límite: {fmtUSD(customer.credit_limit)}</span>
-            </div>
-            <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[var(--border)]">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{
-                  width: `${creditUsedPct}%`,
-                  background: creditUsedPct > 80 ? "linear-gradient(90deg,#F59E0B,#EF4444)"
-                    : creditUsedPct > 50 ? "linear-gradient(90deg,#3B82F6,#F59E0B)"
-                    : "linear-gradient(90deg,#10B981,#3B82F6)",
-                }}
-              />
-            </div>
-            <div className="mt-2 flex justify-between">
-              <span className="text-[9px] font-bold text-[var(--text-primary)]">{fmtUSD(customer.credit_limit - customer.credit_used)} disponible</span>
-              <span className="text-[9px] font-semibold" style={{ color: creditUsedPct > 80 ? "#EF4444" : "#10B981" }}>
-                {creditUsedPct.toFixed(0)}%
-              </span>
-            </div>
-          </div>
-          {/* Payment stats */}
-          <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
-            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Comportamiento de Pago</p>
-            <div className="mt-2 space-y-2">
-              {[
-                { label: "Términos de pago", value: `${customer.payment_terms} días` },
-                { label: "Moneda preferida", value: customer.preferred_currency },
-                { label: "Facturas pagadas", value: `${paidCount} / ${invoices.length}`, highlight: true },
-                { label: "Última compra", value: customer.last_purchase_at
-                  ? new Date(customer.last_purchase_at).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" })
-                  : "—" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between text-[9px]">
-                  <span className="text-[var(--text-secondary)]">{item.label}</span>
-                  <span className={cn("font-bold", item.highlight ? "text-emerald-500" : "text-[var(--text-primary)]")}>{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── REVENUE CHART ── */}
+      {/* ═══ B4: EVOLUCIÓN INGRESOS ═══ */}
       {revenueChart.length > 0 && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
-            <BarChart3 size={12} className="text-[var(--brand)]" />Evolución de Ingresos
-          </h4>
-          <div className="h-40">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><BarChart3 size={12} className="text-[var(--brand)]" />Evolución de Ingresos</h4>
+            <span className="text-[8px] font-bold" style={{ color: customer.yoy_growth_pct >= 0 ? "#10B981" : "#EF4444" }}>
+              {customer.yoy_growth_pct > 0 ? "↑" : "↓"} {Math.abs(customer.yoy_growth_pct).toFixed(1)}% YoY
+            </span>
+          </div>
+          <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={revenueChart}>
-                <defs>
-                  <linearGradient id="presRevGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--brand)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+                <defs><linearGradient id="presGrd" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--brand)" stopOpacity={0.25} /><stop offset="95%" stopColor="var(--brand)" stopOpacity={0} /></linearGradient></defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="month" tick={{ fontSize: 9, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} tickFormatter={(v) => fmtUSD(v)} />
                 <Tooltip contentStyle={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10 }} formatter={(v: unknown) => [fmtUSD(Number(v)), "Ingresos"]} />
-                <Area type="monotone" dataKey="revenue" stroke="var(--brand)" strokeWidth={2} fill="url(#presRevGrad)" />
+                <Area type="monotone" dataKey="revenue" stroke="var(--brand)" strokeWidth={2.5} fill="url(#presGrd)" dot={{ r: 3, fill: "var(--brand)" }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
       )}
 
-      {/* ── AI RECOMMENDATIONS ── */}
+      {/* ═══ B5: SALUD FINANCIERA ═══ */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Shield size={12} className="text-[var(--brand)]" />Salud Financiera</h4>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
+            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Cupo de Crédito</p>
+            <div className="mt-2 flex justify-between text-[9px]"><span className="text-[var(--text-secondary)]">Utilizado: <strong>{fmtUSD(customer.credit_used)}</strong></span><span className="text-[var(--text-muted)]">Límite: {fmtUSD(customer.credit_limit)}</span></div>
+            <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[var(--border)]"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${creditUsedPct}%`, background: creditUsedPct > 80 ? "linear-gradient(90deg,#F59E0B,#EF4444)" : creditUsedPct > 50 ? "linear-gradient(90deg,#3B82F6,#F59E0B)" : "linear-gradient(90deg,#10B981,#3B82F6)" }} /></div>
+            <div className="mt-2 flex justify-between"><span className="text-[9px] font-bold text-[var(--text-primary)]">{fmtUSD(customer.credit_limit - customer.credit_used)} disponible</span><span className="text-[9px] font-semibold" style={{ color: creditUsedPct > 80 ? "#EF4444" : "#10B981" }}>{creditUsedPct.toFixed(0)}%</span></div>
+          </div>
+          <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
+            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Pago</p>
+            <div className="mt-3 flex items-center justify-around">
+              <MiniGauge value={customer.on_time_payment_pct} max={100} color="#10B981" label="A tiempo" />
+              <div className="text-center">
+                <p className="text-lg font-bold text-[var(--text-primary)]">{customer.payment_avg_days}d</p>
+                <p className="text-[7px] text-[var(--text-muted)]">Prom. pago</p>
+                <p className="text-[7px]" style={{ color: customer.payment_avg_days <= customer.payment_terms ? "#10B981" : "#EF4444" }}>
+                  {customer.payment_avg_days <= customer.payment_terms ? "✓" : "⚠"} vs {customer.payment_terms}d
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
+            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Facturas</p>
+            <div className="mt-1 flex items-center gap-2">
+              <div className="h-24 w-24"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={statusPie} dataKey="value" cx="50%" cy="50%" innerRadius={18} outerRadius={34} paddingAngle={3} strokeWidth={0}>{statusPie.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart></ResponsiveContainer></div>
+              <div className="space-y-1">{statusPie.map((s) => (<div key={s.name} className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} /><span className="text-[8px] text-[var(--text-secondary)]">{s.name}: <strong>{s.value}</strong></span></div>))}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ B6: MIX DE PRODUCTOS ═══ */}
+      {donutData.length > 0 && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Package size={12} className="text-[var(--brand)]" />Mix de Productos</h4>
+          <div className="flex items-center gap-6">
+            <div className="h-36 w-36 shrink-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={donutData} dataKey="value" cx="50%" cy="50%" innerRadius={30} outerRadius={55} paddingAngle={4} strokeWidth={0}>{donutData.map((_d, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie><Tooltip contentStyle={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10 }} /></PieChart></ResponsiveContainer></div>
+            <div className="flex-1 space-y-2">
+              {donutData.map((cat, i) => (
+                <div key={cat.name} className="flex items-center gap-3">
+                  <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                  <span className="flex-1 text-[10px] font-medium text-[var(--text-primary)]">{cat.name}</span>
+                  <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[var(--border)]"><div className="h-full rounded-full" style={{ width: `${cat.value}%`, backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} /></div>
+                  <span className="text-[9px] font-bold text-[var(--text-primary)] tabular-nums w-8 text-right">{cat.value}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ B7: PIPELINE ═══ */}
+      {opportunities.length > 0 && (
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <h4 className="mb-3 flex items-center justify-between text-[10px] font-semibold text-[var(--text-primary)]">
+            <span className="flex items-center gap-1.5"><Target size={12} className="text-[var(--brand)]" />Pipeline Activo</span>
+            <span className="text-[10px] font-bold text-[var(--brand)]">{fmtUSD(pipelineTotal)}</span>
+          </h4>
+          <div className="space-y-2">{opportunities.map((opp) => (
+            <div key={opp.id} className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-[var(--bg-muted)]/50 transition-colors">
+              <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: opp.stage?.color || "#6B7280" }} />
+              <div className="flex-1 min-w-0"><p className="truncate text-[9px] font-semibold text-[var(--text-primary)]">{opp.name}</p><p className="text-[8px] text-[var(--text-muted)]">{opp.stage?.name} · {opp.probability}%</p></div>
+              <span className="text-[10px] font-bold text-[var(--text-primary)] tabular-nums">{fmtUSD(Number(opp.amount))}</span>
+            </div>
+          ))}</div>
+        </div>
+      )}
+
+      {/* ═══ B8: RESUMEN RELACIÓN ═══ */}
+      <div className="rounded-2xl border border-[var(--border)] bg-gradient-to-r from-[var(--bg-card)] to-[var(--bg-muted)]/30 p-4">
+        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Briefcase size={12} className="text-[var(--brand)]" />Resumen de Relación</h4>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { icon: Calendar, label: "Relación", value: relationYears > 0 ? `${relationYears} años` : "Nuevo", sub: customer.first_purchase_date ? `Desde ${new Date(customer.first_purchase_date).toLocaleDateString("es-EC", { month: "long", year: "numeric" })}` : "" },
+            { icon: Mail, label: "Último Contacto", value: daysSinceContact !== null ? `Hace ${daysSinceContact}d` : "—", sub: customer.last_contact_date ? new Date(customer.last_contact_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" }) : "" },
+            { icon: FileText, label: "Contrato", value: customer.contract_type, sub: contractDaysLeft !== null ? `${contractDaysLeft} días restantes` : "Sin contrato" },
+            { icon: DollarSign, label: "Valor de Vida", value: fmtUSD(customer.lifetime_value), sub: `${fmtUSD(customer.annual_revenue_usd)} / año` },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3">
+              <div className="flex items-center gap-1.5 text-[8px] text-[var(--text-muted)] uppercase tracking-wider"><item.icon size={10} />{item.label}</div>
+              <p className="mt-1.5 text-[11px] font-bold text-[var(--text-primary)]">{item.value}</p>
+              <p className="text-[8px] text-[var(--text-secondary)]">{item.sub}</p>
+            </div>
+          ))}
+        </div>
+        {customer.assigned_seller && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-[var(--bg-muted)]/30 p-2">
+            {customer.assigned_seller.avatar_url ? <img src={customer.assigned_seller.avatar_url} alt="" className="h-6 w-6 rounded-full object-cover" /> : <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand)]/10"><UserCheck size={12} className="text-[var(--brand)]" /></div>}
+            <div><p className="text-[9px] font-semibold text-[var(--text-primary)]">{customer.assigned_seller.full_name}</p><p className="text-[7px] text-[var(--text-muted)]">Ejecutivo Comercial</p></div>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ B9: BENCHMARK ═══ */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><BarChart3 size={12} className="text-[var(--brand)]" />Benchmark vs. Sector</h4>
+        <div className="space-y-3">
+          {[
+            { label: "Health Score", value: customer.health_score, avg: 68, max: 100, unit: "" },
+            { label: "NPS", value: customer.nps_score, avg: 55, max: 100, unit: "" },
+            { label: "Retención", value: Math.round(customer.retention_rate), avg: 72, max: 100, unit: "%" },
+            { label: "Pago a Tiempo", value: Math.round(customer.on_time_payment_pct), avg: 65, max: 100, unit: "%" },
+          ].map((m) => {
+            const isAbove = m.value >= m.avg;
+            return (
+              <div key={m.label} className="flex items-center gap-3">
+                <span className="w-24 text-[9px] font-medium text-[var(--text-secondary)]">{m.label}</span>
+                <div className="relative flex-1 h-4">
+                  <div className="absolute inset-0 rounded-full bg-[var(--border)]/50" />
+                  <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700" style={{ width: `${(m.value / m.max) * 100}%`, backgroundColor: isAbove ? "#10B981" : "#EF4444", opacity: 0.8 }} />
+                  <div className="absolute inset-y-0 w-0.5 bg-[var(--text-muted)]" style={{ left: `${(m.avg / m.max) * 100}%` }} />
+                </div>
+                <span className="w-10 text-right text-[9px] font-bold" style={{ color: isAbove ? "#10B981" : "#EF4444" }}>{m.value}{m.unit}</span>
+              </div>
+            );
+          })}
+          <p className="text-right text-[7px] text-[var(--text-muted)]">│ = Promedio del sector</p>
+        </div>
+      </div>
+
+      {/* ═══ B10: FACTURAS ═══ */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
+        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+          <h4 className="flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><FileText size={12} className="text-[var(--brand)]" />Facturas</h4>
+          <div className="flex items-center gap-2">{[{ l: "Pagadas", c: paidCount, co: "#10B981" }, { l: "Pendientes", c: pendingCount, co: "#F59E0B" }, { l: "Vencidas", c: overdueCount, co: "#EF4444" }].map((s) => <span key={s.l} className="rounded-full px-2 py-0.5 text-[7px] font-bold" style={{ backgroundColor: `${s.co}15`, color: s.co }}>{s.c} {s.l}</span>)}</div>
+        </div>
+        <table className="w-full"><thead><tr className="border-b border-[var(--border)] bg-[var(--bg-muted)]/50">{["Factura","Fecha","Total USD","Status","Método"].map((h) => <th key={h} className="px-4 py-2 text-left text-[8px] font-semibold text-[var(--text-muted)] uppercase">{h}</th>)}</tr></thead>
+          <tbody>{invoices.slice(0, 8).map((inv) => (
+            <tr key={inv.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg-muted)]/30 transition-colors">
+              <td className="px-4 py-2 text-[9px] font-medium text-[var(--text-primary)]">{inv.invoice_number}</td>
+              <td className="px-4 py-2 text-[9px] text-[var(--text-secondary)]">{new Date(inv.sale_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" })}</td>
+              <td className="px-4 py-2 text-[9px] font-bold text-[var(--text-primary)] tabular-nums">${Number(inv.total_usd).toLocaleString()}</td>
+              <td className="px-4 py-2"><span className="rounded-full px-2 py-0.5 text-[7px] font-semibold" style={{ backgroundColor: `${INVOICE_STATUS_COLORS[inv.status]}15`, color: INVOICE_STATUS_COLORS[inv.status] }}>{INVOICE_STATUS_LABELS[inv.status]}</span></td>
+              <td className="px-4 py-2 text-[9px] text-[var(--text-muted)]">{inv.payment_method || "—"}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+        {invoices.length > 8 && <div className="px-4 py-2 text-center text-[8px] text-[var(--text-muted)]">+{invoices.length - 8} facturas más</div>}
+      </div>
+
+      {/* ═══ B11: AI RECOMMENDATIONS ═══ */}
       <div className="relative overflow-hidden rounded-2xl border border-[var(--brand)]/20 bg-gradient-to-br from-[var(--brand)]/5 to-[#8B5CF6]/5 p-4">
         <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[var(--brand)]/10 blur-3xl" />
         <div className="relative">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
-            <Sparkles size={12} className="text-[var(--brand)]" />Recomendaciones GRIXI AI
-          </h4>
-          <div className="grid gap-2 md:grid-cols-3">
+          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Sparkles size={12} className="text-[var(--brand)]" />Recomendaciones GRIXI AI</h4>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              {
-                tag: "Venta Cruzada",
-                title: "Expansión de línea",
-                desc: `${customer.trade_name || "Cliente"} podría beneficiarse de productos complementarios basados en ${customer.total_orders} pedidos registrados.`,
-              },
-              {
-                tag: "Financiero",
-                title: "Optimización de crédito",
-                desc: creditUsedPct < 50
-                  ? `Tiene ${(100 - creditUsedPct).toFixed(0)}% de crédito disponible. Oportunidad de incrementar volumen.`
-                  : `Uso al ${creditUsedPct.toFixed(0)}%. Considerar ampliación de cupo.`,
-              },
-              {
-                tag: "Retención",
-                title: "Frecuencia de compra",
-                desc: invoices.length > 0
-                  ? `Promedio de ${(invoices.length / 6).toFixed(1)} compras/mes. Programa de fidelización recomendado.`
-                  : "Sin historial reciente. Activar con oferta introductoria.",
-              },
+              { tag: "Venta Cruzada", title: "Expansión de línea", desc: `Con ${customer.total_orders} pedidos en ${categories[0] || "su línea"}, explorar ${categories[1] || "complementarios"} y ${categories[2] || "servicios"}.`, color: "#3B82F6" },
+              { tag: "Financiero", title: creditUsedPct < 50 ? "Ampliar volumen" : "Revisar cupo", desc: creditUsedPct < 50 ? `Solo usa ${creditUsedPct.toFixed(0)}% del cupo. ${fmtUSD(customer.credit_limit - customer.credit_used)} disponibles.` : `Uso al ${creditUsedPct.toFixed(0)}%. ${creditUsedPct > 80 ? "Evaluar ampliación." : "Monitorear."}`, color: "#10B981" },
+              { tag: contractDaysLeft !== null && contractDaysLeft < 60 ? "⚠️ Urgente" : "Renovación", title: contractDaysLeft !== null && contractDaysLeft < 60 ? "Contrato por vencer" : "Planificar renovación", desc: contractDaysLeft !== null ? `${customer.contract_type} vence en ${contractDaysLeft}d. ${contractDaysLeft < 30 ? "Reunión inmediata." : "Preparar propuesta."}` : "Sin contrato. Proponer acuerdo marco.", color: contractDaysLeft !== null && contractDaysLeft < 60 ? "#EF4444" : "#8B5CF6" },
+              { tag: "Retención", title: customer.churn_risk === "low" ? "Programa VIP" : "Acción requerida", desc: customer.churn_risk === "low" ? `NPS ${customer.nps_score}, retención ${customer.retention_rate.toFixed(0)}%. Programa fidelización premium.` : `Riesgo ${customer.churn_risk.toUpperCase()}. NPS ${customer.nps_score}. ${customer.nps_score < 50 ? "Reunión urgente." : "Mejorar post-venta."}`, color: customer.churn_risk === "low" ? "#F59E0B" : "#EF4444" },
             ].map((rec, i) => (
               <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3">
-                <span className="rounded-full bg-[var(--brand)]/10 px-1.5 py-0.5 text-[7px] font-bold text-[var(--brand)]">{rec.tag}</span>
+                <span className="rounded-full px-1.5 py-0.5 text-[7px] font-bold" style={{ backgroundColor: `${rec.color}15`, color: rec.color }}>{rec.tag}</span>
                 <p className="mt-1.5 text-[9px] font-semibold text-[var(--text-primary)]">{rec.title}</p>
                 <p className="mt-1 text-[8px] leading-relaxed text-[var(--text-secondary)]">{rec.desc}</p>
               </div>
@@ -829,47 +912,30 @@ function PresentacionTab({
         </div>
       </div>
 
-      {/* ── CONTACTS GRID ── */}
+      {/* ═══ B12: CONTACTOS ═══ */}
       {contacts.length > 0 && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]">
-            <Users size={12} className="text-[var(--brand)]" />Contactos ({contacts.length})
-          </h4>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {contacts.map((c) => (
-              <div key={c.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 p-3">
-                <div className="flex items-center gap-2">
-                  {c.avatar_url ? (
-                    <img src={c.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
-                  ) : (
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[8px] font-bold text-[var(--brand)]">
-                      {c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-[9px] font-semibold text-[var(--text-primary)]">{c.full_name}</p>
-                    {c.role && (
-                      <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[7px] text-[var(--text-muted)]">
-                        {CONTACT_ROLE_LABELS[c.role]}
-                      </span>
-                    )}
-                  </div>
-                  {c.is_primary && <Star size={10} className="text-amber-500 fill-amber-500" />}
-                </div>
-                <div className="mt-2 space-y-1">
-                  {c.email && <p className="flex items-center gap-1 text-[8px] text-[var(--text-secondary)]"><Mail size={8} />{c.email}</p>}
-                  {c.phone && <p className="flex items-center gap-1 text-[8px] text-[var(--text-secondary)]"><Phone size={8} />{c.phone}</p>}
-                </div>
+          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Users size={12} className="text-[var(--brand)]" />Equipo de Contacto ({contacts.length})</h4>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{contacts.map((c) => (
+            <div key={c.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 p-3">
+              <div className="flex items-center gap-2">
+                {c.avatar_url ? <img src={c.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" /> : <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[8px] font-bold text-[var(--brand)]">{c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}</div>}
+                <div className="flex-1 min-w-0"><p className="truncate text-[9px] font-semibold text-[var(--text-primary)]">{c.full_name}</p>{c.role && <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[7px] text-[var(--text-muted)]">{CONTACT_ROLE_LABELS[c.role]}</span>}</div>
+                {c.is_primary && <Star size={10} className="text-amber-500 fill-amber-500" />}
               </div>
-            ))}
-          </div>
+              <div className="mt-2 space-y-1">
+                {c.email && <p className="flex items-center gap-1 text-[8px] text-[var(--text-secondary)]"><Mail size={8} />{c.email}</p>}
+                {c.phone && <p className="flex items-center gap-1 text-[8px] text-[var(--text-secondary)]"><Phone size={8} />{c.phone}</p>}
+              </div>
+            </div>
+          ))}</div>
         </div>
       )}
 
-      {/* ── FOOTER ── */}
+      {/* ═══ FOOTER ═══ */}
       <div className="flex items-center gap-2 py-3 text-[var(--text-muted)]">
         <div className="h-px flex-1 bg-[var(--border)]" />
-        <span className="text-[8px]">Presentación generada por GRIXI · {new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "long", year: "numeric" })}</span>
+        <span className="text-[8px]">Ficha Comercial generada por GRIXI · {new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "long", year: "numeric" })}</span>
         <div className="h-px flex-1 bg-[var(--border)]" />
       </div>
     </div>

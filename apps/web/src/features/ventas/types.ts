@@ -122,6 +122,15 @@ export type SalesCustomer = {
   primary_product_line: string | null;
   avg_order_value: number;
   retention_rate: number;
+  first_purchase_date: string | null;
+  lifetime_value: number;
+  yoy_growth_pct: number;
+  payment_avg_days: number;
+  on_time_payment_pct: number;
+  top_categories: string[];
+  contract_type: string;
+  contract_end_date: string | null;
+  satisfaction_rating: number;
   created_at: string;
   // Joined fields
   assigned_seller?: { id: string; full_name: string; avatar_url: string | null };
