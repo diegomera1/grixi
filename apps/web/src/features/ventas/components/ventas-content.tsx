@@ -11,7 +11,9 @@ import {
   BarChart3,
   Plus,
   Sparkles,
+  Award,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import type {
   SalesCustomer,
@@ -146,6 +148,13 @@ export function VentasContent({
             <Sparkles size={12} />
             Demo IA
           </button>
+          <Link
+            href="/ventas/presentacion"
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--brand)]/30 bg-[var(--brand)]/5 px-3 py-1.5 text-[10px] font-bold text-[var(--brand)] transition-all hover:bg-[var(--brand)]/10 hover:border-[var(--brand)]/50"
+          >
+            <Award size={12} />
+            Presentación
+          </Link>
           <RoleSwitcher activeRole={demoRole} onRoleChange={setDemoRole} />
           <div data-tour="ventas-tabs" className="grid grid-cols-3 gap-0.5 border-b border-[var(--border)] sm:flex sm:items-center sm:gap-1 md:grid-cols-6">
             {visibleTabs.map((tab) => (
