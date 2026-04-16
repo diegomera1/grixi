@@ -65,9 +65,9 @@ function getTourSteps(): TourStepDef[] {
     // 0: WELCOME
     {
       popover: {
-        title: '<span class="tour-icon tour-icon--brand">V</span> Bienvenido a Ventas & CRM',
+        title: '<span class="tour-icon tour-icon--brand">C</span> Bienvenido a Comercial & CRM',
         description: `
-          Tour interactivo del módulo de <strong>Ventas & CRM</strong> de GRIXI.
+          Tour interactivo del módulo de <strong>Comercial & CRM</strong> de GRIXI.
           Recorreremos las <strong>6 secciones</strong>: Dashboard, Clientes, Ventas, Pipeline, Cotizaciones y Reportes.<br/><br/>
           En cada sección, <strong>GRIXI AI</strong> analizará la data real y generará insights ejecutivos.
         `,
@@ -255,7 +255,7 @@ function getTourSteps(): TourStepDef[] {
       popover: {
         title: '<span class="tour-icon tour-icon--brand">✓</span> Tour Completado',
         description: `
-          Ha recorrido las <strong>6 secciones</strong> de Ventas & CRM con análisis de <strong>GRIXI AI</strong>.
+          Ha recorrido las <strong>6 secciones</strong> de Comercial & CRM con análisis de <strong>GRIXI AI</strong>.
           Reinicie desde el botón <strong>Demo IA</strong> en la cabecera.
         `,
         popoverClass: "welcome-step",

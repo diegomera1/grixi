@@ -13,7 +13,7 @@ const routeTitles: Record<string, string> = {
   "/almacenes": "Almacenes",
   "/finanzas": "Finanzas",
   "/compras": "Compras",
-  "/ventas": "Ventas",
+  "/ventas": "Comercial",
   "/flota": "Flota",
   "/rrhh": "Recursos Humanos",
   "/command-center": "Centro de Comando",

@@ -1039,7 +1039,7 @@ function CountryDetailDrawer({
           {/* KPI Cards */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { icon: DollarSign, label: "Revenue Total", value: `$${(data.revenue / 1000).toFixed(0)}K`, color: "#10B981" },
+              { icon: DollarSign, label: "Ingresos Totales", value: `$${(data.revenue / 1000).toFixed(0)}K`, color: "#10B981" },
               { icon: BarChart3, label: "Ticket Promedio", value: `$${(data.avgDealSize / 1000).toFixed(1)}K`, color: "#3B82F6" },
               { icon: TrendingUp, label: "Facturas", value: String(data.invoices), color: "#8B5CF6" },
             ].map((kpi, i) => (

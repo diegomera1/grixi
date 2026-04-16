@@ -98,7 +98,7 @@ const NAV_GROUPS: NavGroup[] = [
         glowColor: "rgba(245,158,11,0.25)",
       },
       {
-        label: "Ventas",
+        label: "Comercial",
         href: "/ventas",
         icon: TrendingUp,
         color: "#EF4444",

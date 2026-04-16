@@ -153,7 +153,7 @@ export function ReportesTab({
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           {
-            label: "Revenue Total USD",
+            label: "Ingresos Totales USD",
             value: `$${(totalUSD / 1000).toFixed(0)}K`,
             color: "#10B981",
             sub: `${invoices.length} facturas`,

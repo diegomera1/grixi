@@ -202,7 +202,7 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
           </h4>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Revenue Total", value: `$${(customer.total_revenue / 1000).toFixed(1)}K`, icon: DollarSign, color: "#10B981" },
+              { label: "Ingresos Totales", value: `$${(customer.total_revenue / 1000).toFixed(1)}K`, icon: DollarSign, color: "#10B981" },
               { label: "Total Pedidos", value: customer.total_orders, icon: Package, color: "#3B82F6" },
               { label: "Crédito Límite", value: `$${(customer.credit_limit / 1000).toFixed(0)}K`, icon: CreditCard, color: "#8B5CF6" },
               { label: "Crédito Usado", value: `$${(customer.credit_used / 1000).toFixed(0)}K`, icon: Shield, color: "#F59E0B" },
@@ -399,7 +399,7 @@ function VentasDetailTab({ invoices, customer }: { invoices: SalesInvoice[]; cus
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 text-center">
           <p className="text-lg font-bold text-[var(--text-primary)]">${(customer.total_revenue / 1000).toFixed(1)}K</p>
-          <p className="text-[8px] text-[var(--text-muted)]">Revenue Total</p>
+          <p className="text-[8px] text-[var(--text-muted)]">Ingresos Totales</p>
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 text-center">
           <p className="text-lg font-bold text-[var(--text-primary)]">{invoices.length}</p>

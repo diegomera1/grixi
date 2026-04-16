@@ -157,7 +157,7 @@ DATOS CLAVE:
 
 // ── System prompt ─────────────────────────────────
 
-const SYSTEM_PROMPT = `Eres el narrador de una demo interactiva del módulo Ventas & CRM de GRIXI, una plataforma empresarial.
+const SYSTEM_PROMPT = `Eres el narrador de una demo interactiva del módulo Comercial & CRM de GRIXI, una plataforma empresarial.
 
 Reglas:
 - Responde en exactamente 3 oraciones

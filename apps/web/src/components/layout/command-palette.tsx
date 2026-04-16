@@ -34,7 +34,7 @@ const COMMANDS: CommandItem[] = [
   { id: "dashboard", label: "Dashboard", description: "Panel principal", icon: LayoutDashboard, href: "/dashboard", category: "Páginas", color: "#06B6D4" },
   { id: "finanzas", label: "Finanzas", description: "Centro financiero", icon: DollarSign, href: "/finanzas", category: "Páginas", color: "#8B5CF6" },
   { id: "compras", label: "Compras", description: "Gestión de proveedores", icon: ShoppingCart, href: "/compras", category: "Páginas", color: "#F97316" },
-  { id: "ventas", label: "Ventas", description: "Pipeline y facturación", icon: TrendingUp, href: "/ventas", category: "Páginas", color: "#EF4444" },
+  { id: "ventas", label: "Comercial", description: "Pipeline, CRM y facturación", icon: TrendingUp, href: "/ventas", category: "Páginas", color: "#EF4444" },
   { id: "usuarios", label: "Usuarios", description: "Gestión de equipo", icon: Users, href: "/usuarios", category: "Páginas", color: "#F59E0B" },
   { id: "admin", label: "Administración", description: "Auditoría y control", icon: Shield, href: "/administracion", category: "Páginas", color: "#F43F5E" },
   { id: "almacenes", label: "Almacenes", description: "Inventario 3D", icon: Warehouse, href: "/almacenes", category: "Páginas", color: "#10B981" },

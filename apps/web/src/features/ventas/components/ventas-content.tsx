@@ -123,7 +123,7 @@ export function VentasContent({
       <div data-tour="ventas-header" className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-sm font-bold text-[var(--text-primary)]">
-            Ventas & CRM
+            Comercial & CRM
           </h2>
           <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
             Pipeline comercial, clientes, cotizaciones y facturación

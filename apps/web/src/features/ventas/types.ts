@@ -93,10 +93,13 @@ export type SalesCustomer = {
   address: string | null;
   city: string | null;
   country: string;
+  province: string | null;
   lat: number | null;
   lng: number | null;
   website: string | null;
   logo_url: string | null;
+  phone: string | null;
+  email: string | null;
   assigned_seller_id: string | null;
   payment_terms: number;
   credit_limit: number;
@@ -109,6 +112,8 @@ export type SalesCustomer = {
   last_purchase_at: string | null;
   total_revenue: number;
   total_orders: number;
+  founded_year: number | null;
+  employee_count: number | null;
   created_at: string;
   // Joined fields
   assigned_seller?: { id: string; full_name: string; avatar_url: string | null };

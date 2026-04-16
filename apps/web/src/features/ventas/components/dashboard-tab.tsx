@@ -141,6 +141,7 @@ function KPICard({
   delay,
   sparkData,
   yoyLabel,
+  tooltip,
 }: {
   label: string;
   value: number;
@@ -153,8 +154,10 @@ function KPICard({
   delay: number;
   sparkData?: number[];
   yoyLabel?: string;
+  tooltip?: string;
 }) {
   const isPositive = (change || 0) >= 0;
+  const [showTip, setShowTip] = useState(false);
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -169,9 +172,28 @@ function KPICard({
       />
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
-            {label}
-          </p>
+          <div className="flex items-center gap-1">
+            <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
+              {label}
+            </p>
+            {tooltip && (
+              <div className="relative">
+                <button
+                  onMouseEnter={() => setShowTip(true)}
+                  onMouseLeave={() => setShowTip(false)}
+                  className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--text-muted)] transition-colors hover:bg-[var(--brand)]/10 hover:text-[var(--brand)]"
+                  aria-label={`Info: ${label}`}
+                >
+                  <span className="text-[7px] font-bold leading-none">i</span>
+                </button>
+                {showTip && (
+                  <div className="absolute bottom-full left-1/2 z-50 mb-1.5 w-52 -translate-x-1/2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5 shadow-xl">
+                    <p className="text-[8px] leading-relaxed text-[var(--text-secondary)]">{tooltip}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <p className="mt-1.5 text-xl font-bold text-[var(--text-primary)]">
             <AnimatedValue value={value} prefix={prefix} suffix={suffix} />
           </p>
@@ -782,7 +804,7 @@ export function DashboardTab({
       {/* KPIs Row */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <KPICard
-          label="Revenue Total"
+          label="Ingresos Totales"
           value={kpis.totalRevenue}
           prefix="$"
           change={kpis.totalRevenueChange}
@@ -792,6 +814,7 @@ export function DashboardTab({
           delay={0}
           sparkData={SPARK_REVENUE}
           yoyLabel="+18% vs 2025"
+          tooltip="Suma de todas las facturas pagadas en el período seleccionado."
         />
         <KPICard
           label="Clientes Activos"
@@ -802,6 +825,7 @@ export function DashboardTab({
           delay={0.06}
           sparkData={SPARK_CLIENTS}
           yoyLabel="+12% vs 2025"
+          tooltip="Clientes con al menos una transacción en los últimos 90 días."
         />
         <KPICard
           label="Pipeline"
@@ -814,6 +838,7 @@ export function DashboardTab({
           delay={0.12}
           sparkData={SPARK_PIPELINE}
           yoyLabel="+22% vs 2025"
+          tooltip="Valor estimado de todos los deals activos en las etapas del embudo comercial."
         />
         <KPICard
           label="Deals Ganados"
@@ -824,6 +849,7 @@ export function DashboardTab({
           delay={0.18}
           sparkData={SPARK_DEALS}
           yoyLabel="+8% vs 2025"
+          tooltip="Deals que pasaron a la etapa de cierre exitoso en el período."
         />
         <KPICard
           label="Tasa Conversión"
@@ -834,6 +860,7 @@ export function DashboardTab({
           color="#06B6D4"
           delay={0.24}
           sparkData={SPARK_CONV}
+          tooltip="Porcentaje de deals que pasan de prospección a venta cerrada."
         />
         <KPICard
           label="Ticket Promedio"
@@ -843,6 +870,7 @@ export function DashboardTab({
           color="#F59E0B"
           delay={0.30}
           sparkData={SPARK_TICKET}
+          tooltip="Valor promedio por factura = Ingresos Totales ÷ Número de facturas."
         />
         <KPICard
           label="Ventas del Mes"
@@ -851,6 +879,7 @@ export function DashboardTab({
           color="#EC4899"
           delay={0.36}
           sparkData={SPARK_MONTH_TX}
+          tooltip="Cantidad de facturas emitidas en el mes calendario actual."
         />
         <KPICard
           label="Facturas Vencidas"
@@ -859,6 +888,7 @@ export function DashboardTab({
           color="#EF4444"
           delay={0.42}
           sparkData={SPARK_OVERDUE}
+          tooltip="Facturas cuya fecha de vencimiento ha pasado sin recibir pago."
         />
       </div>
 
