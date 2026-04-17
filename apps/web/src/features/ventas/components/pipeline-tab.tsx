@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DndContext,
@@ -96,6 +96,19 @@ function SortableOpportunityCard({
   onQuickMove: (oppId: string, newStageId: string) => void;
 }) {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
+  const moveButtonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+
+  // Calculate menu position when opening
+  useEffect(() => {
+    if (showMoveMenu && moveButtonRef.current) {
+      const rect = moveButtonRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.top - 4, // above the button
+        left: Math.min(rect.right, window.innerWidth - 176), // 176 = w-44 = 11rem
+      });
+    }
+  }, [showMoveMenu]);
 
   const {
     attributes,
@@ -221,65 +234,65 @@ function SortableOpportunityCard({
             </span>
 
             {/* Quick-move */}
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMoveMenu(!showMoveMenu);
-                }}
-                className={cn(
-                  "flex h-5 w-5 items-center justify-center rounded text-[var(--text-muted)] transition-all",
-                  "opacity-0 group-hover:opacity-100",
-                  "hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]",
-                  showMoveMenu && "!opacity-100 bg-[var(--brand)]/10 text-[var(--brand)]"
-                )}
-                title="Mover a otra etapa"
-              >
-                <ArrowRight size={10} />
-              </button>
+            <button
+              ref={moveButtonRef}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMoveMenu(!showMoveMenu);
+              }}
+              className={cn(
+                "flex h-5 w-5 items-center justify-center rounded transition-all",
+                "hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]",
+                showMoveMenu
+                  ? "bg-[var(--brand)]/10 text-[var(--brand)]"
+                  : "text-[var(--text-muted)]"
+              )}
+              title="Mover a otra etapa"
+            >
+              <ArrowRight size={10} />
+            </button>
 
-              <AnimatePresence>
-                {showMoveMenu && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowMoveMenu(false)}
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, y: 4, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute bottom-full right-0 z-50 mb-1 w-40 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-xl"
+            {/* Fixed-position dropdown (avoids overflow clipping) */}
+            {showMoveMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-[9998]"
+                  onClick={() => setShowMoveMenu(false)}
+                />
+                <div
+                  className="fixed z-[9999] w-44 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl"
+                  style={{
+                    top: menuPos ? `${menuPos.top}px` : 0,
+                    left: menuPos ? `${menuPos.left - 176}px` : 0,
+                    transform: 'translateY(-100%)',
+                  }}
+                >
+                  <p className="border-b border-[var(--border)] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                    Mover a
+                  </p>
+                  {otherStages.map((stage) => (
+                    <button
+                      key={stage.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onQuickMove(opp.id, stage.id);
+                        setShowMoveMenu(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-2.5 py-2 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-muted)]"
                     >
-                      <p className="border-b border-[var(--border)] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                        Mover a
-                      </p>
-                      {otherStages.map((stage) => (
-                        <button
-                          key={stage.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onQuickMove(opp.id, stage.id);
-                            setShowMoveMenu(false);
-                          }}
-                          className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-muted)]"
-                        >
-                          <div
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: stage.color }}
-                          />
-                          <span className="flex-1 text-left truncate">{stage.name}</span>
-                          <span className="text-[10px] text-[var(--text-muted)]">
-                            {stage.default_probability}%
-                          </span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
+                      <div
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: stage.color }}
+                      />
+                      <span className="flex-1 text-left truncate">{stage.name}</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">
+                        {stage.default_probability}%
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </motion.div>
