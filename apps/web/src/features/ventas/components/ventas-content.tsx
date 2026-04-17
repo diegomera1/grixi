@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
@@ -11,6 +12,7 @@ import {
   BarChart3,
   Plus,
   Sparkles,
+  Presentation,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type {
@@ -72,7 +74,8 @@ export function VentasContent({
   initialKPIs,
   initialSellers,
   initialTopProducts,
-}: Props) {
+} : Props) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [demoRole, setDemoRole] = useState<DemoRole>("admin");
   const [showNuevaVenta, setShowNuevaVenta] = useState(false);
@@ -120,58 +123,66 @@ export function VentasContent({
   return (
     <div className="w-full space-y-6">
       {/* Header */}
-      <div data-tour="ventas-header" className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-sm font-bold text-[var(--text-primary)]">
-            Comercial & CRM
-          </h2>
-          <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
-            Pipeline comercial, clientes, cotizaciones y facturación
-          </p>
-        </div>
+      <div data-tour="ventas-header" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-[var(--text-primary)]">
+              Comercial & CRM
+            </h2>
+            <p className="mt-0.5 text-[10px] text-[var(--text-secondary)]">
+              Pipeline comercial, clientes, cotizaciones y facturación
+            </p>
+          </div>
         <div className="flex items-center gap-3">
           {ROLE_PERMISSIONS[demoRole].create && (
             <button
               onClick={() => setShowNuevaVenta(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-[#3B82F6] px-3 py-1.5 text-[10px] font-bold text-white shadow-lg shadow-[#3B82F6]/25 transition-all hover:bg-[#2563EB]"
+              className="flex items-center gap-1 rounded-lg bg-[#3B82F6] px-2.5 py-1 text-[8px] font-semibold text-white shadow-sm shadow-[#3B82F6]/20 transition-all hover:bg-[#2563EB]"
             >
               <Plus size={12} />
               Nueva Venta
             </button>
           )}
           <button
-            onClick={() => setTourOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] px-3 py-1.5 text-[10px] font-bold text-white shadow-lg shadow-[#8B5CF6]/25 transition-all hover:shadow-[#8B5CF6]/40 hover:scale-[1.02]"
-          >
-            <Sparkles size={12} />
-            Demo IA
-          </button>
-          <RoleSwitcher activeRole={demoRole} onRoleChange={setDemoRole} />
-          <div data-tour="ventas-tabs" className="grid grid-cols-3 gap-0.5 border-b border-[var(--border)] sm:flex sm:items-center sm:gap-1 md:grid-cols-6">
-            {visibleTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex items-center justify-center gap-2 py-2.5 text-xs font-medium transition-all relative",
-                  "sm:justify-start sm:px-4",
-                  activeTab === tab.id
-                    ? "text-[#3B82F6]"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                )}
-              >
-                <tab.icon size={14} />
-                <span className="hidden sm:inline">{tab.label}</span>
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="ventas-tab-indicator"
-                    className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#3B82F6] rounded-full"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
+              onClick={() => setTourOpen(true)}
+              className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] px-2.5 py-1 text-[8px] font-semibold text-white shadow-sm shadow-[#8B5CF6]/20 transition-all hover:shadow-[#8B5CF6]/30"
+            >
+              <Sparkles size={12} />
+              Demo IA
+            </button>
+            <button
+              onClick={() => router.push('/ventas/presentacion')}
+              className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#06B6D4] to-[#3B82F6] px-2.5 py-1 text-[8px] font-semibold text-white shadow-sm shadow-[#06B6D4]/20 transition-all hover:shadow-[#06B6D4]/30"
+            >
+              <Presentation size={12} />
+              Presentación
+            </button>
+            <RoleSwitcher activeRole={demoRole} onRoleChange={setDemoRole} />
+        </div>
+        </div>
+        <div data-tour="ventas-tabs" className="flex items-center gap-0.5 border-b border-[var(--border)]">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 text-[9px] font-medium transition-all relative",
+                activeTab === tab.id
+                  ? "text-[#3B82F6]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              )}
+            >
+              <tab.icon size={12} />
+              <span className="hidden sm:inline">{tab.label}</span>
+              {activeTab === tab.id && (
+                <motion.div
+                  layoutId="ventas-tab-indicator"
+                  className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#3B82F6] rounded-full"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -234,6 +245,7 @@ export function VentasContent({
               customers={customers}
               opportunities={opportunities}
               quotes={quotes}
+              activities={initialActivities}
               demoRole={demoRole}
             />
           )}
@@ -275,7 +287,7 @@ export function VentasContent({
 
 // ── Role-based data filtering (demo only) ─────────
 
-const DEMO_SELLER_ID = "a0000001-0000-0000-0000-000000000007"; // Roberto Silva for demo
+const DEMO_SELLER_ID = "a0000001-0000-0000-0000-000000000007"; // Sebastián Paredes for demo
 
 function filterByRole<
   T extends { seller_id?: string | null; assigned_seller_id?: string | null }

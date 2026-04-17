@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -12,6 +13,7 @@ import {
   Globe,
   Heart,
   Users,
+  Presentation,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { SalesCustomer, DemoRole, SellerProfile, CustomerSegment } from "../types";
@@ -148,6 +150,16 @@ function CustomerCard({
         <span className="text-[8px] text-[var(--text-muted)]">
           {customer.total_orders} ventas
         </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            window.open(`/ventas/presentacion?cliente=${customer.id}`, '_blank');
+          }}
+          className="flex items-center gap-1 rounded-md bg-gradient-to-r from-[#06B6D4] to-[#3B82F6] px-2 py-0.5 text-[7px] font-semibold text-white shadow-sm transition-all hover:shadow-md opacity-0 group-hover:opacity-100"
+        >
+          <Presentation size={8} />
+          Presentación
+        </button>
       </div>
 
       {/* Seller */}

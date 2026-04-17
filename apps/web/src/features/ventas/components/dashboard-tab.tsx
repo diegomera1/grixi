@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useMemo } from "react";
+import { fmtMoney, fmtMoneyCompact, fmtNum } from "../utils/fmtMoney";
 import { motion, useInView } from "framer-motion";
 import {
   DollarSign,
@@ -73,14 +74,9 @@ function AnimatedValue({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          {prefix}
-          {decimals > 0
-            ? value.toLocaleString("en-US", {
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals,
-              })
-            : value.toLocaleString("en-US")}
-          {suffix}
+          {prefix === "$"
+            ? fmtMoneyCompact(value)
+            : `${prefix}${fmtNum(value, decimals)}${suffix}`}
         </motion.span>
       )}
     </motion.span>
@@ -163,7 +159,7 @@ function KPICard({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: "easeOut" }}
-      className="group relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4 transition-all hover:shadow-md"
+      className="group relative rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4 transition-all hover:shadow-md"
     >
       {/* Glow */}
       <div
@@ -187,7 +183,7 @@ function KPICard({
                   <span className="text-[7px] font-bold leading-none">i</span>
                 </button>
                 {showTip && (
-                  <div className="absolute bottom-full left-1/2 z-50 mb-1.5 w-52 -translate-x-1/2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5 shadow-xl">
+                  <div className="absolute bottom-full left-1/2 z-[100] mb-1.5 w-52 -translate-x-1/2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5 shadow-xl">
                     <p className="text-[8px] leading-relaxed text-[var(--text-secondary)]">{tooltip}</p>
                   </div>
                 )}
@@ -526,7 +522,7 @@ function RevenueChart({ invoices }: { invoices: SalesInvoice[] }) {
               tick={{ fontSize: 9, fill: "var(--text-muted)" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+              tickFormatter={(v) => fmtMoneyCompact(v)}
             />
             <Tooltip
               contentStyle={{
@@ -536,7 +532,7 @@ function RevenueChart({ invoices }: { invoices: SalesInvoice[] }) {
                 fontSize: 10,
               }}
               formatter={(value, name) => [
-                `$${Number(value).toLocaleString()}`,
+                fmtMoney(Number(value), 0),
                 name === "actual" ? "Actual" : "Anterior",
               ]}
             />
@@ -612,7 +608,7 @@ function TopCustomers({ customers }: { customers: SalesCustomer[] }) {
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold text-[var(--text-primary)]">
-                ${(c.total_revenue / 1000).toFixed(1)}K
+                {fmtMoneyCompact(c.total_revenue)}
               </p>
               <div
                 className="mt-0.5 rounded-full px-1.5 py-0.5 text-[7px] font-semibold"
@@ -673,7 +669,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
               </p>
             </div>
             <p className="text-[10px] font-bold text-[var(--text-primary)]">
-              ${(p.revenue / 1000).toFixed(1)}K
+              {fmtMoneyCompact(p.revenue)}
             </p>
           </div>
         ))}
@@ -694,14 +690,14 @@ const ACTIVITY_ICONS: Record<string, typeof DollarSign> = {
 };
 
 const DEMO_ACTIVITY_FEED = [
-  { type: "sale", text: "Nueva venta FAC-2026-087 por $24,500", person: "Paula Navarro", avatar: "https://randomuser.me/api/portraits/women/38.jpg", time: "hace 12 min", color: "#10B981" },
-  { type: "quote", text: "Cotización COT-2026-034 enviada a Cargill IS", person: "Roberto Silva", avatar: "https://randomuser.me/api/portraits/men/52.jpg", time: "hace 45 min", color: "#8B5CF6" },
-  { type: "call", text: "Llamada con Nestlé LATAM — seguimiento contrato", person: "Ricardo Fuentes", avatar: "https://randomuser.me/api/portraits/men/27.jpg", time: "hace 1h", color: "#3B82F6" },
-  { type: "meeting", text: "Reunión cerrada con Procter & Gamble", person: "Paula Navarro", avatar: "https://randomuser.me/api/portraits/women/38.jpg", time: "hace 2h", color: "#F59E0B" },
-  { type: "sale", text: "Venta FAC-2026-085 confirmada — $18,200", person: "Roberto Silva", avatar: "https://randomuser.me/api/portraits/men/52.jpg", time: "hace 3h", color: "#10B981" },
-  { type: "email", text: "Propuesta enviada a BASF Chemical S.A.", person: "Ricardo Fuentes", avatar: "https://randomuser.me/api/portraits/men/27.jpg", time: "hace 4h", color: "#06B6D4" },
-  { type: "quote", text: "Cotización COT-2026-033 aprobada por 3M Industrial", person: "Paula Navarro", avatar: "https://randomuser.me/api/portraits/women/38.jpg", time: "hace 5h", color: "#10B981" },
-  { type: "note", text: "Nota: Actualizar condiciones de crédito Siemens", person: "Roberto Silva", avatar: "https://randomuser.me/api/portraits/men/52.jpg", time: "hace 6h", color: "#6B7280" },
+  { type: "sale", text: "Nueva venta FAC-2026-087 por $24,500", person: "Valentina Espinoza", avatar: "https://randomuser.me/api/portraits/women/44.jpg", time: "hace 12 min", color: "#10B981" },
+  { type: "quote", text: "Cotización COT-2026-034 enviada a Cargill IS", person: "Sebastián Paredes", avatar: "https://randomuser.me/api/portraits/men/67.jpg", time: "hace 45 min", color: "#8B5CF6" },
+  { type: "call", text: "Llamada con Nestlé LATAM — seguimiento contrato", person: "Andrés Villacrés", avatar: "https://randomuser.me/api/portraits/men/45.jpg", time: "hace 1h", color: "#3B82F6" },
+  { type: "meeting", text: "Reunión cerrada con Procter & Gamble", person: "Valentina Espinoza", avatar: "https://randomuser.me/api/portraits/women/44.jpg", time: "hace 2h", color: "#F59E0B" },
+  { type: "sale", text: "Venta FAC-2026-085 confirmada — $18,200", person: "Sebastián Paredes", avatar: "https://randomuser.me/api/portraits/men/67.jpg", time: "hace 3h", color: "#10B981" },
+  { type: "email", text: "Propuesta enviada a BASF Chemical S.A.", person: "Camila Restrepo", avatar: "https://randomuser.me/api/portraits/women/68.jpg", time: "hace 4h", color: "#06B6D4" },
+  { type: "quote", text: "Cotización COT-2026-033 aprobada por 3M Industrial", person: "Isabella Navarro", avatar: "https://randomuser.me/api/portraits/women/29.jpg", time: "hace 5h", color: "#10B981" },
+  { type: "note", text: "Nota: Actualizar condiciones de crédito Siemens", person: "Andrés Villacrés", avatar: "https://randomuser.me/api/portraits/men/45.jpg", time: "hace 6h", color: "#6B7280" },
 ];
 
 function ActivityFeed() {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import {
   Search,
@@ -66,27 +67,18 @@ import {
   fetchOpportunitiesByCustomer,
   fetchQuotesByCustomer,
 } from "../actions/ventas-actions";
+import { fmtMoneyCompact } from "../utils/fmtMoney";
 
 // ── Helpers ────────────────────────────────────────
 
-function fmtUSD(v: number): string {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
-  return `$${v.toLocaleString()}`;
-}
+// Use centralized formatter
+const fmtUSD = fmtMoneyCompact;
 
 function fmtNum(v: number): string {
   return v.toLocaleString("es-EC");
 }
 
-// ── Font Scale ─────────────────────────────────────
 
-const FONT_SCALES = [
-  { label: "A-", scale: 0.85 },
-  { label: "A", scale: 1.0 },
-  { label: "A+", scale: 1.15 },
-  { label: "A++", scale: 1.3 },
-];
 
 // ── Animated Counter ───────────────────────────────
 
@@ -168,6 +160,7 @@ type Props = {
 };
 
 export function FichaClientePage({ customers }: Props) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [customer, setCustomer] = useState<SalesCustomer | null>(null);
   const [contacts, setContacts] = useState<SalesContact[]>([]);
@@ -176,24 +169,13 @@ export function FichaClientePage({ customers }: Props) {
   const [quotes, setQuotes] = useState<SalesQuote[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [fontScale, setFontScale] = useState(1.0);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { scrollYProgress } = useScroll({ container: containerRef });
   const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
-  // Load font scale from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("grixi-font-scale");
-    if (saved) setFontScale(parseFloat(saved));
-  }, []);
-
-  // Save font scale
-  const handleFontScale = (scale: number) => {
-    setFontScale(scale);
-    localStorage.setItem("grixi-font-scale", String(scale));
-  };
 
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
@@ -226,6 +208,15 @@ export function FichaClientePage({ customers }: Props) {
     // Scroll to top
     containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  // Auto-load from URL query param (?cliente=<id>)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const clienteId = params.get("cliente");
+    if (clienteId && customers.some((c) => c.id === clienteId)) {
+      loadCustomer(clienteId);
+    }
+  }, [customers, loadCustomer]);
 
   // ESC to go back
   useEffect(() => {
@@ -282,7 +273,7 @@ export function FichaClientePage({ customers }: Props) {
 
   return (
     <div
-      style={{ fontSize: `${fontScale}rem` }}
+
       className="relative flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden"
     >
       {/* Progress bar */}
@@ -315,23 +306,14 @@ export function FichaClientePage({ customers }: Props) {
           </div>
         )}
         <div className="flex-1" />
-        {/* Font Scale */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--bg-muted)] p-0.5">
-          {FONT_SCALES.map((fs) => (
-            <button
-              key={fs.label}
-              onClick={() => handleFontScale(fs.scale)}
-              className={cn(
-                "rounded-md px-2 py-1 text-[10px] font-semibold transition-all",
-                fontScale === fs.scale
-                  ? "bg-[var(--brand)] text-white shadow-sm"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-              )}
-            >
-              {fs.label}
-            </button>
-          ))}
-        </div>
+        {/* Back to Dashboard */}
+        <button
+          onClick={() => router.push('/ventas')}
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[10px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+        >
+          <X size={12} />
+          Cerrar Presentación
+        </button>
         {/* Fullscreen */}
         <button
           onClick={toggleFullscreen}

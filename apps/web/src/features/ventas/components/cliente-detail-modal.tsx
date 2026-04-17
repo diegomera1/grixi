@@ -912,6 +912,108 @@ function PresentacionTab({
         </div>
       </div>
 
+      {/* ═══ B11b: VENTA CRUZADA ═══ */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <h4 className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-[var(--text-primary)]"><TrendingUp size={14} className="text-[var(--brand)]" />Análisis de Venta Cruzada</h4>
+        {(() => {
+          // Build product map from invoices
+          const productMap = new Map<string, { revenue: number; qty: number; count: number; lastDate: string }>();
+          for (const inv of invoices) {
+            for (const item of (inv.items || [])) {
+              const name = item.description;
+              const existing = productMap.get(name) || { revenue: 0, qty: 0, count: 0, lastDate: '' };
+              existing.revenue += Number(item.subtotal || 0);
+              existing.qty += Number(item.quantity);
+              existing.count += 1;
+              if (inv.sale_date > existing.lastDate) existing.lastDate = inv.sale_date;
+              productMap.set(name, existing);
+            }
+          }
+          const sortedProducts = Array.from(productMap.entries())
+            .sort((a, b) => b[1].revenue - a[1].revenue);
+          const maxRev = sortedProducts[0]?.[1].revenue || 1;
+
+          // Full product catalog from DB (sales_invoice_items)
+          const FULL_CATALOG = [
+            'Acero Estructural A36 ton', 'Bomba Centrífuga 3HP unid', 'Bomba Centrífuga HC-150',
+            'Cable Instrumentación Blindado 4x16', 'Cable THHN 12AWG rollo',
+            'Capacitación Seguridad Industrial', 'Cemento Portland 50kg saco',
+            'Cerámica Industrial 60x60 m²', 'Cinta Transportadora CT-500',
+            'Compresor Aire Industrial CA-300', 'Compresor Industrial 10HP unid',
+            'Consultoría Operacional', 'Estructura Metálica SM-10',
+            'Filtro HEPA Industrial unid', 'Generador Diésel 50kVA',
+            'Generador Diesel 50kW unid', 'Granito Negro Galaxy m²',
+            'Herraje Inoxidable Kit', 'Impermeabilizante Elástico gal',
+            'Kit Mantenimiento Preventivo KMP-300', 'Lubricante Sintético GraxTech 700',
+            'Mármol Travertino Premium m²', 'Medidor Flujo Electromagnético MF-80',
+            'Motor Trifásico 5HP unid', 'Panel Acústico HD m²', 'Panel Solar 450W Mono',
+            'Perfil Aluminio Anodizado ml', 'Pintura Epóxica Industrial gal',
+            'Plataforma SCADA Lite', 'Porcelanato Rectificado m²',
+            'Recubrimiento Marino Pro-Shield 5000', 'Resina Poliuretano Inyección',
+            'Sellante Epóxico MarineBond Ultra', 'Sensor IoT Temp/Humedad v3',
+            'Sistema Filtración FX-200', 'Soldadura 6011 3/32 kg',
+            'Tablero Eléctrico 24p unid', 'Traje Protección Química N3',
+            'Transformador Seco 75kVA unid', 'Tubería PVC 4" ml',
+            'Válvula Control VCN-80', 'Válvula Industrial 2" unid', 'Vidrio Templado 10mm m²',
+          ];
+          // Find products the client hasn't bought yet
+          const boughtNames = new Set(sortedProducts.map(([n]) => n.toLowerCase().trim()));
+          const suggestions = FULL_CATALOG
+            .filter(p => !boughtNames.has(p.toLowerCase().trim())
+              && !sortedProducts.some(([n]) => n.toLowerCase().includes(p.split(' ').slice(0, 2).join(' ').toLowerCase()))
+            )
+            .slice(0, 6);
+
+          return (
+            <div className="space-y-4">
+              {/* Products purchased */}
+              <div>
+                <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Productos Adquiridos ({sortedProducts.length})</p>
+                <div className="space-y-1.5">
+                  {sortedProducts.slice(0, 6).map(([name, data], i) => (
+                    <div key={name} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[var(--bg-muted)]/50 transition-colors">
+                      <span className="text-[8px] font-bold text-[var(--text-muted)] w-4">#{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-[10px] font-medium text-[var(--text-primary)]">{name}</p>
+                        <div className="mt-0.5 h-1 rounded-full bg-[var(--border)] overflow-hidden">
+                          <div className="h-full rounded-full bg-emerald-500/70" style={{ width: `${(data.revenue / maxRev) * 100}%` }} />
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[9px] font-bold text-emerald-500 tabular-nums">{fmtUSD(data.revenue)}</p>
+                        <p className="text-[7px] text-[var(--text-muted)]">{data.qty} uds · {data.count} fact</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cross-sell suggestions */}
+              {suggestions.length > 0 && (
+                <div>
+                  <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                    💡 Oportunidades de Venta Cruzada
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {suggestions.map((product) => (
+                      <div key={product} className="flex items-center gap-2 rounded-xl border border-dashed border-[var(--brand)]/20 bg-[var(--brand)]/5 p-2.5">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--brand)]/10">
+                          <Package size={10} className="text-[var(--brand)]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-[9px] font-semibold text-[var(--text-primary)]">{product}</p>
+                          <p className="text-[7px] text-[var(--brand)]">Producto no adquirido — Potencial de expansión</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+
       {/* ═══ B12: CONTACTOS ═══ */}
       {contacts.length > 0 && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
