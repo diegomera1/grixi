@@ -281,29 +281,29 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
         <div className="flex items-center gap-2">
           <TrendingDown size={14} className="text-[var(--brand)]" />
-          <h3 className="text-[11px] font-bold text-[var(--text-primary)]">
+          <h3 className="text-sm font-bold text-[var(--text-primary)]">
             Embudo de Conversión
           </h3>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <DollarSign size={9} className="text-emerald-500" />
-            <span className="text-[9px] text-[var(--text-muted)]">Pipeline</span>
-            <span className="text-[10px] font-bold text-[var(--text-primary)] tabular-nums">
+            <span className="text-xs text-[var(--text-muted)]">Pipeline</span>
+            <span className="text-[13px] font-bold text-[var(--text-primary)] tabular-nums">
               ${(totalPipeline / 1000).toFixed(0)}K
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <Target size={9} className="text-[var(--brand)]" />
-            <span className="text-[9px] text-[var(--text-muted)]">Ponderado</span>
-            <span className="text-[10px] font-bold text-emerald-500 tabular-nums">
+            <span className="text-xs text-[var(--text-muted)]">Ponderado</span>
+            <span className="text-[13px] font-bold text-emerald-500 tabular-nums">
               ${(totalWeighted / 1000).toFixed(0)}K
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <Percent size={9} className="text-amber-500" />
-            <span className="text-[9px] text-[var(--text-muted)]">Conversión</span>
-            <span className="text-[10px] font-bold text-amber-500 tabular-nums">
+            <span className="text-xs text-[var(--text-muted)]">Conversión</span>
+            <span className="text-[13px] font-bold text-amber-500 tabular-nums">
               {overallConversion}%
             </span>
           </div>
@@ -339,10 +339,10 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: m.stage.color }}
                     />
-                    <span className="text-[9px] font-semibold text-[var(--text-primary)] flex-1">
+                    <span className="text-xs font-semibold text-[var(--text-primary)] flex-1">
                       {m.stage.name}
                     </span>
-                    <span className="text-[9px] font-bold text-[var(--text-primary)] tabular-nums mr-1">
+                    <span className="text-xs font-bold text-[var(--text-primary)] tabular-nums mr-1">
                       {m.count}
                     </span>
                     {isExpanded ? (
@@ -365,7 +365,7 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                         style={{ backgroundColor: m.stage.color }}
                       />
                     </div>
-                    <span className="text-[7px] text-[var(--text-muted)] tabular-nums w-10 text-right">
+                    <span className="text-[13px] text-[var(--text-muted)] tabular-nums w-10 text-right">
                       ${(m.amount / 1000).toFixed(0)}K
                     </span>
                   </div>
@@ -373,7 +373,7 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                   {/* Conversion arrow from previous */}
                   {i > 0 && (
                     <div className="mt-1 flex items-center gap-1">
-                      <span className="text-[7px] text-[var(--text-muted)]">
+                      <span className="text-[13px] text-[var(--text-muted)]">
                         ↓ {m.conversionFromPrev}% conversión
                       </span>
                     </div>
@@ -408,18 +408,18 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                           >
                             <Zap size={8} style={{ color: m.stage.color }} className="shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-[8px] font-semibold text-[var(--text-primary)] truncate">
+                              <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
                                 {opp.name}
                               </p>
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 {opp.customer && (
-                                  <span className="flex items-center gap-0.5 text-[7px] text-[var(--text-muted)]">
+                                  <span className="flex items-center gap-0.5 text-[13px] text-[var(--text-muted)]">
                                     <User size={6} />
                                     {opp.customer.trade_name || opp.customer.business_name}
                                   </span>
                                 )}
                                 {opp.expected_close_date && (
-                                  <span className="flex items-center gap-0.5 text-[7px] text-[var(--text-muted)]">
+                                  <span className="flex items-center gap-0.5 text-[13px] text-[var(--text-muted)]">
                                     <Calendar size={6} />
                                     {new Date(opp.expected_close_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}
                                   </span>
@@ -428,7 +428,7 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <span
-                                className="rounded-full px-1.5 py-0.5 text-[7px] font-semibold"
+                                className="rounded-full px-1.5 py-0.5 text-[13px] font-semibold"
                                 style={{
                                   backgroundColor: `${m.stage.color}20`,
                                   color: m.stage.color,
@@ -436,7 +436,7 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                               >
                                 {opp.probability}%
                               </span>
-                              <span className="text-[8px] font-bold text-emerald-500 tabular-nums">
+                              <span className="text-sm font-bold text-emerald-500 tabular-nums">
                                 ${(Number(opp.amount) / 1000).toFixed(0)}K
                               </span>
                               <ArrowRight size={8} className="text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -444,7 +444,7 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                           </motion.button>
                         ))}
                         {m.opportunities.length > 8 && (
-                          <p className="text-center text-[7px] text-[var(--text-muted)] py-1">
+                          <p className="text-center text-[13px] text-[var(--text-muted)] py-1">
                             +{m.opportunities.length - 8} más oportunidades
                           </p>
                         )}

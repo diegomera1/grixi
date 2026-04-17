@@ -103,10 +103,10 @@ export function DemoAiPanel() {
               )}
             </div>
             <div>
-              <h4 className="text-[10px] font-bold text-[var(--text-primary)]">
+              <h4 className="text-[13px] font-bold text-[var(--text-primary)]">
                 GRIXI AI Demo
               </h4>
-              <p className="text-[8px] text-[var(--text-muted)]">
+              <p className="text-sm text-[var(--text-muted)]">
                 {currentStep
                   ? `Analizando: ${currentStep.tabLabel}`
                   : "Demo completada"}
@@ -144,10 +144,10 @@ export function DemoAiPanel() {
           <div className="px-4 pt-3 pb-1">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-[#3B82F6]/10 px-2.5 py-1">
               <Sparkles size={9} className="text-[#3B82F6]" />
-              <span className="text-[8px] font-semibold text-[#3B82F6]">
+              <span className="text-sm font-semibold text-[#3B82F6]">
                 {currentStep.tabLabel}
               </span>
-              <span className="text-[8px] text-[var(--text-muted)]">
+              <span className="text-sm text-[var(--text-muted)]">
                 — {currentStep.description}
               </span>
             </div>
@@ -163,16 +163,16 @@ export function DemoAiPanel() {
                 className="animate-spin text-[#3B82F6]"
               />
               <div>
-                <p className="text-[10px] font-medium text-[var(--text-primary)]">
+                <p className="text-[13px] font-medium text-[var(--text-primary)]">
                   Analizando datos...
                 </p>
-                <p className="text-[8px] text-[var(--text-muted)]">
+                <p className="text-sm text-[var(--text-muted)]">
                   Procesando {currentStep?.tabLabel} con Gemini AI
                 </p>
               </div>
             </div>
           ) : (
-            <p className="text-[11px] leading-relaxed text-[var(--text-primary)]">
+            <p className="text-sm leading-relaxed text-[var(--text-primary)]">
               {displayed}
               {isTyping && (
                 <motion.span
@@ -187,14 +187,14 @@ export function DemoAiPanel() {
 
         {/* Controls */}
         <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-2.5">
-          <span className="text-[9px] font-medium text-[var(--text-muted)] tabular-nums">
+          <span className="text-xs font-medium text-[var(--text-muted)] tabular-nums">
             Paso {currentStepIndex + 1} de {steps.length}
           </span>
           <div className="flex items-center gap-1">
             <button
               onClick={prevStep}
               disabled={currentStepIndex === 0}
-              className="flex h-7 items-center gap-1 rounded-lg px-2.5 text-[9px] font-medium text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-30"
+              className="flex h-7 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-30"
             >
               <SkipBack size={10} />
               Anterior
@@ -203,7 +203,7 @@ export function DemoAiPanel() {
             {status === "paused" ? (
               <button
                 onClick={resumeDemo}
-                className="flex h-7 items-center gap-1 rounded-lg bg-[#3B82F6]/10 px-2.5 text-[9px] font-medium text-[#3B82F6] hover:bg-[#3B82F6]/20 transition-colors"
+                className="flex h-7 items-center gap-1 rounded-lg bg-[#3B82F6]/10 px-2.5 text-xs font-medium text-[#3B82F6] hover:bg-[#3B82F6]/20 transition-colors"
               >
                 <Play size={10} />
                 Continuar
@@ -211,7 +211,7 @@ export function DemoAiPanel() {
             ) : (
               <button
                 onClick={pauseDemo}
-                className="flex h-7 items-center gap-1 rounded-lg px-2.5 text-[9px] font-medium text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] transition-colors"
+                className="flex h-7 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <Pause size={10} />
                 Pausar
@@ -221,7 +221,7 @@ export function DemoAiPanel() {
             <button
               onClick={nextStep}
               disabled={isAnalyzing || status === "completed"}
-              className="flex h-7 items-center gap-1 rounded-lg bg-[#3B82F6] px-3 text-[9px] font-bold text-white shadow-lg shadow-[#3B82F6]/25 hover:bg-[#2563EB] transition-colors disabled:opacity-50"
+              className="flex h-7 items-center gap-1 rounded-lg bg-[#3B82F6] px-3 text-xs font-bold text-white shadow-lg shadow-[#3B82F6]/25 hover:bg-[#2563EB] transition-colors disabled:opacity-50"
             >
               {status === "completed" ? "Finalizado" : "Siguiente"}
               {status !== "completed" && <SkipForward size={10} />}

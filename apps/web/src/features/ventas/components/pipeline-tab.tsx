@@ -147,10 +147,10 @@ function SortableOpportunityCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-[10px] font-semibold text-[var(--text-primary)] truncate leading-tight">
+              <p className="text-[13px] font-semibold text-[var(--text-primary)] truncate leading-tight">
                 {opp.name}
               </p>
-              <span className="shrink-0 text-[10px] font-bold text-emerald-500 tabular-nums">
+              <span className="shrink-0 text-[13px] font-bold text-emerald-500 tabular-nums">
                 ${(Number(opp.amount) / 1000).toFixed(1)}K
               </span>
             </div>
@@ -166,7 +166,7 @@ function SortableOpportunityCard({
               ) : (
                 <Building2 size={9} className="text-[var(--text-muted)]" />
               )}
-              <span className="text-[8px] text-[var(--text-muted)] truncate">
+              <span className="text-sm text-[var(--text-muted)] truncate">
                 {opp.customer?.trade_name ||
                   opp.customer?.business_name ||
                   "—"}
@@ -180,7 +180,7 @@ function SortableOpportunityCard({
           {opp.expected_close_date && (
             <div className="flex items-center gap-0.5 rounded-md bg-[var(--bg-muted)] px-1.5 py-0.5">
               <Calendar size={8} className="text-[var(--text-muted)]" />
-              <span className="text-[7px] text-[var(--text-muted)]">
+              <span className="text-[13px] text-[var(--text-muted)]">
                 {new Date(opp.expected_close_date).toLocaleDateString("es-EC", {
                   day: "2-digit",
                   month: "short",
@@ -200,11 +200,11 @@ function SortableOpportunityCard({
               )}
             >
               <Clock size={7} />
-              <span className="text-[7px] font-medium">{daysInStage}d</span>
+              <span className="text-[13px] font-medium">{daysInStage}d</span>
             </div>
           )}
           {opp.source && (
-            <span className="text-[7px] text-[var(--text-muted)]">
+            <span className="text-[13px] text-[var(--text-muted)]">
               {SOURCE_LABELS[opp.source]}
             </span>
           )}
@@ -223,7 +223,7 @@ function SortableOpportunityCard({
               ) : (
                 <User size={10} className="text-[var(--text-muted)]" />
               )}
-              <span className="text-[8px] text-[var(--text-muted)] truncate max-w-[80px]">
+              <span className="text-sm text-[var(--text-muted)] truncate max-w-[80px]">
                 {opp.seller.full_name}
               </span>
             </div>
@@ -234,7 +234,7 @@ function SortableOpportunityCard({
           <div className="flex items-center gap-1.5">
             {/* Probability badge */}
             <span
-              className="rounded-full px-1.5 py-0.5 text-[7px] font-bold"
+              className="rounded-full px-1.5 py-0.5 text-[13px] font-bold"
               style={{
                 backgroundColor: `${opp.stage?.color || "#6B7280"}15`,
                 color: opp.stage?.color || "#6B7280",
@@ -275,7 +275,7 @@ function SortableOpportunityCard({
                       transition={{ duration: 0.15 }}
                       className="absolute bottom-full right-0 z-50 mb-1 w-44 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-xl"
                     >
-                      <p className="border-b border-[var(--border)] px-3 py-1.5 text-[8px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                      <p className="border-b border-[var(--border)] px-3 py-1.5 text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                         Mover a
                       </p>
                       {otherStages.map((stage) => (
@@ -286,14 +286,14 @@ function SortableOpportunityCard({
                             onQuickMove(opp.id, stage.id);
                             setShowMoveMenu(false);
                           }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-[9px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-muted)]"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-muted)]"
                         >
                           <div
                             className="h-2 w-2 shrink-0 rounded-full"
                             style={{ backgroundColor: stage.color }}
                           />
                           <span className="flex-1 text-left">{stage.name}</span>
-                          <span className="text-[7px] text-[var(--text-muted)]">
+                          <span className="text-[13px] text-[var(--text-muted)]">
                             {stage.default_probability}%
                           </span>
                         </button>
@@ -319,10 +319,10 @@ function DragOverlayCard({ opp }: { opp: SalesOpportunity }) {
         <GripVertical size={10} className="mt-0.5 text-[var(--brand)]" />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[10px] font-semibold text-[var(--text-primary)] truncate">
+            <p className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
               {opp.name}
             </p>
-            <span className="shrink-0 text-[10px] font-bold text-emerald-500 tabular-nums">
+            <span className="shrink-0 text-[13px] font-bold text-emerald-500 tabular-nums">
               ${(Number(opp.amount) / 1000).toFixed(1)}K
             </span>
           </div>
@@ -336,7 +336,7 @@ function DragOverlayCard({ opp }: { opp: SalesOpportunity }) {
             ) : (
               <Building2 size={9} className="text-[var(--text-muted)]" />
             )}
-            <span className="text-[8px] text-[var(--text-muted)] truncate">
+            <span className="text-sm text-[var(--text-muted)] truncate">
               {opp.customer?.trade_name ||
                 opp.customer?.business_name ||
                 "—"}
@@ -345,11 +345,11 @@ function DragOverlayCard({ opp }: { opp: SalesOpportunity }) {
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-[8px] text-[var(--brand)] font-medium">
+        <span className="text-sm text-[var(--brand)] font-medium">
           ↕ Suelta en la etapa destino
         </span>
         <span
-          className="rounded-full px-1.5 py-0.5 text-[7px] font-bold"
+          className="rounded-full px-1.5 py-0.5 text-[13px] font-bold"
           style={{
             backgroundColor: `${opp.stage?.color || "#6B7280"}15`,
             color: opp.stage?.color || "#6B7280",
@@ -494,7 +494,7 @@ export function PipelineTab({
         <select
           value={sellerFilter}
           onChange={(e) => setSellerFilter(e.target.value)}
-          className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1 text-[10px] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1 text-[13px] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
         >
           <option value="all">Todos los vendedores</option>
           {sellers.map((s) => (
@@ -511,7 +511,7 @@ export function PipelineTab({
               key={af.label}
               onClick={() => setAmountFilter(i)}
               className={cn(
-                "rounded-full px-2.5 py-1 text-[9px] font-medium transition-all",
+                "rounded-full px-2.5 py-1 text-xs font-medium transition-all",
                 amountFilter === i
                   ? "bg-[var(--brand)]/10 text-[var(--brand)]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]"
@@ -524,7 +524,7 @@ export function PipelineTab({
 
         {/* Summary stats */}
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-[9px] text-[var(--text-muted)]">
+          <span className="text-xs text-[var(--text-muted)]">
             {filteredOpps.length} oportunidades
           </span>
         </div>
@@ -534,7 +534,7 @@ export function PipelineTab({
       <PipelineFunnel stages={sortedStages} opportunities={filteredOpps} />
 
       {/* Interaction hint */}
-      <div className="flex items-center gap-4 text-[8px] text-[var(--text-muted)]">
+      <div className="flex items-center gap-4 text-sm text-[var(--text-muted)]">
         <span className="flex items-center gap-1">
           <GripVertical size={8} />
           Arrastra para mover
@@ -656,10 +656,10 @@ function DroppableColumn({
           }
           transition={isOver ? { repeat: Infinity, duration: 1 } : {}}
         />
-        <h3 className="text-[11px] font-bold text-[var(--text-primary)]">
+        <h3 className="text-sm font-bold text-[var(--text-primary)]">
           {stage.name}
         </h3>
-        <span className="ml-auto rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-[9px] font-bold text-[var(--text-muted)] shadow-sm">
+        <span className="ml-auto rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-xs font-bold text-[var(--text-muted)] shadow-sm">
           {opportunities.length}
         </span>
       </div>
@@ -667,10 +667,10 @@ function DroppableColumn({
       {/* Amount summary */}
       <div className="flex items-center gap-2 px-3 pb-2">
         <DollarSign size={9} className="text-emerald-500" />
-        <span className="text-[9px] font-semibold text-emerald-500 tabular-nums">
+        <span className="text-xs font-semibold text-emerald-500 tabular-nums">
           ${(totalAmount / 1000).toFixed(0)}K
         </span>
-        <span className="text-[7px] text-[var(--text-muted)]">Pipeline</span>
+        <span className="text-[13px] text-[var(--text-muted)]">Pipeline</span>
       </div>
 
       {/* Drop zone indicator */}
@@ -688,7 +688,7 @@ function DroppableColumn({
           >
             <Zap size={10} style={{ color: stage.color }} />
             <span
-              className="text-[8px] font-bold"
+              className="text-sm font-bold"
               style={{ color: stage.color }}
             >
               Soltar aquí — {stage.default_probability}%
@@ -701,7 +701,7 @@ function DroppableColumn({
       <div className="flex-1 space-y-2 overflow-y-auto px-2 pb-2">
         {opportunities.length === 0 && !isOver && (
           <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-[var(--border)]">
-            <p className="text-[8px] text-[var(--text-muted)]">
+            <p className="text-sm text-[var(--text-muted)]">
               Sin oportunidades
             </p>
           </div>

@@ -134,7 +134,7 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
       {/* Company Info */}
       <div className="space-y-4">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+          <h4 className="mb-3 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
             Datos de la Empresa
           </h4>
           <div className="space-y-2.5">
@@ -147,8 +147,8 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
               { label: "Código SAP", value: customer.sap_customer_code },
             ].map((field) => (
               <div key={field.label} className="flex justify-between">
-                <span className="text-[9px] text-[var(--text-muted)]">{field.label}</span>
-                <span className="text-[9px] font-medium text-[var(--text-primary)]">
+                <span className="text-xs text-[var(--text-muted)]">{field.label}</span>
+                <span className="text-xs font-medium text-[var(--text-primary)]">
                   {field.value || "—"}
                 </span>
               </div>
@@ -157,7 +157,7 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
         </div>
 
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+          <h4 className="mb-3 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
             Ubicación
           </h4>
           <div className="space-y-2.5">
@@ -168,7 +168,7 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
             ].map((field, i) => (
               <div key={i} className="flex items-center gap-2">
                 <field.icon size={10} className="text-[var(--text-muted)]" />
-                <span className="text-[9px] text-[var(--text-primary)]">
+                <span className="text-xs text-[var(--text-primary)]">
                   {field.value || "—"}
                 </span>
               </div>
@@ -180,13 +180,13 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
       {/* Financial Info */}
       <div className="space-y-4">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+          <h4 className="mb-3 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
             Indicadores
           </h4>
           <div className="flex items-center justify-around">
             <div className="text-center">
               <HealthGauge score={customer.health_score} />
-              <p className="mt-1 text-[8px] text-[var(--text-muted)]">Salud</p>
+              <p className="mt-1 text-sm text-[var(--text-muted)]">Salud</p>
             </div>
             <div className="text-center">
               <div
@@ -198,13 +198,13 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
               >
                 {SEGMENT_LABELS[customer.segment]}
               </div>
-              <p className="mt-1 text-[8px] text-[var(--text-muted)]">Segmento RFM</p>
+              <p className="mt-1 text-sm text-[var(--text-muted)]">Segmento RFM</p>
             </div>
           </div>
         </div>
 
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+          <h4 className="mb-3 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
             Financiero
           </h4>
           <div className="grid grid-cols-2 gap-3">
@@ -217,7 +217,7 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
               <div key={kpi.label} className="rounded-lg bg-[var(--bg-muted)] p-2.5 text-center">
                 <kpi.icon size={12} className="mx-auto mb-1" style={{ color: kpi.color }} />
                 <p className="text-xs font-bold text-[var(--text-primary)]">{kpi.value}</p>
-                <p className="text-[7px] text-[var(--text-muted)]">{kpi.label}</p>
+                <p className="text-[13px] text-[var(--text-muted)]">{kpi.label}</p>
               </div>
             ))}
           </div>
@@ -225,7 +225,7 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
 
         {customer.assigned_seller && (
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <h4 className="mb-2 text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+            <h4 className="mb-2 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
               Vendedor Asignado
             </h4>
             <div className="flex items-center gap-3">
@@ -236,7 +236,7 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
                   <UserCheck size={14} className="text-[#3B82F6]" />
                 </div>
               )}
-              <span className="text-[10px] font-medium text-[var(--text-primary)]">
+              <span className="text-[13px] font-medium text-[var(--text-primary)]">
                 {customer.assigned_seller.full_name}
               </span>
             </div>
@@ -252,7 +252,7 @@ function GeneralTab({ customer }: { customer: SalesCustomer }) {
 function ContactosTab({ contacts }: { contacts: SalesContact[] }) {
   if (contacts.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center text-[10px] text-[var(--text-muted)]">
+      <div className="flex h-40 items-center justify-center text-[13px] text-[var(--text-muted)]">
         Sin contactos registrados
       </div>
     );
@@ -271,14 +271,14 @@ function ContactosTab({ contacts }: { contacts: SalesContact[] }) {
             {c.avatar_url ? (
               <img src={c.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#3B82F6]/10 text-[9px] font-bold text-[#3B82F6]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#3B82F6]/10 text-xs font-bold text-[#3B82F6]">
                 {c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
               </div>
             )}
             <div>
-              <p className="text-[10px] font-semibold text-[var(--text-primary)]">{c.full_name}</p>
+              <p className="text-[13px] font-semibold text-[var(--text-primary)]">{c.full_name}</p>
               {c.role && (
-                <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[7px] font-medium text-[var(--text-muted)]">
+                <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[13px] font-medium text-[var(--text-muted)]">
                   {CONTACT_ROLE_LABELS[c.role]}
                 </span>
               )}
@@ -291,13 +291,13 @@ function ContactosTab({ contacts }: { contacts: SalesContact[] }) {
             {c.email && (
               <div className="flex items-center gap-1.5">
                 <Mail size={9} className="text-[var(--text-muted)]" />
-                <span className="text-[8px] text-[var(--text-secondary)]">{c.email}</span>
+                <span className="text-sm text-[var(--text-secondary)]">{c.email}</span>
               </div>
             )}
             {c.phone && (
               <div className="flex items-center gap-1.5">
                 <Phone size={9} className="text-[var(--text-muted)]" />
-                <span className="text-[8px] text-[var(--text-secondary)]">{c.phone}</span>
+                <span className="text-sm text-[var(--text-secondary)]">{c.phone}</span>
               </div>
             )}
           </div>
@@ -312,7 +312,7 @@ function ContactosTab({ contacts }: { contacts: SalesContact[] }) {
 function TimelineTab({ activities }: { activities: SalesActivity[] }) {
   if (activities.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center text-[10px] text-[var(--text-muted)]">
+      <div className="flex h-40 items-center justify-center text-[13px] text-[var(--text-muted)]">
         Sin actividades registradas
       </div>
     );
@@ -342,17 +342,17 @@ function TimelineTab({ activities }: { activities: SalesActivity[] }) {
               <div className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold text-[var(--text-primary)]">
+                    <span className="text-[13px] font-semibold text-[var(--text-primary)]">
                       {act.title}
                     </span>
                     <span
-                      className="rounded-full px-1.5 py-0.5 text-[7px] font-medium"
+                      className="rounded-full px-1.5 py-0.5 text-[13px] font-medium"
                       style={{ backgroundColor: `${color}15`, color }}
                     >
                       {ACTIVITY_TYPE_LABELS[act.activity_type]}
                     </span>
                   </div>
-                  <span className="text-[8px] text-[var(--text-muted)]">
+                  <span className="text-sm text-[var(--text-muted)]">
                     {new Date(act.created_at).toLocaleDateString("es-EC", {
                       day: "2-digit",
                       month: "short",
@@ -361,7 +361,7 @@ function TimelineTab({ activities }: { activities: SalesActivity[] }) {
                   </span>
                 </div>
                 {act.description && (
-                  <p className="mt-1.5 text-[9px] text-[var(--text-secondary)] line-clamp-2">
+                  <p className="mt-1.5 text-xs text-[var(--text-secondary)] line-clamp-2">
                     {act.description}
                   </p>
                 )}
@@ -372,7 +372,7 @@ function TimelineTab({ activities }: { activities: SalesActivity[] }) {
                     ) : (
                       <Users size={8} className="text-[var(--text-muted)]" />
                     )}
-                    <span className="text-[7px] text-[var(--text-muted)]">
+                    <span className="text-[13px] text-[var(--text-muted)]">
                       {act.performer.full_name}
                     </span>
                   </div>
@@ -406,21 +406,21 @@ function VentasDetailTab({ invoices, customer }: { invoices: SalesInvoice[]; cus
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 text-center">
           <p className="text-lg font-bold text-[var(--text-primary)]">${(customer.total_revenue / 1000).toFixed(1)}K</p>
-          <p className="text-[8px] text-[var(--text-muted)]">Ingresos Totales</p>
+          <p className="text-sm text-[var(--text-muted)]">Ingresos Totales</p>
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 text-center">
           <p className="text-lg font-bold text-[var(--text-primary)]">{invoices.length}</p>
-          <p className="text-[8px] text-[var(--text-muted)]">Facturas</p>
+          <p className="text-sm text-[var(--text-muted)]">Facturas</p>
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 text-center">
           <p className="text-lg font-bold text-[var(--text-primary)]">${(avgTicket / 1000).toFixed(1)}K</p>
-          <p className="text-[8px] text-[var(--text-muted)]">Ticket Promedio</p>
+          <p className="text-sm text-[var(--text-muted)]">Ticket Promedio</p>
         </div>
       </div>
 
       {/* Evolution Chart */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-3 text-[10px] font-semibold text-[var(--text-primary)]">Evolución de Ventas</h4>
+        <h4 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">Evolución de Ventas</h4>
         <div className="h-36">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
@@ -446,23 +446,23 @@ function VentasDetailTab({ invoices, customer }: { invoices: SalesInvoice[]; cus
           <thead>
             <tr className="border-b border-[var(--border)] bg-[var(--bg-muted)]/50">
               {["Factura", "Fecha", "Total", "Status"].map((h) => (
-                <th key={h} className="px-3 py-2 text-left text-[8px] font-semibold text-[var(--text-muted)] uppercase">{h}</th>
+                <th key={h} className="px-3 py-2 text-left text-sm font-semibold text-[var(--text-muted)] uppercase">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {invoices.slice(0, 10).map((inv) => (
               <tr key={inv.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg-muted)]/30 transition-colors">
-                <td className="px-3 py-2 text-[9px] font-medium text-[var(--text-primary)]">{inv.invoice_number}</td>
-                <td className="px-3 py-2 text-[9px] text-[var(--text-secondary)]">
+                <td className="px-3 py-2 text-xs font-medium text-[var(--text-primary)]">{inv.invoice_number}</td>
+                <td className="px-3 py-2 text-xs text-[var(--text-secondary)]">
                   {new Date(inv.sale_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" })}
                 </td>
-                <td className="px-3 py-2 text-[9px] font-bold text-[var(--text-primary)] tabular-nums">
+                <td className="px-3 py-2 text-xs font-bold text-[var(--text-primary)] tabular-nums">
                   ${Number(inv.total_usd).toLocaleString()}
                 </td>
                 <td className="px-3 py-2">
                   <span
-                    className="rounded-full px-2 py-0.5 text-[7px] font-semibold"
+                    className="rounded-full px-2 py-0.5 text-[13px] font-semibold"
                     style={{
                       backgroundColor: `${INVOICE_STATUS_COLORS[inv.status]}15`,
                       color: INVOICE_STATUS_COLORS[inv.status],
@@ -499,17 +499,17 @@ function AnalisisTab({ invoices }: { invoices: SalesInvoice[] }) {
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4 text-center">
           <p className="text-2xl font-bold text-[#3B82F6]">{frequency}</p>
-          <p className="text-[8px] text-[var(--text-muted)]">Compras / Mes</p>
+          <p className="text-sm text-[var(--text-muted)]">Compras / Mes</p>
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4 text-center">
           <p className="text-2xl font-bold text-[#10B981]">{invoices.length}</p>
-          <p className="text-[8px] text-[var(--text-muted)]">Transacciones Total</p>
+          <p className="text-sm text-[var(--text-muted)]">Transacciones Total</p>
         </div>
       </div>
 
       {statusData.length > 0 && (
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-2 text-[10px] font-semibold text-[var(--text-primary)]">Distribución por Estado</h4>
+          <h4 className="mb-2 text-[13px] font-semibold text-[var(--text-primary)]">Distribución por Estado</h4>
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={statusData} layout="vertical">
@@ -524,10 +524,10 @@ function AnalisisTab({ invoices }: { invoices: SalesInvoice[] }) {
       )}
 
       <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-2 text-[10px] font-semibold text-[var(--text-primary)]">
+        <h4 className="mb-2 text-[13px] font-semibold text-[var(--text-primary)]">
           Análisis de compra por disponibilidad de datos
         </h4>
-        <p className="text-[9px] text-[var(--text-muted)]">
+        <p className="text-xs text-[var(--text-muted)]">
           El análisis de productos más comprados requiere datos de invoice_items asociados a este cliente.
           Se muestran las métricas de frecuencia y tendencia disponibles.
         </p>
@@ -608,7 +608,7 @@ function PresentacionTab({
           <Star key={s} size={12}
             className={cn(s <= Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-[var(--border)]")} />
         ))}
-        <span className="ml-1 text-[10px] font-bold text-[var(--text-primary)]">{rating.toFixed(1)}</span>
+        <span className="ml-1 text-[13px] font-bold text-[var(--text-primary)]">{rating.toFixed(1)}</span>
       </div>
     );
   }
@@ -625,11 +625,11 @@ function PresentacionTab({
             <circle cx="26" cy="26" r="22" fill="none" stroke={color} strokeWidth="3"
               strokeDasharray={circ} strokeDashoffset={off} strokeLinecap="round" className="transition-all duration-1000" />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold" style={{ color }}>
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold" style={{ color }}>
             {Math.round(pct)}%
           </span>
         </div>
-        <span className="text-[7px] text-[var(--text-muted)] text-center leading-tight">{label}</span>
+        <span className="text-[13px] text-[var(--text-muted)] text-center leading-tight">{label}</span>
       </div>
     );
   }
@@ -654,56 +654,56 @@ function PresentacionTab({
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-bold text-[var(--text-primary)]">{customer.trade_name || customer.business_name}</h2>
               {relationYears > 0 && (
-                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[7px] font-bold text-emerald-600">
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[13px] font-bold text-emerald-600">
                   ✦ Cliente {relationYears} {relationYears === 1 ? "año" : "años"}
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-[var(--text-secondary)]">{customer.business_name}</p>
+            <p className="text-[13px] text-[var(--text-secondary)]">{customer.business_name}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><MapPin size={10} />{customer.city}, {customer.province || ""}, {customer.country}</span>
-              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Globe size={10} />{customer.sector}</span>
-              {customer.phone && <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Phone size={10} />{customer.phone}</span>}
-              {customer.email && <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Mail size={10} />{customer.email}</span>}
+              <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]"><MapPin size={10} />{customer.city}, {customer.province || ""}, {customer.country}</span>
+              <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]"><Globe size={10} />{customer.sector}</span>
+              {customer.phone && <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]"><Phone size={10} />{customer.phone}</span>}
+              {customer.email && <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]"><Mail size={10} />{customer.email}</span>}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="rounded-full px-2 py-0.5 text-[8px] font-bold" style={{ backgroundColor: `${SEGMENT_COLORS[customer.segment]}15`, color: SEGMENT_COLORS[customer.segment] }}>{SEGMENT_LABELS[customer.segment]}</span>
-              {customer.sap_customer_code && <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">SAP {customer.sap_customer_code}</span>}
-              <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">RUC: {customer.tax_id || "—"}</span>
-              <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-medium text-[var(--text-muted)]">{customer.primary_product_line}</span>
-              {customer.contract_type !== "Spot" && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[8px] font-bold text-blue-600">📋 {customer.contract_type}</span>}
-              {customer.website && <a href={customer.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 rounded-full bg-[var(--brand)]/10 px-2 py-0.5 text-[8px] font-medium text-[var(--brand)] hover:bg-[var(--brand)]/20"><ExternalLink size={8} />Web</a>}
+              <span className="rounded-full px-2 py-0.5 text-sm font-bold" style={{ backgroundColor: `${SEGMENT_COLORS[customer.segment]}15`, color: SEGMENT_COLORS[customer.segment] }}>{SEGMENT_LABELS[customer.segment]}</span>
+              {customer.sap_customer_code && <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-sm font-medium text-[var(--text-muted)]">SAP {customer.sap_customer_code}</span>}
+              <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-sm font-medium text-[var(--text-muted)]">RUC: {customer.tax_id || "—"}</span>
+              <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-sm font-medium text-[var(--text-muted)]">{customer.primary_product_line}</span>
+              {customer.contract_type !== "Spot" && <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-sm font-bold text-blue-600">📋 {customer.contract_type}</span>}
+              {customer.website && <a href={customer.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 rounded-full bg-[var(--brand)]/10 px-2 py-0.5 text-sm font-medium text-[var(--brand)] hover:bg-[var(--brand)]/20"><ExternalLink size={8} />Web</a>}
             </div>
             <div className="mt-2 flex items-center gap-4">
-              {customer.founded_year && <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Calendar size={10} />Fundada {customer.founded_year}</span>}
-              {customer.employee_count && <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Users size={10} />{customer.employee_count.toLocaleString()} empleados</span>}
-              <span className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]"><Briefcase size={10} />{customer.industry_code}</span>
+              {customer.founded_year && <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]"><Calendar size={10} />Fundada {customer.founded_year}</span>}
+              {customer.employee_count && <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]"><Users size={10} />{customer.employee_count.toLocaleString()} empleados</span>}
+              <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]"><Briefcase size={10} />{customer.industry_code}</span>
             </div>
           </div>
           <div className="shrink-0 flex items-center gap-4">
-            <div className="text-center"><HealthGauge score={customer.health_score} /><p className="mt-1 text-[7px] text-[var(--text-muted)]">Health</p></div>
-            <div className="text-center"><HealthGauge score={customer.nps_score} /><p className="mt-1 text-[7px] text-[var(--text-muted)]">NPS</p></div>
-            <div className="text-center"><PresentacionStars rating={customer.satisfaction_rating} /><p className="mt-1 text-[7px] text-[var(--text-muted)]">Satisfacción</p></div>
+            <div className="text-center"><HealthGauge score={customer.health_score} /><p className="mt-1 text-[13px] text-[var(--text-muted)]">Health</p></div>
+            <div className="text-center"><HealthGauge score={customer.nps_score} /><p className="mt-1 text-[13px] text-[var(--text-muted)]">NPS</p></div>
+            <div className="text-center"><PresentacionStars rating={customer.satisfaction_rating} /><p className="mt-1 text-[13px] text-[var(--text-muted)]">Satisfacción</p></div>
           </div>
         </div>
       </div>
 
       {/* ═══ B2: GEOLOCATION ═══ */}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><MapPin size={12} className="text-[var(--brand)]" />Ubicación y Street View</h4>
+        <h4 className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><MapPin size={12} className="text-[var(--brand)]" />Ubicación y Street View</h4>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="overflow-hidden rounded-xl border border-[var(--border)]">
             {customer.lat && customer.lng ? (
               <iframe src={`https://www.google.com/maps?q=${customer.lat},${customer.lng}&z=15&output=embed`} width="100%" height="200" style={{ border: 0 }} loading="lazy" className="rounded-xl" />
-            ) : <div className="flex h-[200px] items-center justify-center bg-[var(--bg-muted)] text-[10px] text-[var(--text-muted)]">Sin coordenadas</div>}
+            ) : <div className="flex h-[200px] items-center justify-center bg-[var(--bg-muted)] text-[13px] text-[var(--text-muted)]">Sin coordenadas</div>}
           </div>
           <div className="overflow-hidden rounded-xl border border-[var(--border)]">
             {customer.lat && customer.lng ? (
               <iframe src={`https://www.google.com/maps?q=${customer.lat},${customer.lng}&layer=c&cbll=${customer.lat},${customer.lng}&cbp=11,0,0,0,0&output=svembed`} width="100%" height="200" style={{ border: 0 }} loading="lazy" className="rounded-xl" />
-            ) : <div className="flex h-[200px] items-center justify-center bg-[var(--bg-muted)] text-[10px] text-[var(--text-muted)]">Street View no disponible</div>}
+            ) : <div className="flex h-[200px] items-center justify-center bg-[var(--bg-muted)] text-[13px] text-[var(--text-muted)]">Street View no disponible</div>}
           </div>
         </div>
-        <p className="mt-2 flex items-center gap-1 text-[9px] text-[var(--text-secondary)]"><MapPin size={10} className="text-[var(--brand)]" />{customer.address || "—"} · {customer.city}, {customer.province || ""}, {customer.country}</p>
+        <p className="mt-2 flex items-center gap-1 text-xs text-[var(--text-secondary)]"><MapPin size={10} className="text-[var(--brand)]" />{customer.address || "—"} · {customer.city}, {customer.province || ""}, {customer.country}</p>
       </div>
 
       {/* ═══ B3: SCORECARD 6 KPIs ═══ */}
@@ -719,7 +719,7 @@ function PresentacionTab({
           <div key={kpi.label} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3 transition-shadow hover:shadow-sm">
             <div className="flex items-center gap-1.5"><div className="flex h-6 w-6 items-center justify-center rounded-md" style={{ backgroundColor: `${kpi.color}15` }}><kpi.icon size={12} style={{ color: kpi.color }} /></div></div>
             <p className="mt-2 text-sm font-bold text-[var(--text-primary)]">{kpi.value}</p>
-            <p className="text-[7px] font-medium text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
+            <p className="text-[13px] font-medium text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
           </div>
         ))}
       </div>
@@ -728,8 +728,8 @@ function PresentacionTab({
       {revenueChart.length > 0 && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h4 className="flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><BarChart3 size={12} className="text-[var(--brand)]" />Evolución de Ingresos</h4>
-            <span className="text-[8px] font-bold" style={{ color: customer.yoy_growth_pct >= 0 ? "#10B981" : "#EF4444" }}>
+            <h4 className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><BarChart3 size={12} className="text-[var(--brand)]" />Evolución de Ingresos</h4>
+            <span className="text-sm font-bold" style={{ color: customer.yoy_growth_pct >= 0 ? "#10B981" : "#EF4444" }}>
               {customer.yoy_growth_pct > 0 ? "↑" : "↓"} {Math.abs(customer.yoy_growth_pct).toFixed(1)}% YoY
             </span>
           </div>
@@ -750,32 +750,32 @@ function PresentacionTab({
 
       {/* ═══ B5: SALUD FINANCIERA ═══ */}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Shield size={12} className="text-[var(--brand)]" />Salud Financiera</h4>
+        <h4 className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><Shield size={12} className="text-[var(--brand)]" />Salud Financiera</h4>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
-            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Cupo de Crédito</p>
-            <div className="mt-2 flex justify-between text-[9px]"><span className="text-[var(--text-secondary)]">Utilizado: <strong>{fmtUSD(customer.credit_used)}</strong></span><span className="text-[var(--text-muted)]">Límite: {fmtUSD(customer.credit_limit)}</span></div>
+            <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Cupo de Crédito</p>
+            <div className="mt-2 flex justify-between text-xs"><span className="text-[var(--text-secondary)]">Utilizado: <strong>{fmtUSD(customer.credit_used)}</strong></span><span className="text-[var(--text-muted)]">Límite: {fmtUSD(customer.credit_limit)}</span></div>
             <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[var(--border)]"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${creditUsedPct}%`, background: creditUsedPct > 80 ? "linear-gradient(90deg,#F59E0B,#EF4444)" : creditUsedPct > 50 ? "linear-gradient(90deg,#3B82F6,#F59E0B)" : "linear-gradient(90deg,#10B981,#3B82F6)" }} /></div>
-            <div className="mt-2 flex justify-between"><span className="text-[9px] font-bold text-[var(--text-primary)]">{fmtUSD(customer.credit_limit - customer.credit_used)} disponible</span><span className="text-[9px] font-semibold" style={{ color: creditUsedPct > 80 ? "#EF4444" : "#10B981" }}>{creditUsedPct.toFixed(0)}%</span></div>
+            <div className="mt-2 flex justify-between"><span className="text-xs font-bold text-[var(--text-primary)]">{fmtUSD(customer.credit_limit - customer.credit_used)} disponible</span><span className="text-xs font-semibold" style={{ color: creditUsedPct > 80 ? "#EF4444" : "#10B981" }}>{creditUsedPct.toFixed(0)}%</span></div>
           </div>
           <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
-            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Pago</p>
+            <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Pago</p>
             <div className="mt-3 flex items-center justify-around">
               <MiniGauge value={customer.on_time_payment_pct} max={100} color="#10B981" label="A tiempo" />
               <div className="text-center">
                 <p className="text-lg font-bold text-[var(--text-primary)]">{customer.payment_avg_days}d</p>
-                <p className="text-[7px] text-[var(--text-muted)]">Prom. pago</p>
-                <p className="text-[7px]" style={{ color: customer.payment_avg_days <= customer.payment_terms ? "#10B981" : "#EF4444" }}>
+                <p className="text-[13px] text-[var(--text-muted)]">Prom. pago</p>
+                <p className="text-[13px]" style={{ color: customer.payment_avg_days <= customer.payment_terms ? "#10B981" : "#EF4444" }}>
                   {customer.payment_avg_days <= customer.payment_terms ? "✓" : "⚠"} vs {customer.payment_terms}d
                 </p>
               </div>
             </div>
           </div>
           <div className="rounded-xl bg-[var(--bg-muted)]/50 p-4">
-            <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Facturas</p>
+            <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Facturas</p>
             <div className="mt-1 flex items-center gap-2">
               <div className="h-24 w-24"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={statusPie} dataKey="value" cx="50%" cy="50%" innerRadius={18} outerRadius={34} paddingAngle={3} strokeWidth={0}>{statusPie.map((s, i) => <Cell key={i} fill={s.color} />)}</Pie></PieChart></ResponsiveContainer></div>
-              <div className="space-y-1">{statusPie.map((s) => (<div key={s.name} className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} /><span className="text-[8px] text-[var(--text-secondary)]">{s.name}: <strong>{s.value}</strong></span></div>))}</div>
+              <div className="space-y-1">{statusPie.map((s) => (<div key={s.name} className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} /><span className="text-sm text-[var(--text-secondary)]">{s.name}: <strong>{s.value}</strong></span></div>))}</div>
             </div>
           </div>
         </div>
@@ -784,16 +784,16 @@ function PresentacionTab({
       {/* ═══ B6: MIX DE PRODUCTOS ═══ */}
       {donutData.length > 0 && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Package size={12} className="text-[var(--brand)]" />Mix de Productos</h4>
+          <h4 className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><Package size={12} className="text-[var(--brand)]" />Mix de Productos</h4>
           <div className="flex items-center gap-6">
             <div className="h-36 w-36 shrink-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={donutData} dataKey="value" cx="50%" cy="50%" innerRadius={30} outerRadius={55} paddingAngle={4} strokeWidth={0}>{donutData.map((_d, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}</Pie><Tooltip contentStyle={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 10 }} /></PieChart></ResponsiveContainer></div>
             <div className="flex-1 space-y-2">
               {donutData.map((cat, i) => (
                 <div key={cat.name} className="flex items-center gap-3">
                   <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
-                  <span className="flex-1 text-[10px] font-medium text-[var(--text-primary)]">{cat.name}</span>
+                  <span className="flex-1 text-[13px] font-medium text-[var(--text-primary)]">{cat.name}</span>
                   <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[var(--border)]"><div className="h-full rounded-full" style={{ width: `${cat.value}%`, backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} /></div>
-                  <span className="text-[9px] font-bold text-[var(--text-primary)] tabular-nums w-8 text-right">{cat.value}%</span>
+                  <span className="text-xs font-bold text-[var(--text-primary)] tabular-nums w-8 text-right">{cat.value}%</span>
                 </div>
               ))}
             </div>
@@ -804,15 +804,15 @@ function PresentacionTab({
       {/* ═══ B7: PIPELINE ═══ */}
       {opportunities.length > 0 && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 flex items-center justify-between text-[10px] font-semibold text-[var(--text-primary)]">
+          <h4 className="mb-3 flex items-center justify-between text-[13px] font-semibold text-[var(--text-primary)]">
             <span className="flex items-center gap-1.5"><Target size={12} className="text-[var(--brand)]" />Pipeline Activo</span>
-            <span className="text-[10px] font-bold text-[var(--brand)]">{fmtUSD(pipelineTotal)}</span>
+            <span className="text-[13px] font-bold text-[var(--brand)]">{fmtUSD(pipelineTotal)}</span>
           </h4>
           <div className="space-y-2">{opportunities.map((opp) => (
             <div key={opp.id} className="flex items-center gap-3 rounded-lg p-2.5 hover:bg-[var(--bg-muted)]/50 transition-colors">
               <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: opp.stage?.color || "#6B7280" }} />
-              <div className="flex-1 min-w-0"><p className="truncate text-[9px] font-semibold text-[var(--text-primary)]">{opp.name}</p><p className="text-[8px] text-[var(--text-muted)]">{opp.stage?.name} · {opp.probability}%</p></div>
-              <span className="text-[10px] font-bold text-[var(--text-primary)] tabular-nums">{fmtUSD(Number(opp.amount))}</span>
+              <div className="flex-1 min-w-0"><p className="truncate text-xs font-semibold text-[var(--text-primary)]">{opp.name}</p><p className="text-sm text-[var(--text-muted)]">{opp.stage?.name} · {opp.probability}%</p></div>
+              <span className="text-[13px] font-bold text-[var(--text-primary)] tabular-nums">{fmtUSD(Number(opp.amount))}</span>
             </div>
           ))}</div>
         </div>
@@ -820,7 +820,7 @@ function PresentacionTab({
 
       {/* ═══ B8: RESUMEN RELACIÓN ═══ */}
       <div className="rounded-2xl border border-[var(--border)] bg-gradient-to-r from-[var(--bg-card)] to-[var(--bg-muted)]/30 p-4">
-        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Briefcase size={12} className="text-[var(--brand)]" />Resumen de Relación</h4>
+        <h4 className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><Briefcase size={12} className="text-[var(--brand)]" />Resumen de Relación</h4>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { icon: Calendar, label: "Relación", value: relationYears > 0 ? `${relationYears} años` : "Nuevo", sub: customer.first_purchase_date ? `Desde ${new Date(customer.first_purchase_date).toLocaleDateString("es-EC", { month: "long", year: "numeric" })}` : "" },
@@ -829,23 +829,23 @@ function PresentacionTab({
             { icon: DollarSign, label: "Valor de Vida", value: fmtUSD(customer.lifetime_value), sub: `${fmtUSD(customer.annual_revenue_usd)} / año` },
           ].map((item) => (
             <div key={item.label} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3">
-              <div className="flex items-center gap-1.5 text-[8px] text-[var(--text-muted)] uppercase tracking-wider"><item.icon size={10} />{item.label}</div>
-              <p className="mt-1.5 text-[11px] font-bold text-[var(--text-primary)]">{item.value}</p>
-              <p className="text-[8px] text-[var(--text-secondary)]">{item.sub}</p>
+              <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] uppercase tracking-wider"><item.icon size={10} />{item.label}</div>
+              <p className="mt-1.5 text-sm font-bold text-[var(--text-primary)]">{item.value}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{item.sub}</p>
             </div>
           ))}
         </div>
         {customer.assigned_seller && (
           <div className="mt-3 flex items-center gap-2 rounded-lg bg-[var(--bg-muted)]/30 p-2">
             {customer.assigned_seller.avatar_url ? <img src={customer.assigned_seller.avatar_url} alt="" className="h-6 w-6 rounded-full object-cover" /> : <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand)]/10"><UserCheck size={12} className="text-[var(--brand)]" /></div>}
-            <div><p className="text-[9px] font-semibold text-[var(--text-primary)]">{customer.assigned_seller.full_name}</p><p className="text-[7px] text-[var(--text-muted)]">Ejecutivo Comercial</p></div>
+            <div><p className="text-xs font-semibold text-[var(--text-primary)]">{customer.assigned_seller.full_name}</p><p className="text-[13px] text-[var(--text-muted)]">Ejecutivo Comercial</p></div>
           </div>
         )}
       </div>
 
       {/* ═══ B9: BENCHMARK ═══ */}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><BarChart3 size={12} className="text-[var(--brand)]" />Benchmark vs. Sector</h4>
+        <h4 className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><BarChart3 size={12} className="text-[var(--brand)]" />Benchmark vs. Sector</h4>
         <div className="space-y-3">
           {[
             { label: "Health Score", value: customer.health_score, avg: 68, max: 100, unit: "" },
@@ -856,45 +856,45 @@ function PresentacionTab({
             const isAbove = m.value >= m.avg;
             return (
               <div key={m.label} className="flex items-center gap-3">
-                <span className="w-24 text-[9px] font-medium text-[var(--text-secondary)]">{m.label}</span>
+                <span className="w-24 text-xs font-medium text-[var(--text-secondary)]">{m.label}</span>
                 <div className="relative flex-1 h-4">
                   <div className="absolute inset-0 rounded-full bg-[var(--border)]/50" />
                   <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700" style={{ width: `${(m.value / m.max) * 100}%`, backgroundColor: isAbove ? "#10B981" : "#EF4444", opacity: 0.8 }} />
                   <div className="absolute inset-y-0 w-0.5 bg-[var(--text-muted)]" style={{ left: `${(m.avg / m.max) * 100}%` }} />
                 </div>
-                <span className="w-10 text-right text-[9px] font-bold" style={{ color: isAbove ? "#10B981" : "#EF4444" }}>{m.value}{m.unit}</span>
+                <span className="w-10 text-right text-xs font-bold" style={{ color: isAbove ? "#10B981" : "#EF4444" }}>{m.value}{m.unit}</span>
               </div>
             );
           })}
-          <p className="text-right text-[7px] text-[var(--text-muted)]">│ = Promedio del sector</p>
+          <p className="text-right text-[13px] text-[var(--text-muted)]">│ = Promedio del sector</p>
         </div>
       </div>
 
       {/* ═══ B10: FACTURAS ═══ */}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
-          <h4 className="flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><FileText size={12} className="text-[var(--brand)]" />Facturas</h4>
-          <div className="flex items-center gap-2">{[{ l: "Pagadas", c: paidCount, co: "#10B981" }, { l: "Pendientes", c: pendingCount, co: "#F59E0B" }, { l: "Vencidas", c: overdueCount, co: "#EF4444" }].map((s) => <span key={s.l} className="rounded-full px-2 py-0.5 text-[7px] font-bold" style={{ backgroundColor: `${s.co}15`, color: s.co }}>{s.c} {s.l}</span>)}</div>
+          <h4 className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><FileText size={12} className="text-[var(--brand)]" />Facturas</h4>
+          <div className="flex items-center gap-2">{[{ l: "Pagadas", c: paidCount, co: "#10B981" }, { l: "Pendientes", c: pendingCount, co: "#F59E0B" }, { l: "Vencidas", c: overdueCount, co: "#EF4444" }].map((s) => <span key={s.l} className="rounded-full px-2 py-0.5 text-[13px] font-bold" style={{ backgroundColor: `${s.co}15`, color: s.co }}>{s.c} {s.l}</span>)}</div>
         </div>
-        <table className="w-full"><thead><tr className="border-b border-[var(--border)] bg-[var(--bg-muted)]/50">{["Factura","Fecha","Total USD","Status","Método"].map((h) => <th key={h} className="px-4 py-2 text-left text-[8px] font-semibold text-[var(--text-muted)] uppercase">{h}</th>)}</tr></thead>
+        <table className="w-full"><thead><tr className="border-b border-[var(--border)] bg-[var(--bg-muted)]/50">{["Factura","Fecha","Total USD","Status","Método"].map((h) => <th key={h} className="px-4 py-2 text-left text-sm font-semibold text-[var(--text-muted)] uppercase">{h}</th>)}</tr></thead>
           <tbody>{invoices.slice(0, 8).map((inv) => (
             <tr key={inv.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg-muted)]/30 transition-colors">
-              <td className="px-4 py-2 text-[9px] font-medium text-[var(--text-primary)]">{inv.invoice_number}</td>
-              <td className="px-4 py-2 text-[9px] text-[var(--text-secondary)]">{new Date(inv.sale_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" })}</td>
-              <td className="px-4 py-2 text-[9px] font-bold text-[var(--text-primary)] tabular-nums">${Number(inv.total_usd).toLocaleString()}</td>
-              <td className="px-4 py-2"><span className="rounded-full px-2 py-0.5 text-[7px] font-semibold" style={{ backgroundColor: `${INVOICE_STATUS_COLORS[inv.status]}15`, color: INVOICE_STATUS_COLORS[inv.status] }}>{INVOICE_STATUS_LABELS[inv.status]}</span></td>
-              <td className="px-4 py-2 text-[9px] text-[var(--text-muted)]">{inv.payment_method || "—"}</td>
+              <td className="px-4 py-2 text-xs font-medium text-[var(--text-primary)]">{inv.invoice_number}</td>
+              <td className="px-4 py-2 text-xs text-[var(--text-secondary)]">{new Date(inv.sale_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" })}</td>
+              <td className="px-4 py-2 text-xs font-bold text-[var(--text-primary)] tabular-nums">${Number(inv.total_usd).toLocaleString()}</td>
+              <td className="px-4 py-2"><span className="rounded-full px-2 py-0.5 text-[13px] font-semibold" style={{ backgroundColor: `${INVOICE_STATUS_COLORS[inv.status]}15`, color: INVOICE_STATUS_COLORS[inv.status] }}>{INVOICE_STATUS_LABELS[inv.status]}</span></td>
+              <td className="px-4 py-2 text-xs text-[var(--text-muted)]">{inv.payment_method || "—"}</td>
             </tr>
           ))}</tbody>
         </table>
-        {invoices.length > 8 && <div className="px-4 py-2 text-center text-[8px] text-[var(--text-muted)]">+{invoices.length - 8} facturas más</div>}
+        {invoices.length > 8 && <div className="px-4 py-2 text-center text-sm text-[var(--text-muted)]">+{invoices.length - 8} facturas más</div>}
       </div>
 
       {/* ═══ B11: AI RECOMMENDATIONS ═══ */}
       <div className="relative overflow-hidden rounded-2xl border border-[var(--brand)]/20 bg-gradient-to-br from-[var(--brand)]/5 to-[#8B5CF6]/5 p-4">
         <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[var(--brand)]/10 blur-3xl" />
         <div className="relative">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Sparkles size={12} className="text-[var(--brand)]" />Recomendaciones GRIXI AI</h4>
+          <h4 className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><Sparkles size={12} className="text-[var(--brand)]" />Recomendaciones GRIXI AI</h4>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { tag: "Venta Cruzada", title: "Expansión de línea", desc: `Con ${customer.total_orders} pedidos en ${categories[0] || "su línea"}, explorar ${categories[1] || "complementarios"} y ${categories[2] || "servicios"}.`, color: "#3B82F6" },
@@ -903,9 +903,9 @@ function PresentacionTab({
               { tag: "Retención", title: customer.churn_risk === "low" ? "Programa VIP" : "Acción requerida", desc: customer.churn_risk === "low" ? `NPS ${customer.nps_score}, retención ${customer.retention_rate.toFixed(0)}%. Programa fidelización premium.` : `Riesgo ${customer.churn_risk.toUpperCase()}. NPS ${customer.nps_score}. ${customer.nps_score < 50 ? "Reunión urgente." : "Mejorar post-venta."}`, color: customer.churn_risk === "low" ? "#F59E0B" : "#EF4444" },
             ].map((rec, i) => (
               <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3">
-                <span className="rounded-full px-1.5 py-0.5 text-[7px] font-bold" style={{ backgroundColor: `${rec.color}15`, color: rec.color }}>{rec.tag}</span>
-                <p className="mt-1.5 text-[9px] font-semibold text-[var(--text-primary)]">{rec.title}</p>
-                <p className="mt-1 text-[8px] leading-relaxed text-[var(--text-secondary)]">{rec.desc}</p>
+                <span className="rounded-full px-1.5 py-0.5 text-[13px] font-bold" style={{ backgroundColor: `${rec.color}15`, color: rec.color }}>{rec.tag}</span>
+                <p className="mt-1.5 text-xs font-semibold text-[var(--text-primary)]">{rec.title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">{rec.desc}</p>
               </div>
             ))}
           </div>
@@ -968,20 +968,20 @@ function PresentacionTab({
             <div className="space-y-4">
               {/* Products purchased */}
               <div>
-                <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Productos Adquiridos ({sortedProducts.length})</p>
+                <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Productos Adquiridos ({sortedProducts.length})</p>
                 <div className="space-y-1.5">
                   {sortedProducts.slice(0, 6).map(([name, data], i) => (
                     <div key={name} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[var(--bg-muted)]/50 transition-colors">
-                      <span className="text-[8px] font-bold text-[var(--text-muted)] w-4">#{i + 1}</span>
+                      <span className="text-sm font-bold text-[var(--text-muted)] w-4">#{i + 1}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="truncate text-[10px] font-medium text-[var(--text-primary)]">{name}</p>
+                        <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">{name}</p>
                         <div className="mt-0.5 h-1 rounded-full bg-[var(--border)] overflow-hidden">
                           <div className="h-full rounded-full bg-emerald-500/70" style={{ width: `${(data.revenue / maxRev) * 100}%` }} />
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[9px] font-bold text-emerald-500 tabular-nums">{fmtUSD(data.revenue)}</p>
-                        <p className="text-[7px] text-[var(--text-muted)]">{data.qty} uds · {data.count} fact</p>
+                        <p className="text-xs font-bold text-emerald-500 tabular-nums">{fmtUSD(data.revenue)}</p>
+                        <p className="text-[13px] text-[var(--text-muted)]">{data.qty} uds · {data.count} fact</p>
                       </div>
                     </div>
                   ))}
@@ -991,7 +991,7 @@ function PresentacionTab({
               {/* Cross-sell suggestions */}
               {suggestions.length > 0 && (
                 <div>
-                  <p className="text-[9px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                  <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">
                     💡 Oportunidades de Venta Cruzada
                   </p>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -1001,8 +1001,8 @@ function PresentacionTab({
                           <Package size={10} className="text-[var(--brand)]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="truncate text-[9px] font-semibold text-[var(--text-primary)]">{product}</p>
-                          <p className="text-[7px] text-[var(--brand)]">Producto no adquirido — Potencial de expansión</p>
+                          <p className="truncate text-xs font-semibold text-[var(--text-primary)]">{product}</p>
+                          <p className="text-[13px] text-[var(--brand)]">Producto no adquirido — Potencial de expansión</p>
                         </div>
                       </div>
                     ))}
@@ -1017,17 +1017,17 @@ function PresentacionTab({
       {/* ═══ B12: CONTACTOS ═══ */}
       {contacts.length > 0 && (
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-primary)]"><Users size={12} className="text-[var(--brand)]" />Equipo de Contacto ({contacts.length})</h4>
+          <h4 className="mb-3 flex items-center gap-1.5 text-[13px] font-semibold text-[var(--text-primary)]"><Users size={12} className="text-[var(--brand)]" />Equipo de Contacto ({contacts.length})</h4>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{contacts.map((c) => (
             <div key={c.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg-muted)]/30 p-3">
               <div className="flex items-center gap-2">
-                {c.avatar_url ? <img src={c.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" /> : <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[8px] font-bold text-[var(--brand)]">{c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}</div>}
-                <div className="flex-1 min-w-0"><p className="truncate text-[9px] font-semibold text-[var(--text-primary)]">{c.full_name}</p>{c.role && <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[7px] text-[var(--text-muted)]">{CONTACT_ROLE_LABELS[c.role]}</span>}</div>
+                {c.avatar_url ? <img src={c.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" /> : <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand)]/10 text-sm font-bold text-[var(--brand)]">{c.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2)}</div>}
+                <div className="flex-1 min-w-0"><p className="truncate text-xs font-semibold text-[var(--text-primary)]">{c.full_name}</p>{c.role && <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[13px] text-[var(--text-muted)]">{CONTACT_ROLE_LABELS[c.role]}</span>}</div>
                 {c.is_primary && <Star size={10} className="text-amber-500 fill-amber-500" />}
               </div>
               <div className="mt-2 space-y-1">
-                {c.email && <p className="flex items-center gap-1 text-[8px] text-[var(--text-secondary)]"><Mail size={8} />{c.email}</p>}
-                {c.phone && <p className="flex items-center gap-1 text-[8px] text-[var(--text-secondary)]"><Phone size={8} />{c.phone}</p>}
+                {c.email && <p className="flex items-center gap-1 text-sm text-[var(--text-secondary)]"><Mail size={8} />{c.email}</p>}
+                {c.phone && <p className="flex items-center gap-1 text-sm text-[var(--text-secondary)]"><Phone size={8} />{c.phone}</p>}
               </div>
             </div>
           ))}</div>
@@ -1037,7 +1037,7 @@ function PresentacionTab({
       {/* ═══ FOOTER ═══ */}
       <div className="flex items-center gap-2 py-3 text-[var(--text-muted)]">
         <div className="h-px flex-1 bg-[var(--border)]" />
-        <span className="text-[8px]">Ficha Comercial generada por GRIXI · {new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "long", year: "numeric" })}</span>
+        <span className="text-sm">Ficha Comercial generada por GRIXI · {new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "long", year: "numeric" })}</span>
         <div className="h-px flex-1 bg-[var(--border)]" />
       </div>
     </div>
@@ -1057,11 +1057,11 @@ function OportunidadesTab({
     <div className="space-y-4">
       {/* Opportunities */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-3 text-[10px] font-semibold text-[var(--text-primary)]">
+        <h4 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">
           Oportunidades ({opportunities.length})
         </h4>
         {opportunities.length === 0 ? (
-          <p className="text-[9px] text-[var(--text-muted)]">Sin oportunidades abiertas</p>
+          <p className="text-xs text-[var(--text-muted)]">Sin oportunidades abiertas</p>
         ) : (
           <div className="space-y-2">
             {opportunities.map((opp) => (
@@ -1071,12 +1071,12 @@ function OportunidadesTab({
                   style={{ backgroundColor: opp.stage?.color || "#6B7280" }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-[9px] font-medium text-[var(--text-primary)]">{opp.name}</p>
-                  <p className="text-[8px] text-[var(--text-muted)]">
+                  <p className="truncate text-xs font-medium text-[var(--text-primary)]">{opp.name}</p>
+                  <p className="text-sm text-[var(--text-muted)]">
                     {opp.stage?.name} · {opp.probability}%
                   </p>
                 </div>
-                <span className="text-[9px] font-bold text-[var(--text-primary)] tabular-nums">
+                <span className="text-xs font-bold text-[var(--text-primary)] tabular-nums">
                   ${Number(opp.amount).toLocaleString()}
                 </span>
               </div>
@@ -1087,24 +1087,24 @@ function OportunidadesTab({
 
       {/* Quotes */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-        <h4 className="mb-3 text-[10px] font-semibold text-[var(--text-primary)]">
+        <h4 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">
           Cotizaciones ({quotes.length})
         </h4>
         {quotes.length === 0 ? (
-          <p className="text-[9px] text-[var(--text-muted)]">Sin cotizaciones</p>
+          <p className="text-xs text-[var(--text-muted)]">Sin cotizaciones</p>
         ) : (
           <div className="space-y-2">
             {quotes.map((q) => (
               <div key={q.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-[var(--bg-muted)] transition-colors">
                 <FileText size={12} className="shrink-0 text-[var(--text-muted)]" />
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-[9px] font-medium text-[var(--text-primary)]">{q.quote_number}</p>
-                  <p className="text-[8px] text-[var(--text-muted)]">
+                  <p className="truncate text-xs font-medium text-[var(--text-primary)]">{q.quote_number}</p>
+                  <p className="text-sm text-[var(--text-muted)]">
                     {new Date(q.created_at).toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}
                   </p>
                 </div>
                 <span
-                  className="rounded-full px-2 py-0.5 text-[7px] font-semibold"
+                  className="rounded-full px-2 py-0.5 text-[13px] font-semibold"
                   style={{
                     backgroundColor: `${QUOTE_STATUS_COLORS[q.status]}15`,
                     color: QUOTE_STATUS_COLORS[q.status],
@@ -1112,7 +1112,7 @@ function OportunidadesTab({
                 >
                   {QUOTE_STATUS_LABELS[q.status]}
                 </span>
-                <span className="text-[9px] font-bold text-[var(--text-primary)] tabular-nums">
+                <span className="text-xs font-bold text-[var(--text-primary)] tabular-nums">
                   ${Number(q.total).toLocaleString()}
                 </span>
               </div>
@@ -1206,13 +1206,13 @@ export function ClienteDetailModal({ customerId, onClose, demoRole }: Props) {
               <h2 className="text-sm font-bold text-[var(--text-primary)]">
                 {customer?.trade_name || customer?.business_name || "Cargando..."}
               </h2>
-              <p className="text-[10px] text-[var(--text-muted)]">
+              <p className="text-[13px] text-[var(--text-muted)]">
                 {customer?.code} · {customer?.city}, {customer?.country}
               </p>
             </div>
             {customer && (
               <div
-                className="rounded-full px-3 py-1 text-[9px] font-bold"
+                className="rounded-full px-3 py-1 text-xs font-bold"
                 style={{
                   backgroundColor: `${SEGMENT_COLORS[customer.segment]}15`,
                   color: SEGMENT_COLORS[customer.segment],
@@ -1236,7 +1236,7 @@ export function ClienteDetailModal({ customerId, onClose, demoRole }: Props) {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-2.5 text-[10px] font-medium transition-all relative",
+                  "flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-medium transition-all relative",
                   tab === t.id
                     ? "text-[#3B82F6]"
                     : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -1286,7 +1286,7 @@ export function ClienteDetailModal({ customerId, onClose, demoRole }: Props) {
                 </motion.div>
               </AnimatePresence>
             ) : (
-              <p className="text-center text-[10px] text-[var(--text-muted)]">Cliente no encontrado</p>
+              <p className="text-center text-[13px] text-[var(--text-muted)]">Cliente no encontrado</p>
             )}
           </div>
         </motion.div>

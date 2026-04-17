@@ -169,7 +169,7 @@ function KPICard({
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
+            <p className="text-[13px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
               {label}
             </p>
             {tooltip && (
@@ -180,11 +180,11 @@ function KPICard({
                   className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--text-muted)] transition-colors hover:bg-[var(--brand)]/10 hover:text-[var(--brand)]"
                   aria-label={`Info: ${label}`}
                 >
-                  <span className="text-[7px] font-bold leading-none">i</span>
+                  <span className="text-[13px] font-bold leading-none">i</span>
                 </button>
                 {showTip && (
                   <div className="absolute bottom-full left-1/2 z-[100] mb-1.5 w-52 -translate-x-1/2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5 shadow-xl">
-                    <p className="text-[8px] leading-relaxed text-[var(--text-secondary)]">{tooltip}</p>
+                    <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{tooltip}</p>
                   </div>
                 )}
               </div>
@@ -217,7 +217,7 @@ function KPICard({
             )}
             <span
               className={cn(
-                "text-[9px] font-semibold",
+                "text-xs font-semibold",
                 isPositive ? "text-emerald-500" : "text-red-500"
               )}
             >
@@ -225,14 +225,14 @@ function KPICard({
               {change}%
             </span>
             {changeLabel && (
-              <span className="text-[8px] text-[var(--text-muted)]">
+              <span className="text-sm text-[var(--text-muted)]">
                 {changeLabel}
               </span>
             )}
           </div>
         )}
         {yoyLabel && (
-          <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[7px] font-medium text-[var(--text-muted)]">
+          <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[13px] font-medium text-[var(--text-muted)]">
             {yoyLabel}
           </span>
         )}
@@ -270,10 +270,10 @@ function MiniPipelineBar({
       className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold text-[var(--text-primary)]">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
           Pipeline
         </h3>
-        <span className="text-[10px] text-[var(--text-muted)]">
+        <span className="text-[13px] text-[var(--text-muted)]">
           {total} deals activos
         </span>
       </div>
@@ -303,10 +303,10 @@ function MiniPipelineBar({
               className="h-2 w-2 rounded-full"
               style={{ backgroundColor: stage.color }}
             />
-            <span className="text-[9px] text-[var(--text-muted)]">
+            <span className="text-xs text-[var(--text-muted)]">
               {stage.name}
             </span>
-            <span className="text-[9px] font-semibold text-[var(--text-secondary)]">
+            <span className="text-xs font-semibold text-[var(--text-secondary)]">
               {stage.count}
             </span>
           </div>
@@ -336,10 +336,10 @@ function AlertsPanel({
     >
       <div className="mb-3 flex items-center gap-2">
         <Bell size={13} className="text-amber-500" />
-        <h3 className="text-[11px] font-semibold text-[var(--text-primary)]">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
           Alertas Activas
         </h3>
-        <span className="ml-auto rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold text-amber-500">
+        <span className="ml-auto rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-500">
           {alerts.length}
         </span>
       </div>
@@ -360,11 +360,11 @@ function AlertsPanel({
               }}
             />
             <div className="flex-1 min-w-0">
-              <p className="truncate text-[10px] font-medium text-[var(--text-primary)]">
+              <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">
                 {alert.title}
               </p>
               {alert.message && (
-                <p className="mt-0.5 truncate text-[9px] text-[var(--text-muted)]">
+                <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
                   {alert.message}
                 </p>
               )}
@@ -412,13 +412,13 @@ function ConversionFunnel({
       transition={{ delay: 0.6, duration: 0.4 }}
       className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
     >
-      <h3 className="mb-3 text-[11px] font-semibold text-[var(--text-primary)]">
+      <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
         Funnel de Conversión
       </h3>
       <div className="space-y-2">
         {funnelData.map((step, i) => (
           <div key={step.name} className="flex items-center gap-3">
-            <span className="w-20 text-right text-[9px] text-[var(--text-muted)] truncate">
+            <span className="w-20 text-right text-xs text-[var(--text-muted)] truncate">
               {step.name}
             </span>
             <div className="flex-1 h-6 relative">
@@ -440,7 +440,7 @@ function ConversionFunnel({
                   }}
                 />
               </motion.div>
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[var(--text-primary)]">
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--text-primary)]">
                 {step.count}
               </span>
             </div>
@@ -482,7 +482,7 @@ function RevenueChart({ invoices }: { invoices: SalesInvoice[] }) {
       className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold text-[var(--text-primary)]">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
           Ingresos Mensuales (USD)
         </h3>
         <div className="flex gap-1">
@@ -491,7 +491,7 @@ function RevenueChart({ invoices }: { invoices: SalesInvoice[] }) {
               key={opt}
               onClick={() => setComparison(opt)}
               className={cn(
-                "rounded-full px-2 py-0.5 text-[8px] font-medium transition-all",
+                "rounded-full px-2 py-0.5 text-sm font-medium transition-all",
                 comparison === opt
                   ? "bg-[#3B82F6]/10 text-[#3B82F6]"
                   : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -575,7 +575,7 @@ function TopCustomers({ customers }: { customers: SalesCustomer[] }) {
       transition={{ delay: 0.55, duration: 0.4 }}
       className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
     >
-      <h3 className="mb-3 text-[11px] font-semibold text-[var(--text-primary)]">
+      <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
         Top Clientes por Revenue
       </h3>
       <div className="space-y-2.5">
@@ -584,7 +584,7 @@ function TopCustomers({ customers }: { customers: SalesCustomer[] }) {
             key={c.id}
             className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--bg-muted)]"
           >
-            <span className="text-[9px] font-bold text-[var(--text-muted)] w-4">
+            <span className="text-xs font-bold text-[var(--text-muted)] w-4">
               #{i + 1}
             </span>
             {c.logo_url ? (
@@ -594,24 +594,24 @@ function TopCustomers({ customers }: { customers: SalesCustomer[] }) {
                 className="h-6 w-6 rounded-md object-cover ring-1 ring-[var(--border)]"
               />
             ) : (
-              <div className="h-6 w-6 rounded-md bg-[var(--bg-muted)] flex items-center justify-center text-[9px] font-bold text-[var(--text-muted)]">
+              <div className="h-6 w-6 rounded-md bg-[var(--bg-muted)] flex items-center justify-center text-xs font-bold text-[var(--text-muted)]">
                 {c.business_name[0]}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="truncate text-[10px] font-medium text-[var(--text-primary)]">
+              <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">
                 {c.trade_name || c.business_name}
               </p>
-              <p className="text-[8px] text-[var(--text-muted)]">
+              <p className="text-sm text-[var(--text-muted)]">
                 {c.country} · {c.total_orders} pedidos
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-bold text-[var(--text-primary)]">
+              <p className="text-[13px] font-bold text-[var(--text-primary)]">
                 {fmtMoneyCompact(c.total_revenue)}
               </p>
               <div
-                className="mt-0.5 rounded-full px-1.5 py-0.5 text-[7px] font-semibold"
+                className="mt-0.5 rounded-full px-1.5 py-0.5 text-[13px] font-semibold"
                 style={{
                   backgroundColor: `${SEGMENT_COLORS[c.segment]}15`,
                   color: SEGMENT_COLORS[c.segment],
@@ -637,7 +637,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
       transition={{ delay: 0.58, duration: 0.4 }}
       className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
     >
-      <h3 className="mb-3 text-[11px] font-semibold text-[var(--text-primary)]">
+      <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
         Top Productos por Revenue
       </h3>
       <div className="space-y-2.5">
@@ -646,7 +646,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
             key={p.product_id}
             className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--bg-muted)]"
           >
-            <span className="text-[9px] font-bold text-[var(--text-muted)] w-4">
+            <span className="text-xs font-bold text-[var(--text-muted)] w-4">
               #{i + 1}
             </span>
             {p.image_url ? (
@@ -661,14 +661,14 @@ function TopProducts({ products }: { products: TopProduct[] }) {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="truncate text-[10px] font-medium text-[var(--text-primary)]">
+              <p className="truncate text-[13px] font-medium text-[var(--text-primary)]">
                 {p.name}
               </p>
-              <p className="text-[8px] text-[var(--text-muted)]">
+              <p className="text-sm text-[var(--text-muted)]">
                 {p.units} uds · {p.invoices} facturas
               </p>
             </div>
-            <p className="text-[10px] font-bold text-[var(--text-primary)]">
+            <p className="text-[13px] font-bold text-[var(--text-primary)]">
               {fmtMoneyCompact(p.revenue)}
             </p>
           </div>
@@ -712,11 +712,11 @@ function ActivityFeed() {
         <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#3B82F6]/10">
           <Clock size={10} className="text-[#3B82F6]" />
         </div>
-        <h3 className="text-[11px] font-semibold text-[var(--text-primary)]">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
           Actividad Reciente
         </h3>
         <div className="ml-auto flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-[8px] text-emerald-500 font-medium">En vivo</span>
+        <span className="text-sm text-emerald-500 font-medium">En vivo</span>
       </div>
 
       <div className="space-y-1">
@@ -737,14 +737,14 @@ function ActivityFeed() {
                 <Icon size={9} style={{ color: act.color }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[9px] text-[var(--text-primary)] leading-tight">
+                <p className="text-xs text-[var(--text-primary)] leading-tight">
                   {act.text}
                 </p>
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <img src={act.avatar} alt="" className="h-3 w-3 rounded-full object-cover" />
-                  <span className="text-[7px] text-[var(--text-muted)]">{act.person}</span>
-                  <span className="text-[7px] text-[var(--text-muted)]">&middot;</span>
-                  <span className="text-[7px] text-[var(--text-muted)]">{act.time}</span>
+                  <span className="text-[13px] text-[var(--text-muted)]">{act.person}</span>
+                  <span className="text-[13px] text-[var(--text-muted)]">&middot;</span>
+                  <span className="text-[13px] text-[var(--text-muted)]">{act.time}</span>
                 </div>
               </div>
             </motion.div>

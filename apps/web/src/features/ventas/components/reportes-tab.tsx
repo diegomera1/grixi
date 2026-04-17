@@ -195,18 +195,18 @@ export function ReportesTab({
             transition={{ delay: i * 0.08 }}
             className="group relative rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
           >
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
               {card.label}
             </p>
             <p className="mt-1 text-xl font-bold" style={{ color: card.color }}>
               {card.value}
             </p>
-            <p className="mt-0.5 text-[9px] text-[var(--text-muted)]">
+            <p className="mt-0.5 text-xs text-[var(--text-muted)]">
               {card.sub}
             </p>
             {/* Hint tooltip on hover */}
             <div className="pointer-events-none absolute inset-x-2 -bottom-1 translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5 text-[9px] leading-relaxed text-[var(--text-secondary)] shadow-lg">
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5 text-xs leading-relaxed text-[var(--text-secondary)] shadow-lg">
                 {card.hint}
               </div>
             </div>
@@ -324,7 +324,7 @@ export function ReportesTab({
                 />
                 <Legend
                   formatter={(value) => (
-                    <span className="text-[9px] text-[var(--text-muted)]">
+                    <span className="text-xs text-[var(--text-muted)]">
                       {value}
                     </span>
                   )}
@@ -359,7 +359,7 @@ export function ReportesTab({
                 ].map((h) => (
                   <th
                     key={h}
-                    className="px-3 py-2 text-left text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+                    className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]"
                   >
                     {h}
                   </th>
@@ -378,7 +378,7 @@ export function ReportesTab({
                     <td className="px-3 py-2">
                       <span
                         className={cn(
-                          "text-[10px] font-bold",
+                          "text-[13px] font-bold",
                           i === 0
                             ? "text-[#F59E0B]"
                             : i === 1
@@ -392,13 +392,13 @@ export function ReportesTab({
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      <span className="text-[10px] font-medium text-[var(--text-primary)]">
+                      <span className="text-[13px] font-medium text-[var(--text-primary)]">
                         {seller.name}
                       </span>
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-emerald-500 tabular-nums">
+                        <span className="text-[13px] font-bold text-emerald-500 tabular-nums">
                           {fmtMoney(seller.revenue, 0)}
                         </span>
                         <div className="hidden sm:block h-1 w-16 overflow-hidden rounded-full bg-[var(--bg-muted)]">
@@ -410,17 +410,17 @@ export function ReportesTab({
                       </div>
                     </td>
                     <td className="px-3 py-2">
-                      <span className="text-[10px] text-[var(--text-secondary)] tabular-nums">
+                      <span className="text-[13px] text-[var(--text-secondary)] tabular-nums">
                         {seller.deals}
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      <span className="text-[10px] text-[var(--text-secondary)] tabular-nums">
+                      <span className="text-[13px] text-[var(--text-secondary)] tabular-nums">
                         {fmtMoney(seller.revenue / seller.deals, 0)}
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      <span className="text-[10px] font-medium text-emerald-500 tabular-nums">
+                      <span className="text-[13px] font-medium text-emerald-500 tabular-nums">
                         {seller.revenue > 0
                           ? (
                               (seller.margin / seller.revenue) *
@@ -463,17 +463,17 @@ export function ReportesTab({
               return Object.entries(statusMap).sort((a, b) => b[1].count - a[1].count).map(([status, data]) => (
                 <div key={status} className="flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: colors[status] || '#6B7280' }} />
-                  <span className="w-20 text-[9px] text-[var(--text-muted)]">{labels[status] || status}</span>
+                  <span className="w-20 text-xs text-[var(--text-muted)]">{labels[status] || status}</span>
                   <div className="flex-1 h-2 rounded-full bg-[var(--bg-muted)] overflow-hidden">
                     <div className="h-full rounded-full transition-all" style={{ width: `${(data.count / totalInv) * 100}%`, backgroundColor: colors[status] || '#6B7280' }} />
                   </div>
-                  <span className="text-[9px] font-bold text-[var(--text-secondary)] tabular-nums w-8 text-right">{data.count}</span>
-                  <span className="text-[9px] font-bold text-emerald-500 tabular-nums w-16 text-right">{fmtMoneyCompact(data.total)}</span>
+                  <span className="text-xs font-bold text-[var(--text-secondary)] tabular-nums w-8 text-right">{data.count}</span>
+                  <span className="text-xs font-bold text-emerald-500 tabular-nums w-16 text-right">{fmtMoneyCompact(data.total)}</span>
                 </div>
               ));
             })()}
           </div>
-          <div className="mt-3 pt-2 border-t border-[var(--border)] flex justify-between text-[8px] text-[var(--text-muted)]">
+          <div className="mt-3 pt-2 border-t border-[var(--border)] flex justify-between text-sm text-[var(--text-muted)]">
             <span>Total: {fmtNum(invoices.length, 0)} facturas</span>
             <span className="font-bold text-[var(--text-primary)]">{fmtMoney(totalUSD, 0)}</span>
           </div>
@@ -502,17 +502,17 @@ export function ReportesTab({
                   <div key={seg} className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-[var(--bg-muted)] transition-colors">
                     <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: SEGMENT_COLORS[seg] }} />
                     <div className="w-16">
-                      <span className="text-[9px] font-semibold" style={{ color: SEGMENT_COLORS[seg] }}>{SEGMENT_LABELS[seg]}</span>
+                      <span className="text-xs font-semibold" style={{ color: SEGMENT_COLORS[seg] }}>{SEGMENT_LABELS[seg]}</span>
                     </div>
-                    <span className="text-[8px] text-[var(--text-muted)] w-6 text-center">{segs.length}</span>
+                    <span className="text-sm text-[var(--text-muted)] w-6 text-center">{segs.length}</span>
                     <div className="flex-1 flex items-center gap-1">
                       <div className="h-1.5 w-full rounded-full bg-[var(--bg-muted)] overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${avgHealth}%`, backgroundColor: avgHealth > 70 ? '#10B981' : avgHealth > 45 ? '#F59E0B' : '#EF4444' }} />
                       </div>
                     </div>
-                    <span className="text-[8px] font-bold tabular-nums w-8 text-right" style={{ color: avgHealth > 70 ? '#10B981' : avgHealth > 45 ? '#F59E0B' : '#EF4444' }}>{avgHealth.toFixed(0)}</span>
-                    <span className="text-[8px] text-[var(--text-muted)] tabular-nums w-12 text-right">NPS {avgNps.toFixed(0)}</span>
-                    <span className="text-[8px] font-bold text-[var(--text-secondary)] tabular-nums w-14 text-right">{fmtMoneyCompact(avgRev)}</span>
+                    <span className="text-sm font-bold tabular-nums w-8 text-right" style={{ color: avgHealth > 70 ? '#10B981' : avgHealth > 45 ? '#F59E0B' : '#EF4444' }}>{avgHealth.toFixed(0)}</span>
+                    <span className="text-sm text-[var(--text-muted)] tabular-nums w-12 text-right">NPS {avgNps.toFixed(0)}</span>
+                    <span className="text-sm font-bold text-[var(--text-secondary)] tabular-nums w-14 text-right">{fmtMoneyCompact(avgRev)}</span>
                   </div>
                 );
               }).filter(Boolean);
@@ -554,7 +554,7 @@ export function ReportesTab({
                 <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 10 }} formatter={(value) => [`${value}%`]} />
                 <Bar dataKey="retention" name="Retención %" fill="#10B981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="growth" name="Crecimiento YoY %" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                <Legend formatter={(value) => <span className="text-[9px] text-[var(--text-muted)]">{value}</span>} />
+                <Legend formatter={(value) => <span className="text-xs text-[var(--text-muted)]">{value}</span>} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -603,7 +603,7 @@ export function ReportesTab({
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 text-[8px] text-[var(--text-muted)] text-center">
+          <div className="mt-2 text-sm text-[var(--text-muted)] text-center">
             Total: {fmtNum(activities.length, 0)} actividades registradas
           </div>
         </motion.div>
@@ -654,11 +654,11 @@ export function ReportesTab({
                   })()}
                 </Pie>
                 <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 10 }} />
-                <Legend formatter={(value) => <span className="text-[9px] text-[var(--text-muted)]">{value}</span>} />
+                <Legend formatter={(value) => <span className="text-xs text-[var(--text-muted)]">{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-1 text-center text-[8px] text-[var(--text-muted)]">
+          <div className="mt-1 text-center text-sm text-[var(--text-muted)]">
             {fmtNum(opportunities.length, 0)} oportunidades · {fmtMoney(opportunities.reduce((s, o) => s + Number(o.amount), 0), 0)} en pipeline
           </div>
         </motion.div>
@@ -689,16 +689,16 @@ export function ReportesTab({
               const maxRev = top[0]?.[1].revenue || 1;
               return top.map(([name, data], i) => (
                 <div key={name} className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[var(--bg-muted)] transition-colors">
-                  <span className="text-[8px] font-bold text-[var(--text-muted)] w-4">#{i + 1}</span>
+                  <span className="text-sm font-bold text-[var(--text-muted)] w-4">#{i + 1}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-[9px] font-medium text-[var(--text-primary)]">{name}</p>
+                    <p className="truncate text-xs font-medium text-[var(--text-primary)]">{name}</p>
                     <div className="mt-0.5 h-1 rounded-full bg-[var(--bg-muted)] overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${(data.revenue / maxRev) * 100}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[9px] font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(data.revenue)}</p>
-                    <p className="text-[7px] text-[var(--text-muted)]">{fmtNum(data.qty, 0)} uds · {data.count} fact</p>
+                    <p className="text-xs font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(data.revenue)}</p>
+                    <p className="text-[13px] text-[var(--text-muted)]">{fmtNum(data.qty, 0)} uds · {data.count} fact</p>
                   </div>
                 </div>
               ));

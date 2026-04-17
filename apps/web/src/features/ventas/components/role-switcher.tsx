@@ -23,7 +23,7 @@ export function RoleSwitcher({ activeRole, onRoleChange }: Props) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all",
+          "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition-all",
           "border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-muted)]",
           "shadow-sm"
         )}
@@ -78,7 +78,7 @@ export function RoleSwitcher({ activeRole, onRoleChange }: Props) {
                       setIsOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[11px] font-medium transition-all",
+                      "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                       activeRole === role
                         ? "bg-[var(--bg-muted)]"
                         : "hover:bg-[var(--bg-muted)]/60"
@@ -112,7 +112,7 @@ export function RoleSwitcher({ activeRole, onRoleChange }: Props) {
                 ))}
               </div>
               <div className="border-t border-[var(--border)] px-3 py-2">
-                <p className="text-[9px] text-[var(--text-muted)] leading-tight">
+                <p className="text-xs text-[var(--text-muted)] leading-tight">
                   Cambia de vista para simular los permisos de cada rol
                 </p>
               </div>

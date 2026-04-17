@@ -93,7 +93,7 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
 
             {/* Left: Items Table */}
             <div className="col-span-7">
-              <h4 className="mb-2 text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+              <h4 className="mb-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                 Detalle de Productos ({items.length} línea{items.length !== 1 ? "s" : ""})
               </h4>
               <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-card)]">
@@ -101,7 +101,7 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                   <thead>
                     <tr className="border-b border-[var(--border)] bg-[var(--bg-muted)]/50">
                       {["#", "Producto", "Cant.", "P.Unit.", "Desc.%", "Subtotal", "Margen"].map((h) => (
-                        <th key={h} className="px-2.5 py-1.5 text-left text-[7px] font-semibold text-[var(--text-muted)] uppercase">
+                        <th key={h} className="px-2.5 py-1.5 text-left text-[13px] font-semibold text-[var(--text-muted)] uppercase">
                           {h}
                         </th>
                       ))}
@@ -116,7 +116,7 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                         const lineMarginColor = lineMargin >= 35 ? "#10B981" : lineMargin >= 20 ? "#F59E0B" : "#EF4444";
                         return (
                           <tr key={i} className="border-b border-[var(--border)] last:border-0">
-                            <td className="px-2.5 py-1.5 text-[8px] tabular-nums text-[var(--text-muted)]">
+                            <td className="px-2.5 py-1.5 text-sm tabular-nums text-[var(--text-muted)]">
                               {item.item_number || i + 1}
                             </td>
                             <td className="px-2.5 py-1.5">
@@ -124,25 +124,25 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                                 <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-[var(--bg-muted)]">
                                   <Package size={8} className="text-[var(--text-muted)]" />
                                 </div>
-                                <span className="text-[8px] text-[var(--text-primary)] truncate max-w-[140px]">
+                                <span className="text-sm text-[var(--text-primary)] truncate max-w-[140px]">
                                   {item.description}
                                 </span>
                               </div>
                             </td>
-                            <td className="px-2.5 py-1.5 text-[8px] tabular-nums text-[var(--text-secondary)]">
+                            <td className="px-2.5 py-1.5 text-sm tabular-nums text-[var(--text-secondary)]">
                               {item.quantity} {item.unit}
                             </td>
-                            <td className="px-2.5 py-1.5 text-[8px] tabular-nums text-[var(--text-secondary)]">
+                            <td className="px-2.5 py-1.5 text-sm tabular-nums text-[var(--text-secondary)]">
                               ${item.unit_price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                             </td>
-                            <td className="px-2.5 py-1.5 text-[8px] tabular-nums text-[var(--text-muted)]">
+                            <td className="px-2.5 py-1.5 text-sm tabular-nums text-[var(--text-muted)]">
                               {item.discount_percent ? `${item.discount_percent}%` : "—"}
                             </td>
-                            <td className="px-2.5 py-1.5 text-[8px] font-semibold tabular-nums text-[var(--text-primary)]">
+                            <td className="px-2.5 py-1.5 text-sm font-semibold tabular-nums text-[var(--text-primary)]">
                               ${lineSubtotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                             </td>
                             <td className="px-2.5 py-1.5">
-                              <span className="text-[7px] font-bold tabular-nums" style={{ color: lineMarginColor }}>
+                              <span className="text-[13px] font-bold tabular-nums" style={{ color: lineMarginColor }}>
                                 {lineMargin.toFixed(0)}%
                               </span>
                             </td>
@@ -151,7 +151,7 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={7} className="px-3 py-4 text-center text-[9px] text-[var(--text-muted)]">
+                        <td colSpan={7} className="px-3 py-4 text-center text-xs text-[var(--text-muted)]">
                           Sin detalle de líneas
                         </td>
                       </tr>
@@ -163,34 +163,34 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
               {/* Totals Breakdown */}
               <div className="mt-3 flex justify-end">
                 <div className="w-64 space-y-1 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-3">
-                  <div className="flex justify-between text-[8px]">
+                  <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">Subtotal</span>
                     <span className="tabular-nums text-[var(--text-secondary)]">
                       ${Number(inv.subtotal).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   {inv.discount_percent > 0 && (
-                    <div className="flex justify-between text-[8px]">
+                    <div className="flex justify-between text-sm">
                       <span className="text-[var(--text-muted)]">Descuento ({inv.discount_percent}%)</span>
                       <span className="tabular-nums text-red-500">
                         -${(Number(inv.subtotal) * inv.discount_percent / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between text-[8px]">
+                  <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">IVA ({inv.tax_rate}%)</span>
                     <span className="tabular-nums text-[var(--text-secondary)]">
                       ${Number(inv.tax).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
-                  <div className="border-t border-[var(--border)] pt-1 flex justify-between text-[9px]">
+                  <div className="border-t border-[var(--border)] pt-1 flex justify-between text-xs">
                     <span className="font-semibold text-[var(--text-primary)]">Total</span>
                     <span className="font-bold tabular-nums text-[var(--text-primary)]">
                       {inv.currency} ${Number(inv.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   {inv.currency !== "USD" && (
-                    <div className="flex justify-between text-[7px]">
+                    <div className="flex justify-between text-[13px]">
                       <span className="text-[var(--text-muted)]">Equiv. USD (TC: {inv.exchange_rate})</span>
                       <span className="tabular-nums text-[var(--text-muted)]">
                         ${Number(inv.total_usd).toLocaleString("en-US", { minimumFractionDigits: 2 })}
@@ -206,7 +206,7 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
 
               {/* Margin Gauge */}
               <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-3">
-                <h4 className="mb-2 text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                <h4 className="mb-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                   Margen Estimado
                 </h4>
                 <div className="flex items-end gap-3">
@@ -223,7 +223,7 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                         style={{ backgroundColor: marginColor }}
                       />
                     </div>
-                    <div className="mt-1 flex justify-between text-[7px] text-[var(--text-muted)]">
+                    <div className="mt-1 flex justify-between text-[13px] text-[var(--text-muted)]">
                       <span>Costo: ${(costTotal / 1000).toFixed(1)}K</span>
                       <span>Venta: ${(subtotal / 1000).toFixed(1)}K</span>
                     </div>
@@ -233,7 +233,7 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
 
               {/* Payment & Financial Info */}
               <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-3">
-                <h4 className="mb-2 text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                <h4 className="mb-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                   Información Financiera
                 </h4>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -246,8 +246,8 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                       <PayInfo.icon size={9} style={{ color: PayInfo.color }} />
                     </div>
                     <div>
-                      <p className="text-[7px] text-[var(--text-muted)]">Método</p>
-                      <p className="text-[8px] font-medium text-[var(--text-primary)]">
+                      <p className="text-[13px] text-[var(--text-muted)]">Método</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
                         {PAYMENT_LABELS[inv.payment_method || "transfer"] || inv.payment_method}
                       </p>
                     </div>
@@ -259,8 +259,8 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                       <Calendar size={9} className="text-[var(--text-muted)]" />
                     </div>
                     <div>
-                      <p className="text-[7px] text-[var(--text-muted)]">Plazo</p>
-                      <p className="text-[8px] font-medium text-[var(--text-primary)]">{inv.payment_terms} días</p>
+                      <p className="text-[13px] text-[var(--text-muted)]">Plazo</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{inv.payment_terms} días</p>
                     </div>
                   </div>
 
@@ -273,8 +273,8 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                       <Clock size={9} className={isPastDue ? "text-red-500" : "text-[var(--text-muted)]"} />
                     </div>
                     <div>
-                      <p className="text-[7px] text-[var(--text-muted)]">Vencimiento</p>
-                      <p className={cn("text-[8px] font-medium", isPastDue ? "text-red-500" : "text-[var(--text-primary)]")}>
+                      <p className="text-[13px] text-[var(--text-muted)]">Vencimiento</p>
+                      <p className={cn("text-sm font-medium", isPastDue ? "text-red-500" : "text-[var(--text-primary)]")}>
                         {inv.due_date ? new Date(inv.due_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                         {isPastDue && ` (+${daysOverdue}d)`}
                       </p>
@@ -287,8 +287,8 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                       <TrendingUp size={9} className="text-[var(--text-muted)]" />
                     </div>
                     <div>
-                      <p className="text-[7px] text-[var(--text-muted)]">Moneda</p>
-                      <p className="text-[8px] font-medium text-[var(--text-primary)]">{inv.currency}</p>
+                      <p className="text-[13px] text-[var(--text-muted)]">Moneda</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{inv.currency}</p>
                     </div>
                   </div>
 
@@ -299,8 +299,8 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                         <CheckCircle2 size={9} className="text-emerald-500" />
                       </div>
                       <div>
-                        <p className="text-[7px] text-[var(--text-muted)]">Pagado</p>
-                        <p className="text-[8px] font-medium text-emerald-600">
+                        <p className="text-[13px] text-[var(--text-muted)]">Pagado</p>
+                        <p className="text-sm font-medium text-emerald-600">
                           {new Date(inv.paid_at).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" })}
                         </p>
                       </div>
@@ -314,8 +314,8 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
                         <FileText size={9} className="text-[var(--text-muted)]" />
                       </div>
                       <div>
-                        <p className="text-[7px] text-[var(--text-muted)]">SAP Ref.</p>
-                        <p className="text-[8px] font-medium text-[var(--text-primary)] font-mono">{inv.sap_invoice_number}</p>
+                        <p className="text-[13px] text-[var(--text-muted)]">SAP Ref.</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)] font-mono">{inv.sap_invoice_number}</p>
                       </div>
                     </div>
                   )}
@@ -325,10 +325,10 @@ function InvoiceDetail({ inv }: { inv: SalesInvoice }) {
               {/* Notes */}
               {inv.notes && (
                 <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-3">
-                  <h4 className="mb-1 text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <h4 className="mb-1 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Notas
                   </h4>
-                  <p className="text-[8px] text-[var(--text-secondary)] leading-relaxed">
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                     {inv.notes}
                   </p>
                 </div>
@@ -406,7 +406,7 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
               "w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] py-2 pl-9 pr-4",
-              "text-[11px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
+              "text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
               "focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/30"
             )}
           />
@@ -415,14 +415,14 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSortBy(sortBy === "date" ? "amount" : "date")}
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]"
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]"
           >
             <ArrowUpDown size={11} />
             {sortBy === "date" ? "Fecha" : "Monto"}
           </button>
           <button
             onClick={() => exportToCSV(filtered)}
-            className="flex items-center gap-1.5 rounded-lg bg-[#10B981]/10 px-3 py-2 text-[10px] font-semibold text-[#10B981] transition-colors hover:bg-[#10B981]/20"
+            className="flex items-center gap-1.5 rounded-lg bg-[#10B981]/10 px-3 py-2 text-[13px] font-semibold text-[#10B981] transition-colors hover:bg-[#10B981]/20"
           >
             <Download size={11} />
             Exportar CSV
@@ -438,7 +438,7 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
               key={status}
               onClick={() => setStatusFilter(status)}
               className={cn(
-                "rounded-full px-2.5 py-1 text-[9px] font-medium transition-all",
+                "rounded-full px-2.5 py-1 text-xs font-medium transition-all",
                 statusFilter === status
                   ? status === "all"
                     ? "bg-[#3B82F6]/10 text-[#3B82F6]"
@@ -470,7 +470,7 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
                 (header) => (
                   <th
                     key={header}
-                    className="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+                    className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]"
                   >
                     {header}
                   </th>
@@ -503,7 +503,7 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
                     </motion.div>
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="text-[10px] font-semibold text-[#3B82F6]">
+                    <span className="text-[13px] font-semibold text-[#3B82F6]">
                       {inv.invoice_number}
                     </span>
                   </td>
@@ -518,13 +518,13 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
                       ) : (
                         <div className="h-5 w-5 rounded bg-[var(--bg-muted)]" />
                       )}
-                      <span className="text-[10px] text-[var(--text-primary)] truncate max-w-[150px]">
+                      <span className="text-[13px] text-[var(--text-primary)] truncate max-w-[150px]">
                         {inv.customer?.trade_name || inv.customer?.business_name || "—"}
                       </span>
                     </div>
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="text-[10px] text-[var(--text-secondary)]">
+                    <span className="text-[13px] text-[var(--text-secondary)]">
                       {new Date(inv.sale_date).toLocaleDateString("es-EC", {
                         day: "2-digit",
                         month: "short",
@@ -533,20 +533,20 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
                     </span>
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="text-[10px] font-bold text-[var(--text-primary)] tabular-nums">
+                    <span className="text-[13px] font-bold text-[var(--text-primary)] tabular-nums">
                       {Number(inv.total).toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                       })}
                     </span>
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="text-[10px] text-[var(--text-muted)]">
+                    <span className="text-[13px] text-[var(--text-muted)]">
                       {inv.currency}
                     </span>
                   </td>
                   <td className="px-4 py-2.5">
                     <span
-                      className="rounded-full px-2 py-0.5 text-[8px] font-semibold"
+                      className="rounded-full px-2 py-0.5 text-sm font-semibold"
                       style={{
                         backgroundColor: `${INVOICE_STATUS_COLORS[inv.status]}15`,
                         color: INVOICE_STATUS_COLORS[inv.status],
@@ -564,7 +564,7 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
                           className="h-4 w-4 rounded-full object-cover"
                         />
                       )}
-                      <span className="text-[9px] text-[var(--text-muted)] truncate">
+                      <span className="text-xs text-[var(--text-muted)] truncate">
                         {inv.seller?.full_name || "—"}
                       </span>
                     </div>
@@ -582,7 +582,7 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16">
           <DollarSign className="h-8 w-8 text-[var(--text-muted)]" />
-          <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             No se encontraron facturas
           </p>
         </div>

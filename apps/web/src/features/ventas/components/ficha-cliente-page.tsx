@@ -145,7 +145,7 @@ function BlockTitle({ icon: Icon, title, badge }: { icon: typeof Building2; titl
       </div>
       <h3 className="text-sm font-bold text-[var(--text-primary)]">{title}</h3>
       {badge && (
-        <span className="ml-auto rounded-full bg-[var(--brand)]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[var(--brand)]">
+        <span className="ml-auto rounded-full bg-[var(--brand)]/10 px-2.5 py-0.5 text-[13px] font-semibold text-[var(--brand)]">
           {badge}
         </span>
       )}
@@ -301,7 +301,7 @@ export function FichaClientePage({ customers }: Props) {
             </div>
             <div>
               <p className="text-xs font-bold text-[var(--text-primary)]">Modo Presentación</p>
-              <p className="text-[9px] text-[var(--text-muted)]">Ficha de Cliente — Comercial & CRM</p>
+              <p className="text-xs text-[var(--text-muted)]">Ficha de Cliente — Comercial & CRM</p>
             </div>
           </div>
         )}
@@ -309,7 +309,7 @@ export function FichaClientePage({ customers }: Props) {
         {/* Back to Dashboard */}
         <button
           onClick={() => router.push('/ventas')}
-          className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[10px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
         >
           <X size={12} />
           Cerrar Presentación
@@ -420,14 +420,14 @@ export function FichaClientePage({ customers }: Props) {
                           <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
                             {c.trade_name || c.business_name}
                           </p>
-                          <p className="text-[10px] text-[var(--text-muted)] truncate">
+                          <p className="text-[13px] text-[var(--text-muted)] truncate">
                             {c.sector} · {c.city}, {c.country}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
                           <p className="text-xs font-bold text-[var(--text-primary)]">{fmtUSD(c.total_revenue)}</p>
                           <div
-                            className="mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[8px] font-semibold"
+                            className="mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-sm font-semibold"
                             style={{ backgroundColor: `${SEGMENT_COLORS[c.segment]}15`, color: SEGMENT_COLORS[c.segment] }}
                           >
                             {SEGMENT_LABELS[c.segment]}
@@ -436,7 +436,7 @@ export function FichaClientePage({ customers }: Props) {
                       </motion.button>
                     ))}
                     {filtered.length > 12 && (
-                      <p className="py-2 text-center text-[10px] text-[var(--text-muted)]">
+                      <p className="py-2 text-center text-[13px] text-[var(--text-muted)]">
                         +{filtered.length - 12} resultados más...
                       </p>
                     )}
@@ -458,7 +458,7 @@ export function FichaClientePage({ customers }: Props) {
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
                     <p className="text-lg font-bold text-[var(--text-primary)]">{stat.value}</p>
-                    <p className="text-[10px] text-[var(--text-muted)]">{stat.label}</p>
+                    <p className="text-[13px] text-[var(--text-muted)]">{stat.label}</p>
                   </div>
                 ))}
               </motion.div>
@@ -539,7 +539,7 @@ export function FichaClientePage({ customers }: Props) {
                           ...(customer.phone ? [{ icon: Phone, text: customer.phone }] : []),
                           ...(customer.email ? [{ icon: Mail, text: customer.email }] : []),
                         ].map((item, i) => (
-                          <div key={i} className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                          <div key={i} className="flex items-center gap-1.5 text-sm text-[var(--text-muted)]">
                             <item.icon size={12} />
                             <span>{item.text}</span>
                           </div>
@@ -553,18 +553,18 @@ export function FichaClientePage({ customers }: Props) {
                         className="mt-4 flex flex-wrap items-center justify-center gap-2 md:justify-start"
                       >
                         <span
-                          className="rounded-full px-3 py-1 text-[10px] font-bold"
+                          className="rounded-full px-3 py-1 text-[13px] font-bold"
                           style={{ backgroundColor: `${SEGMENT_COLORS[customer.segment]}15`, color: SEGMENT_COLORS[customer.segment] }}
                         >
                           {SEGMENT_LABELS[customer.segment]}
                         </span>
                         {customer.sap_customer_code && (
-                          <span className="rounded-full bg-[var(--bg-muted)] px-3 py-1 text-[10px] font-medium text-[var(--text-muted)]">
+                          <span className="rounded-full bg-[var(--bg-muted)] px-3 py-1 text-[13px] font-medium text-[var(--text-muted)]">
                             {customer.sap_customer_code}
                           </span>
                         )}
                         {customer.tax_id && (
-                          <span className="rounded-full bg-[var(--bg-muted)] px-3 py-1 text-[10px] font-medium text-[var(--text-muted)]">
+                          <span className="rounded-full bg-[var(--bg-muted)] px-3 py-1 text-[13px] font-medium text-[var(--text-muted)]">
                             RUC: {customer.tax_id}
                           </span>
                         )}
@@ -573,7 +573,7 @@ export function FichaClientePage({ customers }: Props) {
                             href={customer.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 rounded-full bg-[var(--brand)]/10 px-3 py-1 text-[10px] font-medium text-[var(--brand)] transition-colors hover:bg-[var(--brand)]/20"
+                            className="flex items-center gap-1 rounded-full bg-[var(--brand)]/10 px-3 py-1 text-[13px] font-medium text-[var(--brand)] transition-colors hover:bg-[var(--brand)]/20"
                           >
                             <ExternalLink size={10} />
                             Web
@@ -606,7 +606,7 @@ export function FichaClientePage({ customers }: Props) {
                           {customer.health_score}
                         </span>
                       </div>
-                      <p className="mt-1 text-[10px] font-medium text-[var(--text-muted)]">Health Score</p>
+                      <p className="mt-1 text-[13px] font-medium text-[var(--text-muted)]">Health Score</p>
                     </motion.div>
                   </div>
 
@@ -619,18 +619,18 @@ export function FichaClientePage({ customers }: Props) {
                       className="mt-6 flex items-center justify-center gap-6 border-t border-[var(--border)] pt-4 md:justify-start"
                     >
                       {customer.founded_year && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                        <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)]">
                           <Calendar size={12} />
                           Fundada en {customer.founded_year}
                         </div>
                       )}
                       {customer.employee_count && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                        <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)]">
                           <Users size={12} />
                           {fmtNum(customer.employee_count)} empleados
                         </div>
                       )}
-                      <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                      <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)]">
                         <Clock size={12} />
                         Términos: {customer.payment_terms} días
                       </div>
@@ -710,7 +710,7 @@ export function FichaClientePage({ customers }: Props) {
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${kpi.color}15` }}>
                           <kpi.icon size={16} style={{ color: kpi.color }} />
                         </div>
-                        <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
+                        <p className="text-sm font-medium text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
                       </div>
                       <p className="mt-3 text-2xl font-bold text-[var(--text-primary)]">
                         {kpi.fmt(kpi.value)}
@@ -727,9 +727,9 @@ export function FichaClientePage({ customers }: Props) {
                   <div className="grid gap-6 md:grid-cols-3">
                     {/* Credit gauge */}
                     <div className="rounded-xl bg-[var(--bg-muted)]/50 p-5">
-                      <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Cupo de Crédito</p>
+                      <p className="text-sm font-medium text-[var(--text-muted)] uppercase tracking-wider">Cupo de Crédito</p>
                       <div className="mt-3">
-                        <div className="flex justify-between text-[11px]">
+                        <div className="flex justify-between text-sm">
                           <span className="text-[var(--text-secondary)]">Utilizado: <strong>{fmtUSD(customer.credit_used)}</strong></span>
                           <span className="text-[var(--text-muted)]">Límite: {fmtUSD(customer.credit_limit)}</span>
                         </div>
@@ -749,19 +749,19 @@ export function FichaClientePage({ customers }: Props) {
                             }}
                           />
                         </div>
-                        <p className="mt-1.5 text-right text-[10px] font-semibold" style={{ color: creditUsedPct > 80 ? "#EF4444" : "#10B981" }}>
+                        <p className="mt-1.5 text-right text-[13px] font-semibold" style={{ color: creditUsedPct > 80 ? "#EF4444" : "#10B981" }}>
                           {creditUsedPct.toFixed(0)}% utilizado
                         </p>
                       </div>
                       <p className="mt-3 text-xl font-bold text-[var(--text-primary)]">
                         {fmtUSD(customer.credit_limit - customer.credit_used)}
                       </p>
-                      <p className="text-[10px] text-[var(--text-muted)]">Disponible</p>
+                      <p className="text-[13px] text-[var(--text-muted)]">Disponible</p>
                     </div>
 
                     {/* Payment distribution */}
                     <div className="rounded-xl bg-[var(--bg-muted)]/50 p-5">
-                      <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Estado de Facturas</p>
+                      <p className="text-sm font-medium text-[var(--text-muted)] uppercase tracking-wider">Estado de Facturas</p>
                       {statusPie.length > 0 ? (
                         <div className="mt-2 h-[140px]">
                           <ResponsiveContainer width="100%" height="100%">
@@ -784,13 +784,13 @@ export function FichaClientePage({ customers }: Props) {
                           </ResponsiveContainer>
                         </div>
                       ) : (
-                        <p className="mt-4 text-center text-[11px] text-[var(--text-muted)]">Sin facturas</p>
+                        <p className="mt-4 text-center text-sm text-[var(--text-muted)]">Sin facturas</p>
                       )}
                       <div className="mt-2 flex flex-wrap justify-center gap-2">
                         {statusPie.map((s) => (
                           <div key={s.name} className="flex items-center gap-1">
                             <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
-                            <span className="text-[9px] text-[var(--text-muted)]">{s.name} ({s.value})</span>
+                            <span className="text-xs text-[var(--text-muted)]">{s.name} ({s.value})</span>
                           </div>
                         ))}
                       </div>
@@ -798,22 +798,22 @@ export function FichaClientePage({ customers }: Props) {
 
                     {/* Payment terms */}
                     <div className="rounded-xl bg-[var(--bg-muted)]/50 p-5">
-                      <p className="text-[11px] font-medium text-[var(--text-muted)] uppercase tracking-wider">Comportamiento de Pago</p>
+                      <p className="text-sm font-medium text-[var(--text-muted)] uppercase tracking-wider">Comportamiento de Pago</p>
                       <div className="mt-4 space-y-3">
                         <div>
-                          <div className="flex items-center justify-between text-[11px]">
+                          <div className="flex items-center justify-between text-sm">
                             <span className="text-[var(--text-secondary)]">Términos de pago</span>
                             <span className="font-bold text-[var(--text-primary)]">{customer.payment_terms} días</span>
                           </div>
                         </div>
                         <div>
-                          <div className="flex items-center justify-between text-[11px]">
+                          <div className="flex items-center justify-between text-sm">
                             <span className="text-[var(--text-secondary)]">Moneda preferida</span>
                             <span className="font-bold text-[var(--text-primary)]">{customer.preferred_currency}</span>
                           </div>
                         </div>
                         <div>
-                          <div className="flex items-center justify-between text-[11px]">
+                          <div className="flex items-center justify-between text-sm">
                             <span className="text-[var(--text-secondary)]">Facturas pagadas</span>
                             <span className="font-bold text-emerald-500">
                               {invoices.filter((i) => i.status === "paid").length} / {invoices.length}
@@ -821,7 +821,7 @@ export function FichaClientePage({ customers }: Props) {
                           </div>
                         </div>
                         <div>
-                          <div className="flex items-center justify-between text-[11px]">
+                          <div className="flex items-center justify-between text-sm">
                             <span className="text-[var(--text-secondary)]">Última compra</span>
                             <span className="font-bold text-[var(--text-primary)]">
                               {customer.last_purchase_at
@@ -868,7 +868,7 @@ export function FichaClientePage({ customers }: Props) {
                       <thead>
                         <tr className="border-b border-[var(--border)] bg-[var(--bg-muted)]/50">
                           {["Factura", "Fecha", "Total", "Estado"].map((h) => (
-                            <th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">{h}</th>
+                            <th key={h} className="px-4 py-2.5 text-left text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -882,7 +882,7 @@ export function FichaClientePage({ customers }: Props) {
                             <td className="px-4 py-2.5 text-xs font-bold text-[var(--text-primary)] tabular-nums">{fmtUSD(Number(inv.total_usd))}</td>
                             <td className="px-4 py-2.5">
                               <span
-                                className="rounded-full px-2.5 py-0.5 text-[9px] font-semibold"
+                                className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
                                 style={{ backgroundColor: `${INVOICE_STATUS_COLORS[inv.status]}15`, color: INVOICE_STATUS_COLORS[inv.status] }}
                               >
                                 {INVOICE_STATUS_LABELS[inv.status]}
@@ -910,7 +910,7 @@ export function FichaClientePage({ customers }: Props) {
                             <div className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: opp.stage?.color || "#6B7280" }} />
                             <div className="flex-1 min-w-0">
                               <p className="truncate text-xs font-medium text-[var(--text-primary)]">{opp.name}</p>
-                              <p className="text-[10px] text-[var(--text-muted)]">{opp.stage?.name} · {opp.probability}%</p>
+                              <p className="text-[13px] text-[var(--text-muted)]">{opp.stage?.name} · {opp.probability}%</p>
                             </div>
                             <span className="text-xs font-bold text-[var(--text-primary)] tabular-nums">{fmtUSD(Number(opp.amount))}</span>
                           </div>
@@ -930,7 +930,7 @@ export function FichaClientePage({ customers }: Props) {
                             <FileText size={14} className="shrink-0 text-[var(--text-muted)]" />
                             <div className="flex-1 min-w-0">
                               <p className="truncate text-xs font-medium text-[var(--text-primary)]">{q.quote_number}</p>
-                              <p className="text-[10px] text-[var(--text-muted)]">
+                              <p className="text-[13px] text-[var(--text-muted)]">
                                 {new Date(q.created_at).toLocaleDateString("es-EC", { day: "2-digit", month: "short", year: "numeric" })}
                               </p>
                             </div>
@@ -953,7 +953,7 @@ export function FichaClientePage({ customers }: Props) {
                         <Sparkles size={14} className="text-white" />
                       </div>
                       <h3 className="text-sm font-bold text-[var(--text-primary)]">Recomendaciones para su Negocio</h3>
-                      <span className="rounded-full bg-[var(--brand)]/10 px-2.5 py-0.5 text-[9px] font-bold text-[var(--brand)]">
+                      <span className="rounded-full bg-[var(--brand)]/10 px-2.5 py-0.5 text-xs font-bold text-[var(--brand)]">
                         🤖 GRIXI AI
                       </span>
                     </div>
@@ -987,11 +987,11 @@ export function FichaClientePage({ customers }: Props) {
                           transition={{ delay: i * 0.1 }}
                           className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4 transition-shadow hover:shadow-md"
                         >
-                          <span className="rounded-full bg-[var(--brand)]/10 px-2 py-0.5 text-[8px] font-bold text-[var(--brand)]">
+                          <span className="rounded-full bg-[var(--brand)]/10 px-2 py-0.5 text-sm font-bold text-[var(--brand)]">
                             {rec.tag}
                           </span>
                           <p className="mt-2 text-xs font-semibold text-[var(--text-primary)]">{rec.title}</p>
-                          <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-secondary)]">{rec.desc}</p>
+                          <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">{rec.desc}</p>
                         </motion.div>
                       ))}
                     </div>
@@ -1027,7 +1027,7 @@ export function FichaClientePage({ customers }: Props) {
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{c.full_name}</p>
                               {c.role && (
-                                <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[9px] font-medium text-[var(--text-muted)]">
+                                <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-xs font-medium text-[var(--text-muted)]">
                                   {CONTACT_ROLE_LABELS[c.role]}
                                 </span>
                               )}
@@ -1036,13 +1036,13 @@ export function FichaClientePage({ customers }: Props) {
                           </div>
                           <div className="mt-3 space-y-1.5">
                             {c.email && (
-                              <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
+                              <div className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
                                 <Mail size={11} className="shrink-0 text-[var(--text-muted)]" />
                                 <span className="truncate">{c.email}</span>
                               </div>
                             )}
                             {c.phone && (
-                              <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
+                              <div className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
                                 <Phone size={11} className="shrink-0 text-[var(--text-muted)]" />
                                 <span>{c.phone}</span>
                               </div>
@@ -1059,9 +1059,9 @@ export function FichaClientePage({ customers }: Props) {
               <Section delay={0.45}>
                 <div className="flex items-center justify-center gap-3 py-8 text-[var(--text-muted)]">
                   <div className="h-px flex-1 bg-[var(--border)]" />
-                  <div className="flex items-center gap-2 text-[10px]">
+                  <div className="flex items-center gap-2 text-[13px]">
                     <div className="flex h-5 w-5 items-center justify-center rounded bg-gradient-to-br from-[var(--brand)] to-[#8B5CF6]">
-                      <span className="text-[7px] font-bold text-white">G</span>
+                      <span className="text-[13px] font-bold text-white">G</span>
                     </div>
                     Presentación generada por GRIXI · {new Date().toLocaleDateString("es-EC", { day: "2-digit", month: "long", year: "numeric" })}
                   </div>

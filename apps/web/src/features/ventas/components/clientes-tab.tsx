@@ -58,7 +58,7 @@ function HealthGauge({ score }: { score: number }) {
         />
       </svg>
       <span
-        className="absolute text-[9px] font-bold"
+        className="absolute text-xs font-bold"
         style={{ color }}
       >
         {score}
@@ -105,14 +105,14 @@ function CustomerCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className="truncate text-[11px] font-semibold text-[var(--text-primary)]">
+            <h4 className="truncate text-sm font-semibold text-[var(--text-primary)]">
               {customer.trade_name || customer.business_name}
             </h4>
-            <span className="shrink-0 text-[8px] text-[var(--text-muted)]">
+            <span className="shrink-0 text-sm text-[var(--text-muted)]">
               {customer.code}
             </span>
           </div>
-          <div className="mt-1 flex items-center gap-2 text-[9px] text-[var(--text-muted)]">
+          <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
             <MapPin size={9} />
             <span>
               {customer.city}, {customer.country}
@@ -133,7 +133,7 @@ function CustomerCard({
       {/* Bottom row */}
       <div className="mt-3 flex items-center gap-2">
         <span
-          className="rounded-full px-2 py-0.5 text-[8px] font-semibold"
+          className="rounded-full px-2 py-0.5 text-sm font-semibold"
           style={{
             backgroundColor: `${SEGMENT_COLORS[customer.segment]}15`,
             color: SEGMENT_COLORS[customer.segment],
@@ -141,13 +141,13 @@ function CustomerCard({
         >
           {SEGMENT_LABELS[customer.segment]}
         </span>
-        <span className="text-[8px] text-[var(--text-muted)]">
+        <span className="text-sm text-[var(--text-muted)]">
           {STATUS_LABELS[customer.status]}
         </span>
-        <span className="ml-auto text-[10px] font-bold text-[var(--text-primary)]">
+        <span className="ml-auto text-[13px] font-bold text-[var(--text-primary)]">
           ${(customer.total_revenue / 1000).toFixed(1)}K
         </span>
-        <span className="text-[8px] text-[var(--text-muted)]">
+        <span className="text-sm text-[var(--text-muted)]">
           {customer.total_orders} ventas
         </span>
         <button
@@ -155,7 +155,7 @@ function CustomerCard({
             e.stopPropagation();
             window.open(`/ventas/presentacion?cliente=${customer.id}`, '_blank');
           }}
-          className="flex items-center gap-1 rounded-md bg-gradient-to-r from-[#06B6D4] to-[#3B82F6] px-2 py-0.5 text-[7px] font-semibold text-white shadow-sm transition-all hover:shadow-md opacity-0 group-hover:opacity-100"
+          className="flex items-center gap-1 rounded-md bg-gradient-to-r from-[#06B6D4] to-[#3B82F6] px-2 py-0.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:shadow-md opacity-0 group-hover:opacity-100"
         >
           <Presentation size={8} />
           Presentación
@@ -174,7 +174,7 @@ function CustomerCard({
           ) : (
             <div className="h-4 w-4 rounded-full bg-[var(--bg-muted)]" />
           )}
-          <span className="text-[8px] text-[var(--text-muted)]">
+          <span className="text-sm text-[var(--text-muted)]">
             {customer.assigned_seller.full_name}
           </span>
         </div>
@@ -239,7 +239,7 @@ export function ClientesTab({ customers, sellers, demoRole }: Props) {
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
               "w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] py-2 pl-9 pr-4",
-              "text-[11px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
+              "text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
               "focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/30"
             )}
           />
@@ -254,7 +254,7 @@ export function ClientesTab({ customers, sellers, demoRole }: Props) {
               key={seg}
               onClick={() => setSegmentFilter(seg)}
               className={cn(
-                "rounded-full px-2.5 py-1 text-[9px] font-medium transition-all",
+                "rounded-full px-2.5 py-1 text-xs font-medium transition-all",
                 segmentFilter === seg
                   ? seg === "all"
                     ? "bg-[#3B82F6]/10 text-[#3B82F6]"
@@ -294,7 +294,7 @@ export function ClientesTab({ customers, sellers, demoRole }: Props) {
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16">
           <Users className="h-8 w-8 text-[var(--text-muted)]" />
-          <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             No se encontraron clientes
           </p>
         </div>

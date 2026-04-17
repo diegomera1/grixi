@@ -141,28 +141,28 @@ export function ForecastSection({ opportunities, stages, invoices }: Props) {
           <p className="text-lg font-bold text-[var(--text-primary)]">
             ${(pipelineForecast.totalWeighted / 1000).toFixed(0)}K
           </p>
-          <p className="text-[8px] text-[var(--text-muted)]">Forecast Ponderado</p>
+          <p className="text-sm text-[var(--text-muted)]">Forecast Ponderado</p>
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4 text-center">
           <Target size={16} className="mx-auto mb-1 text-[#3B82F6]" />
           <p className="text-lg font-bold text-[var(--text-primary)]">
             ${(pipelineForecast.totalRaw / 1000).toFixed(0)}K
           </p>
-          <p className="text-[8px] text-[var(--text-muted)]">Pipeline Total</p>
+          <p className="text-sm text-[var(--text-muted)]">Pipeline Total</p>
         </div>
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4 text-center">
           <Clock size={16} className="mx-auto mb-1 text-violet-500" />
           <p className="text-lg font-bold text-[var(--text-primary)]">
             {avgVelocity || "—"}
           </p>
-          <p className="text-[8px] text-[var(--text-muted)]">Días Promedio Cierre</p>
+          <p className="text-sm text-[var(--text-muted)]">Días Promedio Cierre</p>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Weighted Pipeline Bars */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <h4 className="mb-3 text-[10px] font-semibold text-[var(--text-primary)]">
+          <h4 className="mb-3 text-[13px] font-semibold text-[var(--text-primary)]">
             Pipeline Ponderado por Etapa
           </h4>
           <div className="h-48">
@@ -213,17 +213,17 @@ export function ForecastSection({ opportunities, stages, invoices }: Props) {
         {/* Historical Trend + Projection */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
           <div className="mb-3 flex items-center gap-2">
-            <h4 className="text-[10px] font-semibold text-[var(--text-primary)]">
+            <h4 className="text-[13px] font-semibold text-[var(--text-primary)]">
               Tendencia + Proyección
             </h4>
             <div className="flex items-center gap-3 ml-auto">
               <div className="flex items-center gap-1">
                 <div className="h-1.5 w-4 rounded bg-[#3B82F6]" />
-                <span className="text-[7px] text-[var(--text-muted)]">Actual</span>
+                <span className="text-[13px] text-[var(--text-muted)]">Actual</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="h-1.5 w-4 rounded bg-[#10B981]" style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 2px, var(--bg-card) 2px, var(--bg-card) 4px)" }} />
-                <span className="text-[7px] text-[var(--text-muted)]">Proyección</span>
+                <span className="text-[13px] text-[var(--text-muted)]">Proyección</span>
               </div>
             </div>
           </div>

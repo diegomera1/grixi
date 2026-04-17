@@ -192,20 +192,20 @@ export function CustomerCombobox({
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="truncate text-[11px] font-semibold text-[var(--text-primary)]">
+              <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
                 {selected.trade_name || selected.business_name}
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-[8px] text-[var(--text-muted)]">{selected.code}</span>
-                <span className="text-[8px] text-[var(--text-muted)]">·</span>
-                <span className="flex items-center gap-0.5 text-[8px] text-[var(--text-muted)]">
+                <span className="text-sm text-[var(--text-muted)]">{selected.code}</span>
+                <span className="text-sm text-[var(--text-muted)]">·</span>
+                <span className="flex items-center gap-0.5 text-sm text-[var(--text-muted)]">
                   <MapPin size={7} />
                   {selected.city}, {selected.country}
                 </span>
               </div>
             </div>
             <span
-              className="shrink-0 rounded-full px-1.5 py-0.5 text-[7px] font-bold"
+              className="shrink-0 rounded-full px-1.5 py-0.5 text-[13px] font-bold"
               style={{
                 backgroundColor: `${SEGMENT_COLORS[selected.segment]}15`,
                 color: SEGMENT_COLORS[selected.segment],
@@ -219,7 +219,7 @@ export function CustomerCombobox({
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-muted)]">
               <Building2 size={14} className="text-[var(--text-muted)]" />
             </div>
-            <span className="text-[11px] text-[var(--text-muted)]">Seleccionar cliente...</span>
+            <span className="text-sm text-[var(--text-muted)]">Seleccionar cliente...</span>
           </>
         )}
         <ChevronDown
@@ -255,7 +255,7 @@ export function CustomerCombobox({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar por nombre, código o país..."
-                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-muted)] py-2 pl-8 pr-3 text-[10px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-muted)] py-2 pl-8 pr-3 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]"
                   autoFocus
                 />
               </div>
@@ -264,7 +264,7 @@ export function CustomerCombobox({
             {/* List */}
             <div className="max-h-64 overflow-y-auto">
               {filtered.length === 0 ? (
-                <p className="p-4 text-center text-[10px] text-[var(--text-muted)]">
+                <p className="p-4 text-center text-[13px] text-[var(--text-muted)]">
                   Sin resultados
                 </p>
               ) : (
@@ -295,24 +295,24 @@ export function CustomerCombobox({
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-[10px] font-semibold text-[var(--text-primary)]">
+                      <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
                         {c.trade_name || c.business_name}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[8px] text-[var(--text-muted)]">{c.code}</span>
-                        <span className="text-[8px] text-[var(--text-muted)]">·</span>
-                        <span className="text-[8px] text-[var(--text-muted)]">
+                        <span className="text-sm text-[var(--text-muted)]">{c.code}</span>
+                        <span className="text-sm text-[var(--text-muted)]">·</span>
+                        <span className="text-sm text-[var(--text-muted)]">
                           {c.city}, {c.country}
                         </span>
-                        <span className="text-[8px] text-[var(--text-muted)]">·</span>
-                        <span className="text-[8px] text-emerald-500 font-medium">
+                        <span className="text-sm text-[var(--text-muted)]">·</span>
+                        <span className="text-sm text-emerald-500 font-medium">
                           ${(c.total_revenue / 1000).toFixed(0)}K rev.
                         </span>
                       </div>
                     </div>
                     <div className="shrink-0 flex flex-col items-end gap-1">
                       <span
-                        className="rounded-full px-1.5 py-0.5 text-[7px] font-bold"
+                        className="rounded-full px-1.5 py-0.5 text-[13px] font-bold"
                         style={{
                           backgroundColor: `${SEGMENT_COLORS[c.segment]}15`,
                           color: SEGMENT_COLORS[c.segment],
@@ -320,7 +320,7 @@ export function CustomerCombobox({
                       >
                         {SEGMENT_LABELS[c.segment]}
                       </span>
-                      <span className="text-[7px] text-[var(--text-muted)]">
+                      <span className="text-[13px] text-[var(--text-muted)]">
                         Score: {c.health_score}
                       </span>
                     </div>
@@ -407,7 +407,7 @@ export function ProductPicker({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar producto por nombre o SKU..."
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-muted)] py-2 pl-8 pr-3 text-[10px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-muted)] py-2 pl-8 pr-3 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]"
             autoFocus
           />
         </div>
@@ -418,7 +418,7 @@ export function ProductPicker({
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-6">
             <Package size={20} className="text-[var(--text-muted)]" />
-            <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+            <p className="mt-2 text-[13px] text-[var(--text-muted)]">
               No se encontraron productos
             </p>
           </div>
@@ -442,18 +442,18 @@ export function ProductPicker({
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="truncate text-[10px] font-semibold text-[var(--text-primary)]">
+                <p className="truncate text-[13px] font-semibold text-[var(--text-primary)]">
                   {p.name}
                 </p>
-                <p className="text-[8px] text-[var(--text-muted)] mt-0.5">
+                <p className="text-sm text-[var(--text-muted)] mt-0.5">
                   SKU: {p.sku}
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-[11px] font-bold text-emerald-500 tabular-nums">
+                <p className="text-sm font-bold text-emerald-500 tabular-nums">
                   ${p.sale_price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 </p>
-                <p className="text-[7px] text-[var(--text-muted)]">precio unit.</p>
+                <p className="text-[13px] text-[var(--text-muted)]">precio unit.</p>
               </div>
             </button>
           ))
@@ -462,7 +462,7 @@ export function ProductPicker({
 
       {/* Footer */}
       <div className="border-t border-[var(--border)] px-3 py-2 bg-[var(--bg-muted)]/30">
-        <p className="text-[8px] text-[var(--text-muted)]">
+        <p className="text-sm text-[var(--text-muted)]">
           {filtered.length} producto{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
         </p>
       </div>
@@ -520,7 +520,7 @@ function ProductRowAnchor({
           <input
             {...register(`items.${index}.description`)}
             placeholder="Click para buscar producto..."
-            className="w-full bg-[var(--bg-card)] text-[10px] font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none cursor-pointer"
+            className="w-full bg-[var(--bg-card)] text-[13px] font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none cursor-pointer"
             onFocus={() => {
               setActiveProductRow(index);
               setProductSearch("");
@@ -532,7 +532,7 @@ function ProductRowAnchor({
             }}
           />
           {selectedProd && (
-            <p className="text-[8px] text-[var(--text-muted)]">
+            <p className="text-sm text-[var(--text-muted)]">
               SKU: {selectedProd.sku}
             </p>
           )}
@@ -727,7 +727,7 @@ export function NuevaVentaModal({
               </div>
               <div>
                 <h2 className="text-sm font-bold text-[var(--text-primary)]">Nueva Venta</h2>
-                <p className="text-[9px] text-[var(--text-muted)]">Registrar nueva transacción de venta</p>
+                <p className="text-xs text-[var(--text-muted)]">Registrar nueva transacción de venta</p>
               </div>
             </div>
 
@@ -737,7 +737,7 @@ export function NuevaVentaModal({
                 <div key={s} className="flex items-center gap-1.5">
                   <div
                     className={cn(
-                      "flex h-6 items-center gap-1 rounded-full px-2.5 text-[8px] font-bold transition-all",
+                      "flex h-6 items-center gap-1 rounded-full px-2.5 text-sm font-bold transition-all",
                       watchStatus === s
                         ? "ring-2 ring-offset-1"
                         : STATUS_FLOW.indexOf(watchStatus) > i
@@ -761,7 +761,7 @@ export function NuevaVentaModal({
                 <button
                   type="button"
                   onClick={advanceStatus}
-                  className="ml-2 rounded-lg bg-[#3B82F6] px-3 py-1.5 text-[9px] font-bold text-white transition-all hover:bg-[#2563EB]"
+                  className="ml-2 rounded-lg bg-[#3B82F6] px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-[#2563EB]"
                 >
                   Avanzar →
                 </button>
@@ -781,7 +781,7 @@ export function NuevaVentaModal({
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
               {/* Row 1: Customer Combobox (full width) */}
               <div>
-                <label className="mb-1.5 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                <label className="mb-1.5 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                   Cliente *
                 </label>
                 <CustomerCombobox
@@ -796,19 +796,19 @@ export function NuevaVentaModal({
               <div className="grid grid-cols-12 gap-4">
                 {/* Date */}
                 <div className="col-span-3">
-                  <label className="mb-1.5 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <label className="mb-1.5 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Fecha de Venta
                   </label>
                   <input
                     type="date"
                     {...register("sale_date")}
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-[11px] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30"
                   />
                 </div>
 
                 {/* Currency Picker */}
                 <div className="col-span-3 relative">
-                  <label className="mb-1.5 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <label className="mb-1.5 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Moneda
                   </label>
                   <button
@@ -817,8 +817,8 @@ export function NuevaVentaModal({
                     className="flex w-full items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-left transition-all hover:border-[#3B82F6]/50"
                   >
                     <span className="text-base">{selectedCurrency?.flag}</span>
-                    <span className="text-[11px] font-semibold text-[var(--text-primary)]">{watchCurrency}</span>
-                    <span className="text-[9px] text-[var(--text-muted)]">{selectedCurrency?.name}</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">{watchCurrency}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{selectedCurrency?.name}</span>
                     <ChevronDown size={12} className="ml-auto text-[var(--text-muted)]" />
                   </button>
                   {showCurrencyPicker && (
@@ -841,8 +841,8 @@ export function NuevaVentaModal({
                           )}
                         >
                           <span className="text-lg">{c.flag}</span>
-                          <span className="text-[10px] font-semibold text-[var(--text-primary)]">{c.code}</span>
-                          <span className="text-[9px] text-[var(--text-muted)]">{c.name}</span>
+                          <span className="text-[13px] font-semibold text-[var(--text-primary)]">{c.code}</span>
+                          <span className="text-xs text-[var(--text-muted)]">{c.name}</span>
                           {watchCurrency === c.code && (
                             <CheckCircle2 size={12} className="ml-auto text-[#3B82F6]" />
                           )}
@@ -854,7 +854,7 @@ export function NuevaVentaModal({
 
                 {/* Payment Method Picker */}
                 <div className="col-span-4 relative">
-                  <label className="mb-1.5 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <label className="mb-1.5 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Método de Pago
                   </label>
                   <button
@@ -870,7 +870,7 @@ export function NuevaVentaModal({
                         >
                           <selectedPayment.icon size={12} style={{ color: selectedPayment.color }} />
                         </div>
-                        <span className="text-[11px] font-medium text-[var(--text-primary)]">
+                        <span className="text-sm font-medium text-[var(--text-primary)]">
                           {selectedPayment.label}
                         </span>
                       </>
@@ -902,7 +902,7 @@ export function NuevaVentaModal({
                           >
                             <m.icon size={14} style={{ color: m.color }} />
                           </div>
-                          <span className="text-[10px] font-medium text-[var(--text-primary)]">{m.label}</span>
+                          <span className="text-[13px] font-medium text-[var(--text-primary)]">{m.label}</span>
                           {watchPaymentMethod === m.value && (
                             <CheckCircle2 size={12} className="ml-auto text-[#3B82F6]" />
                           )}
@@ -914,27 +914,27 @@ export function NuevaVentaModal({
 
                 {/* Payment Terms */}
                 <div className="col-span-2">
-                  <label className="mb-1.5 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <label className="mb-1.5 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Plazo (días)
                   </label>
                   <input
                     type="number"
                     {...register("payment_terms", { valueAsNumber: true })}
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-[11px] text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30"
                   />
                 </div>
               </div>
 
               {/* Row 3: Notes */}
               <div>
-                <label className="mb-1.5 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                <label className="mb-1.5 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                   Notas Internas
                 </label>
                 <input
                   type="text"
                   {...register("notes")}
                   placeholder="Instrucciones especiales, referencias, etc."
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-[11px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/30"
                 />
               </div>
 
@@ -943,10 +943,10 @@ export function NuevaVentaModal({
                 <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Package size={14} className="text-[#3B82F6]" />
-                    <h3 className="text-[11px] font-semibold text-[var(--text-primary)]">
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                       Líneas de Producto
                     </h3>
-                    <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[8px] font-bold text-[var(--text-muted)]">
+                    <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-sm font-bold text-[var(--text-muted)]">
                       {fields.length}
                     </span>
                   </div>
@@ -963,7 +963,7 @@ export function NuevaVentaModal({
                         cost_price: 0,
                       })
                     }
-                    className="flex items-center gap-1.5 rounded-lg bg-[#3B82F6]/10 px-3 py-1.5 text-[9px] font-bold text-[#3B82F6] transition-colors hover:bg-[#3B82F6]/20"
+                    className="flex items-center gap-1.5 rounded-lg bg-[#3B82F6]/10 px-3 py-1.5 text-xs font-bold text-[#3B82F6] transition-colors hover:bg-[#3B82F6]/20"
                   >
                     <Plus size={10} />
                     Agregar Línea
@@ -985,7 +985,7 @@ export function NuevaVentaModal({
                     return (
                       <div key={field.id} className="group flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-muted)]/30 transition-colors">
                         {/* # */}
-                        <span className="w-6 shrink-0 text-[10px] font-bold text-[var(--text-muted)]">
+                        <span className="w-6 shrink-0 text-[13px] font-bold text-[var(--text-muted)]">
                           {index + 1}
                         </span>
 
@@ -1005,21 +1005,21 @@ export function NuevaVentaModal({
 
                         {/* Quantity */}
                         <div className="w-16 shrink-0">
-                          <label className="mb-0.5 block text-[7px] text-[var(--text-muted)] uppercase">Cant.</label>
+                          <label className="mb-0.5 block text-[13px] text-[var(--text-muted)] uppercase">Cant.</label>
                           <input
                             type="number"
                             min={1}
                             {...register(`items.${index}.quantity`, { valueAsNumber: true })}
-                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-center"
+                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-center"
                           />
                         </div>
 
                         {/* Unit */}
                         <div className="w-16 shrink-0">
-                          <label className="mb-0.5 block text-[7px] text-[var(--text-muted)] uppercase">Unidad</label>
+                          <label className="mb-0.5 block text-[13px] text-[var(--text-muted)] uppercase">Unidad</label>
                           <select
                             {...register(`items.${index}.unit`)}
-                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-1 py-1.5 text-[10px] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]"
+                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-1 py-1.5 text-[13px] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#3B82F6]"
                           >
                             {["UND", "KG", "MT", "GL", "LIC", "KIT", "HRS"].map((u) => (
                               <option key={u} value={u}>{u}</option>
@@ -1029,32 +1029,32 @@ export function NuevaVentaModal({
 
                         {/* Price */}
                         <div className="w-24 shrink-0">
-                          <label className="mb-0.5 block text-[7px] text-[var(--text-muted)] uppercase">P. Unit.</label>
+                          <label className="mb-0.5 block text-[13px] text-[var(--text-muted)] uppercase">P. Unit.</label>
                           <input
                             type="number"
                             step="0.01"
                             {...register(`items.${index}.unit_price`, { valueAsNumber: true })}
-                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-right"
+                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-right"
                           />
                         </div>
 
                         {/* Disc */}
                         <div className="w-14 shrink-0">
-                          <label className="mb-0.5 block text-[7px] text-[var(--text-muted)] uppercase">Desc.%</label>
+                          <label className="mb-0.5 block text-[13px] text-[var(--text-muted)] uppercase">Desc.%</label>
                           <input
                             type="number"
                             step="0.1"
                             min={0}
                             max={100}
                             {...register(`items.${index}.discount_percent`, { valueAsNumber: true })}
-                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-center"
+                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-center"
                           />
                         </div>
 
                         {/* Subtotal */}
                         <div className="w-24 shrink-0 text-right">
-                          <label className="mb-0.5 block text-[7px] text-[var(--text-muted)] uppercase">Subtotal</label>
-                          <p className="text-[11px] font-bold text-[var(--text-primary)] tabular-nums">
+                          <label className="mb-0.5 block text-[13px] text-[var(--text-muted)] uppercase">Subtotal</label>
+                          <p className="text-sm font-bold text-[var(--text-primary)] tabular-nums">
                             ${lineTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                         </div>
@@ -1084,7 +1084,7 @@ export function NuevaVentaModal({
                 {/* Controls */}
                 <div className="flex items-end gap-5">
                   <div>
-                    <label className="mb-1 block text-[8px] font-semibold text-[var(--text-muted)] uppercase">
+                    <label className="mb-1 block text-sm font-semibold text-[var(--text-muted)] uppercase">
                       Descuento %
                     </label>
                     <input
@@ -1093,22 +1093,22 @@ export function NuevaVentaModal({
                       min={0}
                       max={100}
                       {...register("discount_percent", { valueAsNumber: true })}
-                      className="w-20 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-center"
+                      className="w-20 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-center"
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[8px] font-semibold text-[var(--text-muted)] uppercase">
+                    <label className="mb-1 block text-sm font-semibold text-[var(--text-muted)] uppercase">
                       IVA %
                     </label>
                     <input
                       type="number"
                       step="0.1"
                       {...register("tax_rate", { valueAsNumber: true })}
-                      className="w-20 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-center"
+                      className="w-20 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#3B82F6] text-center"
                     />
                   </div>
                   <div className="rounded-lg bg-[var(--bg-card)] border border-[var(--border)] px-3 py-1.5">
-                    <p className="text-[7px] text-[var(--text-muted)] uppercase">Margen</p>
+                    <p className="text-[13px] text-[var(--text-muted)] uppercase">Margen</p>
                     <p
                       className={cn(
                         "text-sm font-bold tabular-nums",
@@ -1123,27 +1123,27 @@ export function NuevaVentaModal({
                 {/* Summary */}
                 <div className="text-right space-y-1">
                   <div className="flex items-center justify-end gap-4">
-                    <span className="text-[9px] text-[var(--text-muted)]">Subtotal</span>
-                    <span className="text-[10px] font-medium text-[var(--text-secondary)] tabular-nums w-28 text-right">
+                    <span className="text-xs text-[var(--text-muted)]">Subtotal</span>
+                    <span className="text-[13px] font-medium text-[var(--text-secondary)] tabular-nums w-28 text-right">
                       ${subtotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex items-center justify-end gap-4">
-                      <span className="text-[9px] text-[var(--text-muted)]">Descuento ({watchDiscount}%)</span>
-                      <span className="text-[10px] text-red-500 tabular-nums w-28 text-right">
+                      <span className="text-xs text-[var(--text-muted)]">Descuento ({watchDiscount}%)</span>
+                      <span className="text-[13px] text-red-500 tabular-nums w-28 text-right">
                         -${discountAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   )}
                   <div className="flex items-center justify-end gap-4">
-                    <span className="text-[9px] text-[var(--text-muted)]">IVA ({watchTax}%)</span>
-                    <span className="text-[10px] text-[var(--text-secondary)] tabular-nums w-28 text-right">
+                    <span className="text-xs text-[var(--text-muted)]">IVA ({watchTax}%)</span>
+                    <span className="text-[13px] text-[var(--text-secondary)] tabular-nums w-28 text-right">
                       ${taxAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex items-center justify-end gap-4 pt-1.5 border-t border-[var(--border)]">
-                    <span className="text-[11px] font-bold text-[var(--text-primary)]">TOTAL</span>
+                    <span className="text-sm font-bold text-[var(--text-primary)]">TOTAL</span>
                     <span className="text-lg font-bold text-[var(--text-primary)] tabular-nums w-28 text-right">
                       ${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
@@ -1155,7 +1155,7 @@ export function NuevaVentaModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-[10px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]"
+                    className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     Cancelar
                   </button>
@@ -1163,7 +1163,7 @@ export function NuevaVentaModal({
                     type="submit"
                     disabled={saving}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-[10px] font-bold text-white transition-all",
+                      "flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-[13px] font-bold text-white transition-all",
                       saving
                         ? "bg-[#3B82F6]/50 cursor-not-allowed"
                         : "bg-[#3B82F6] hover:bg-[#2563EB] shadow-lg shadow-[#3B82F6]/25"

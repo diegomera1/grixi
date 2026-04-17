@@ -36,7 +36,7 @@ const LeafletMap = dynamic(
       <div className="flex h-full items-center justify-center bg-[#0f172a] rounded-xl">
         <div className="flex flex-col items-center gap-2 text-[var(--text-muted)]">
           <Loader2 size={20} className="animate-spin text-[#3B82F6]" />
-          <span className="text-[10px]">Cargando mapa...</span>
+          <span className="text-[13px]">Cargando mapa...</span>
         </div>
       </div>
     ),
@@ -141,7 +141,7 @@ export function WorldHeatmap({ invoices, customers }: Props) {
           <h3 className="text-sm font-bold text-[var(--text-primary)]">
             Distribución Geográfica
           </h3>
-          <div className="flex items-center gap-1 text-[9px] text-[var(--text-muted)]">
+          <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
             <span className="cursor-pointer hover:text-[var(--text-primary)]" onClick={handleBackToWorld}>Mundo</span>
             {selectedCountry && (
               <><ChevronRight size={9} /><span className="cursor-pointer hover:text-[var(--text-primary)]" onClick={handleBackToCountry}>{selectedCountry}</span></>
@@ -155,7 +155,7 @@ export function WorldHeatmap({ invoices, customers }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-[9px]">
+        <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
             <DollarSign size={9} className="text-emerald-500" />
             <span className="text-[var(--text-muted)]">Revenue</span>
@@ -254,10 +254,10 @@ export function WorldHeatmap({ invoices, customers }: Props) {
                 className="group cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2 text-left transition-all hover:border-[#3B82F6]/30 hover:shadow-sm"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-semibold text-[var(--text-primary)] truncate">{cd.country}</span>
-                  <span className="text-[7px] font-bold text-[var(--text-muted)]">{`#${i + 1}`}</span>
+                  <span className="text-xs font-semibold text-[var(--text-primary)] truncate">{cd.country}</span>
+                  <span className="text-[13px] font-bold text-[var(--text-muted)]">{`#${i + 1}`}</span>
                 </div>
-                <p className="mt-1 text-[11px] font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(cd.revenue)}</p>
+                <p className="mt-1 text-sm font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(cd.revenue)}</p>
                 <div className="mt-1 h-0.5 overflow-hidden rounded-full bg-[var(--bg-muted)]">
                   <motion.div
                     initial={{ width: 0 }}
@@ -266,7 +266,7 @@ export function WorldHeatmap({ invoices, customers }: Props) {
                     className="h-full rounded-full bg-gradient-to-r from-[#3B82F6] to-[#10B981]"
                   />
                 </div>
-                <div className="mt-1 flex justify-between text-[7px] text-[var(--text-muted)]">
+                <div className="mt-1 flex justify-between text-[13px] text-[var(--text-muted)]">
                   <span>{cd.clients} cl.</span>
                   <span>{pct.toFixed(1)}%</span>
                 </div>
@@ -312,7 +312,7 @@ function ClientMapDetail({
             {client.logo_url ? (
               <img src={client.logo_url} alt="" className="h-5 w-5 rounded object-cover" />
             ) : (
-              <div className="flex h-5 w-5 items-center justify-center rounded bg-gradient-to-br from-[var(--brand)] to-[#8B5CF6] text-[6px] font-bold text-white">
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-gradient-to-br from-[var(--brand)] to-[#8B5CF6] text-xs font-bold text-white">
                 {(client.trade_name || client.business_name).substring(0, 2).toUpperCase()}
               </div>
             )}
@@ -325,7 +325,7 @@ function ClientMapDetail({
           <button
             onClick={onToggleStreetView}
             className={cn(
-              "flex items-center gap-1 rounded-md px-2 py-1 text-[8px] font-semibold transition-all",
+              "flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold transition-all",
               showStreetView
                 ? "bg-[var(--brand)]/20 text-[var(--brand)] border border-[var(--brand)]/30"
                 : "bg-[var(--bg-muted)] text-[var(--text-muted)] hover:bg-[var(--bg-muted)]/80"
@@ -357,7 +357,7 @@ function ClientMapDetail({
                 loading="lazy"
               />
             </div>
-            <p className="flex items-center gap-1 text-[8px] text-[var(--text-muted)]">
+            <p className="flex items-center gap-1 text-sm text-[var(--text-muted)]">
               <MapPin size={8} />{client.address || "—"} · {client.city}, {client.country}
             </p>
           </div>
@@ -375,17 +375,17 @@ function ClientMapDetail({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-[var(--text-primary)] truncate">{client.business_name}</p>
+                  <p className="text-[13px] font-bold text-[var(--text-primary)] truncate">{client.business_name}</p>
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span className="rounded-full px-1.5 py-0.5 text-[7px] font-bold" style={{ backgroundColor: `${segColor}15`, color: segColor }}>
+                    <span className="rounded-full px-1.5 py-0.5 text-[13px] font-bold" style={{ backgroundColor: `${segColor}15`, color: segColor }}>
                       {SEGMENT_LABELS[client.segment] || client.segment}
                     </span>
-                    <span className="text-[7px] text-[var(--text-muted)]">{client.sector}</span>
-                    {client.code && <span className="text-[7px] text-[var(--text-muted)]">#{client.code}</span>}
+                    <span className="text-[13px] text-[var(--text-muted)]">{client.sector}</span>
+                    {client.code && <span className="text-[13px] text-[var(--text-muted)]">#{client.code}</span>}
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[8px] text-[var(--text-muted)]">
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-[var(--text-muted)]">
                 <span className="flex items-center gap-0.5"><MapPin size={8} />{client.city}, {client.province || ""}, {client.country}</span>
                 {client.phone && <span className="flex items-center gap-0.5"><Phone size={8} />{client.phone}</span>}
                 {client.email && <span className="flex items-center gap-0.5"><Mail size={8} />{client.email}</span>}
@@ -409,39 +409,39 @@ function ClientMapDetail({
               ].map((kpi) => (
                 <div key={kpi.label} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2 text-center">
                   <kpi.icon size={10} style={{ color: kpi.color }} className="mx-auto mb-0.5" />
-                  <p className="text-[10px] font-bold tabular-nums" style={{ color: kpi.color }}>{kpi.value}</p>
-                  <p className="text-[6px] text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
+                  <p className="text-[13px] font-bold tabular-nums" style={{ color: kpi.color }}>{kpi.value}</p>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{kpi.label}</p>
                 </div>
               ))}
             </div>
 
             {/* Health Bar */}
             <div className="flex items-center gap-2 px-1">
-              <span className="text-[7px] text-[var(--text-muted)] w-10">Health</span>
+              <span className="text-[13px] text-[var(--text-muted)] w-10">Health</span>
               <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-muted)] overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${client.health_score}%`, backgroundColor: healthColor }} />
               </div>
-              <span className="text-[8px] font-bold tabular-nums" style={{ color: healthColor }}>{client.health_score}/100</span>
+              <span className="text-sm font-bold tabular-nums" style={{ color: healthColor }}>{client.health_score}/100</span>
             </div>
 
             {/* Financial */}
             <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5">
-              <h5 className="text-[9px] font-semibold text-[var(--text-primary)] mb-2">💰 Financiero</h5>
+              <h5 className="text-xs font-semibold text-[var(--text-primary)] mb-2">💰 Financiero</h5>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                <div><span className="text-[6px] text-[var(--text-muted)] uppercase">Crédito</span><p className="text-[9px] font-bold text-[var(--text-primary)]">{fmtMoneyCompact(client.credit_limit)}</p></div>
-                <div><span className="text-[6px] text-[var(--text-muted)] uppercase">Usado</span><p className="text-[9px] font-bold text-[var(--text-primary)]">{fmtMoneyCompact(client.credit_used)}</p></div>
-                <div><span className="text-[6px] text-[var(--text-muted)] uppercase">Pago Prom.</span><p className="text-[9px] font-bold text-[var(--text-primary)]">{client.payment_avg_days}d (plazo {client.payment_terms}d)</p></div>
-                <div><span className="text-[6px] text-[var(--text-muted)] uppercase">A Tiempo</span><p className="text-[9px] font-bold" style={{ color: client.on_time_payment_pct >= 80 ? "#10B981" : "#EF4444" }}>{client.on_time_payment_pct.toFixed(0)}%</p></div>
+                <div><span className="text-xs text-[var(--text-muted)] uppercase">Crédito</span><p className="text-xs font-bold text-[var(--text-primary)]">{fmtMoneyCompact(client.credit_limit)}</p></div>
+                <div><span className="text-xs text-[var(--text-muted)] uppercase">Usado</span><p className="text-xs font-bold text-[var(--text-primary)]">{fmtMoneyCompact(client.credit_used)}</p></div>
+                <div><span className="text-xs text-[var(--text-muted)] uppercase">Pago Prom.</span><p className="text-xs font-bold text-[var(--text-primary)]">{client.payment_avg_days}d (plazo {client.payment_terms}d)</p></div>
+                <div><span className="text-xs text-[var(--text-muted)] uppercase">A Tiempo</span><p className="text-xs font-bold" style={{ color: client.on_time_payment_pct >= 80 ? "#10B981" : "#EF4444" }}>{client.on_time_payment_pct.toFixed(0)}%</p></div>
               </div>
             </div>
 
             {/* Recent Invoices */}
             {clientInvoices.length > 0 && (
               <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5">
-                <h5 className="text-[9px] font-semibold text-[var(--text-primary)] mb-1.5">📋 Últimas Facturas ({clientInvoices.length})</h5>
+                <h5 className="text-xs font-semibold text-[var(--text-primary)] mb-1.5">📋 Últimas Facturas ({clientInvoices.length})</h5>
                 <div className="space-y-1">
                   {clientInvoices.slice(0, 4).map((inv) => (
-                    <div key={inv.id} className="flex items-center justify-between text-[8px]">
+                    <div key={inv.id} className="flex items-center justify-between text-sm">
                       <span className="font-medium text-[var(--text-primary)]">{inv.invoice_number}</span>
                       <span className="text-[var(--text-muted)]">{new Date(inv.sale_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}</span>
                       <span className="font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(Number(inv.total_usd))}</span>
@@ -457,13 +457,13 @@ function ClientMapDetail({
                 {client.assigned_seller.avatar_url ? (
                   <img src={client.assigned_seller.avatar_url} alt="" className="h-5 w-5 rounded-full object-cover" />
                 ) : (
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[6px] font-bold text-[var(--brand)]">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand)]/10 text-xs font-bold text-[var(--brand)]">
                     {client.assigned_seller.full_name.substring(0, 2).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <p className="text-[8px] font-semibold text-[var(--text-primary)]">{client.assigned_seller.full_name}</p>
-                  <p className="text-[6px] text-[var(--text-muted)]">Ejecutivo Comercial</p>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{client.assigned_seller.full_name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">Ejecutivo Comercial</p>
                 </div>
               </div>
             )}

@@ -207,12 +207,12 @@ export function GeoDrilldown({
               <Globe size={12} className="text-[#3B82F6]" />
             </div>
             <div>
-              <h2 className="text-[10px] font-bold text-[var(--text-primary)]">
+              <h2 className="text-[13px] font-bold text-[var(--text-primary)]">
                 {showingProvinces ? `Provincias de ${country}` :
                  showingCities ? `Ciudades de ${selectedProvince}` :
                  `Clientes en ${selectedCity}`}
               </h2>
-              <p className="text-[7px] text-[var(--text-muted)]">
+              <p className="text-[13px] text-[var(--text-muted)]">
                 {showingProvinces ? "Click en una provincia para ver ciudades" :
                  showingCities ? "Click en una ciudad para ver clientes" :
                  `${cityClients.length} clientes encontrados`}
@@ -240,7 +240,7 @@ export function GeoDrilldown({
             <div key={kpi.label} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2">
               <div className="flex items-center gap-1">
                 <kpi.icon size={8} style={{ color: kpi.color }} />
-                <span className="text-[6px] text-[var(--text-muted)] uppercase">{kpi.label}</span>
+                <span className="text-xs text-[var(--text-muted)] uppercase">{kpi.label}</span>
               </div>
               <p className="mt-0.5 text-xs font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
             </div>
@@ -253,7 +253,7 @@ export function GeoDrilldown({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1">
                 <BarChart3 size={9} className="text-[#3B82F6]" />
-                <h4 className="text-[9px] font-semibold text-[var(--text-primary)]">
+                <h4 className="text-xs font-semibold text-[var(--text-primary)]">
                   Revenue por {currentLabel} ({currentData.length})
                 </h4>
               </div>
@@ -262,7 +262,7 @@ export function GeoDrilldown({
                 <button
                   onClick={() => setViewMode("bars")}
                   className={cn(
-                    "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[7px] font-medium transition-all",
+                    "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[13px] font-medium transition-all",
                     viewMode === "bars"
                       ? "bg-[var(--bg-card)] text-[#3B82F6] shadow-sm"
                       : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -273,7 +273,7 @@ export function GeoDrilldown({
                 <button
                   onClick={() => setViewMode("treemap")}
                   className={cn(
-                    "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[7px] font-medium transition-all",
+                    "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[13px] font-medium transition-all",
                     viewMode === "treemap"
                       ? "bg-[var(--bg-card)] text-[#8B5CF6] shadow-sm"
                       : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -362,7 +362,7 @@ export function GeoDrilldown({
               </div>
             )}
 
-            <p className="mt-1.5 text-center text-[7px] text-[var(--text-muted)] italic">
+            <p className="mt-1.5 text-center text-[13px] text-[var(--text-muted)] italic">
               Click para explorar {showingProvinces ? "ciudades" : "clientes"}
             </p>
           </div>
@@ -373,7 +373,7 @@ export function GeoDrilldown({
           <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-3">
             <div className="flex items-center gap-1 mb-1.5">
               <Layers size={9} className="text-[#8B5CF6]" />
-              <h4 className="text-[9px] font-semibold text-[var(--text-primary)]">Segmentación RFM</h4>
+              <h4 className="text-xs font-semibold text-[var(--text-primary)]">Segmentación RFM</h4>
             </div>
             <div className="flex items-center gap-3">
               <div className="h-24 w-24 shrink-0">
@@ -393,9 +393,9 @@ export function GeoDrilldown({
                   <div key={seg.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: seg.fill }} />
-                      <span className="text-[8px] text-[var(--text-secondary)]">{seg.name}</span>
+                      <span className="text-sm text-[var(--text-secondary)]">{seg.name}</span>
                     </div>
-                    <span className="text-[8px] font-bold text-[var(--text-primary)] tabular-nums">{seg.value}</span>
+                    <span className="text-sm font-bold text-[var(--text-primary)] tabular-nums">{seg.value}</span>
                   </div>
                 ))}
               </div>
@@ -408,7 +408,7 @@ export function GeoDrilldown({
           <div>
             <div className="flex items-center gap-1 mb-2">
               <Users size={9} className="text-[#06B6D4]" />
-              <h4 className="text-[9px] font-semibold text-[var(--text-primary)]">
+              <h4 className="text-xs font-semibold text-[var(--text-primary)]">
                 Clientes en {selectedCity} ({cityClients.length})
               </h4>
             </div>
@@ -425,7 +425,7 @@ export function GeoDrilldown({
           <div>
             <div className="flex items-center gap-1 mb-1.5">
               <MapPin size={9} className="text-[#F97316]" />
-              <h4 className="text-[9px] font-semibold text-[var(--text-primary)]">
+              <h4 className="text-xs font-semibold text-[var(--text-primary)]">
                 Ranking de {currentLabel}
               </h4>
             </div>
@@ -437,18 +437,18 @@ export function GeoDrilldown({
                   className="flex w-full items-center justify-between rounded-md border border-[var(--border)] bg-[var(--bg-card)] px-2.5 py-1.5 transition-all hover:border-[#3B82F6]/30 hover:shadow-sm group text-left"
                 >
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[8px] font-bold text-[var(--text-muted)] tabular-nums w-3">
+                    <span className="text-sm font-bold text-[var(--text-muted)] tabular-nums w-3">
                       {`#${i + 1}`}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[9px] font-semibold text-[var(--text-primary)] truncate">{node.name}</p>
-                      <p className="text-[7px] text-[var(--text-muted)]">
+                      <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{node.name}</p>
+                      <p className="text-[13px] text-[var(--text-muted)]">
                         {node.clients} cl. · Health {node.avgHealth}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[9px] font-bold text-emerald-500 tabular-nums">
+                    <span className="text-xs font-bold text-emerald-500 tabular-nums">
                       {`$${(node.revenue / 1000).toFixed(0)}K`}
                     </span>
                     <ChevronRight size={9} className="text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -502,27 +502,27 @@ function ClientCard({ client, index, onSelect }: { client: SalesCustomer; index:
             className="h-7 w-7 rounded-md object-cover ring-1 ring-[var(--border)]"
           />
         ) : (
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-[#3B82F6]/20 to-[#06B6D4]/20 text-[7px] font-bold text-[#3B82F6]">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-[#3B82F6]/20 to-[#06B6D4]/20 text-[13px] font-bold text-[#3B82F6]">
             {initials}
           </div>
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="text-[9px] font-semibold text-[var(--text-primary)] truncate">
+          <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
             {client.trade_name || client.business_name}
           </p>
           <div className="flex items-center gap-1 mt-0.5">
             <span className="inline-block h-1 w-1 rounded-full" style={{ backgroundColor: SEGMENT_COLORS[client.segment] || "#6B7280" }} />
-            <span className="text-[7px] text-[var(--text-muted)]">{SEGMENT_LABELS[client.segment] || client.segment}</span>
-            <span className="text-[7px] font-semibold tabular-nums" style={{ color: healthColor }}>{client.health_score}pts</span>
+            <span className="text-[13px] text-[var(--text-muted)]">{SEGMENT_LABELS[client.segment] || client.segment}</span>
+            <span className="text-[13px] font-semibold tabular-nums" style={{ color: healthColor }}>{client.health_score}pts</span>
           </div>
         </div>
 
         <div className="text-right shrink-0">
-          <p className="text-[9px] font-bold text-emerald-500 tabular-nums">
+          <p className="text-xs font-bold text-emerald-500 tabular-nums">
             {`$${(Number(client.total_revenue) / 1000).toFixed(0)}K`}
           </p>
-          <p className="text-[6px] text-[var(--text-muted)]">{client.total_orders} órdenes</p>
+          <p className="text-xs text-[var(--text-muted)]">{client.total_orders} órdenes</p>
         </div>
       </button>
 
@@ -547,7 +547,7 @@ function ClientCard({ client, index, onSelect }: { client: SalesCustomer; index:
                 <InfoRow label="NPS" value={String(client.nps_score || 0)} />
               </div>
               {client.address && (
-                <div className="flex items-center gap-1 text-[7px] text-[var(--text-muted)]">
+                <div className="flex items-center gap-1 text-[13px] text-[var(--text-muted)]">
                   <MapPin size={7} />
                   <span>{client.address}</span>
                 </div>
@@ -557,7 +557,7 @@ function ClientCard({ client, index, onSelect }: { client: SalesCustomer; index:
                   href={client.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[7px] text-[#3B82F6] hover:underline"
+                  className="inline-flex items-center gap-1 text-[13px] text-[#3B82F6] hover:underline"
                 >
                   <ExternalLink size={7} />
                   {client.website}
@@ -565,7 +565,7 @@ function ClientCard({ client, index, onSelect }: { client: SalesCustomer; index:
               )}
               {/* Health Bar */}
               <div className="flex items-center gap-2">
-                <span className="text-[6px] text-[var(--text-muted)] w-7">Health</span>
+                <span className="text-xs text-[var(--text-muted)] w-7">Health</span>
                 <div className="flex-1 h-1 rounded-full bg-[var(--bg-muted)] overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
@@ -575,7 +575,7 @@ function ClientCard({ client, index, onSelect }: { client: SalesCustomer; index:
                     style={{ backgroundColor: healthColor }}
                   />
                 </div>
-                <span className="text-[7px] font-bold tabular-nums" style={{ color: healthColor }}>
+                <span className="text-[13px] font-bold tabular-nums" style={{ color: healthColor }}>
                   {client.health_score}/100
                 </span>
               </div>
@@ -592,8 +592,8 @@ function ClientCard({ client, index, onSelect }: { client: SalesCustomer; index:
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <span className="text-[6px] text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
-      <p className="text-[8px] font-medium text-[var(--text-primary)] truncate">{value}</p>
+      <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
+      <p className="text-sm font-medium text-[var(--text-primary)] truncate">{value}</p>
     </div>
   );
 }

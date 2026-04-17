@@ -81,7 +81,7 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
               "w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] py-2 pl-9 pr-4",
-              "text-[11px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
+              "text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
               "focus:outline-none focus:ring-1 focus:ring-[#3B82F6]/30"
             )}
           />
@@ -89,7 +89,7 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
         <div className="flex items-center gap-2">
           <button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 rounded-lg bg-[#10B981]/10 px-3 py-1.5 text-[10px] font-semibold text-[#10B981] transition-colors hover:bg-[#10B981]/20 shrink-0"
+            className="flex items-center gap-1.5 rounded-lg bg-[#10B981]/10 px-3 py-1.5 text-[13px] font-semibold text-[#10B981] transition-colors hover:bg-[#10B981]/20 shrink-0"
           >
             <Download size={11} />
             Exportar CSV
@@ -97,7 +97,7 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
           {ROLE_PERMISSIONS[demoRole].create && (
             <button
               onClick={() => { setEditingQuote(null); setShowEditor(true); }}
-              className="flex items-center gap-1.5 rounded-lg bg-[#8B5CF6] px-3 py-1.5 text-[10px] font-bold text-white shadow-lg shadow-[#8B5CF6]/25 transition-all hover:bg-[#7C3AED] shrink-0"
+              className="flex items-center gap-1.5 rounded-lg bg-[#8B5CF6] px-3 py-1.5 text-[13px] font-bold text-white shadow-lg shadow-[#8B5CF6]/25 transition-all hover:bg-[#7C3AED] shrink-0"
             >
               <Plus size={12} />
               Nueva Cotización
@@ -115,7 +115,7 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
             key={status}
             onClick={() => setStatusFilter(status)}
             className={cn(
-              "rounded-full px-2.5 py-1 text-[9px] font-medium transition-all",
+              "rounded-full px-2.5 py-1 text-xs font-medium transition-all",
               statusFilter === status
                 ? status === "all"
                   ? "bg-[#3B82F6]/10 text-[#3B82F6]"
@@ -154,7 +154,7 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
             {/* Header */}
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[10px] font-bold text-[#3B82F6]">
+                <span className="text-[13px] font-bold text-[#3B82F6]">
                   {quote.quote_number}
                 </span>
                 <div className="mt-1 flex items-center gap-2">
@@ -165,13 +165,13 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
                       className="h-5 w-5 rounded object-cover"
                     />
                   )}
-                  <span className="text-[10px] text-[var(--text-primary)] truncate">
+                  <span className="text-[13px] text-[var(--text-primary)] truncate">
                     {quote.customer?.trade_name || quote.customer?.business_name}
                   </span>
                 </div>
               </div>
               <span
-                className="rounded-full px-2 py-0.5 text-[8px] font-semibold"
+                className="rounded-full px-2 py-0.5 text-sm font-semibold"
                 style={{
                   backgroundColor: `${QUOTE_STATUS_COLORS[quote.status]}15`,
                   color: QUOTE_STATUS_COLORS[quote.status],
@@ -190,12 +190,12 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
                     minimumFractionDigits: 2,
                   })}
                 </span>
-                <span className="text-[9px] text-[var(--text-muted)]">
+                <span className="text-xs text-[var(--text-muted)]">
                   {quote.currency}
                 </span>
               </div>
               {quote.discount_percent > 0 && (
-                <span className="text-[8px] text-amber-500 font-medium">
+                <span className="text-sm text-amber-500 font-medium">
                   -{quote.discount_percent}% desc.
                 </span>
               )}
@@ -211,11 +211,11 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
                     className="h-4 w-4 rounded-full object-cover"
                   />
                 )}
-                <span className="text-[8px] text-[var(--text-muted)]">
+                <span className="text-sm text-[var(--text-muted)]">
                   {quote.seller?.full_name}
                 </span>
               </div>
-              <span className="text-[8px] text-[var(--text-muted)]">
+              <span className="text-sm text-[var(--text-muted)]">
                 Validez: {quote.validity_days}d
               </span>
             </div>
@@ -226,7 +226,7 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16">
           <FileText className="h-8 w-8 text-[var(--text-muted)]" />
-          <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             No se encontraron cotizaciones
           </p>
         </div>

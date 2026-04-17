@@ -794,7 +794,7 @@ export function LeafletMap({
                 background: "rgba(56,189,248,0.08)",
                 color: "#38bdf8",
                 fontWeight: 600,
-                fontSize: 11,
+                fontSize: 14,
                 cursor: "pointer",
                 fontFamily: "system-ui, -apple-system, sans-serif",
                 transition: "all 0.2s",
@@ -817,7 +817,7 @@ export function LeafletMap({
                 {streetViewCustomer.name}
               </span>
               <span style={{
-                color: "#64748b", fontSize: 10,
+                color: "#64748b", fontSize: 13,
                 fontFamily: "system-ui, -apple-system, sans-serif",
               }}>
                 — Street View
@@ -825,7 +825,7 @@ export function LeafletMap({
             </div>
             <div style={{ flex: 1 }} />
             <span style={{
-              color: "#475569", fontSize: 9,
+              color: "#475569", fontSize: 12,
               fontFamily: "monospace",
             }}>
               {streetViewCustomer.lat.toFixed(4)}, {streetViewCustomer.lng.toFixed(4)}
@@ -862,7 +862,7 @@ export function LeafletMap({
               width: 8, height: 8, borderRadius: "50%",
               background: l.color, boxShadow: `0 0 6px ${l.color}66`,
             }} />
-            <span style={{ fontSize: 9, color: "#94a3b8", fontFamily: "system-ui" }}>{l.label}</span>
+            <span style={{ fontSize: 12, color: "#94a3b8", fontFamily: "system-ui" }}>{l.label}</span>
           </div>
         ))}
       </div>

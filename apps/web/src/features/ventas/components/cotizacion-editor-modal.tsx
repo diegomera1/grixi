@@ -116,7 +116,7 @@ function QuoteProductCell({
           <input
             {...register(`items.${index}.description`)}
             placeholder="Click para buscar..."
-            className="w-full bg-[var(--bg-card)] text-[10px] font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none cursor-pointer"
+            className="w-full bg-[var(--bg-card)] text-[13px] font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none cursor-pointer"
             onFocus={() => {
               setActiveProductRow(index);
               setProductSearch("");
@@ -309,7 +309,7 @@ export function CotizacionEditorModal({
                 <h2 className="text-sm font-bold text-[var(--text-primary)]">
                   {isEdit ? `Editar Cotización ${existingQuote?.quote_number}` : "Nueva Cotización"}
                 </h2>
-                <p className="text-[9px] text-[var(--text-muted)]">
+                <p className="text-xs text-[var(--text-muted)]">
                   {isEdit ? "Modificar cotización existente" : "Crear una nueva propuesta comercial"}
                 </p>
               </div>
@@ -321,7 +321,7 @@ export function CotizacionEditorModal({
                 <div key={s} className="flex items-center gap-1.5">
                   <div
                     className={cn(
-                      "flex h-6 items-center gap-1 rounded-full px-2.5 text-[8px] font-bold transition-all",
+                      "flex h-6 items-center gap-1 rounded-full px-2.5 text-sm font-bold transition-all",
                       watchStatus === s ? "ring-2 ring-offset-1" : QUOTE_FLOW.indexOf(watchStatus) > i ? "opacity-100" : "opacity-40"
                     )}
                     style={{
@@ -340,7 +340,7 @@ export function CotizacionEditorModal({
                 <button
                   type="button"
                   onClick={advanceStatus}
-                  className="ml-2 flex items-center gap-1 rounded-lg bg-[#3B82F6] px-3 py-1.5 text-[9px] font-bold text-white transition-all hover:bg-[#2563EB]"
+                  className="ml-2 flex items-center gap-1 rounded-lg bg-[#3B82F6] px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-[#2563EB]"
                 >
                   <Send size={10} />
                   Enviar
@@ -351,7 +351,7 @@ export function CotizacionEditorModal({
                 <button
                   type="button"
                   onClick={advanceStatus}
-                  className="ml-2 flex items-center gap-1 rounded-lg bg-[#10B981] px-3 py-1.5 text-[9px] font-bold text-white transition-all hover:bg-[#059669]"
+                  className="ml-2 flex items-center gap-1 rounded-lg bg-[#10B981] px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-[#059669]"
                 >
                   <CheckCircle2 size={10} />
                   Aprobar
@@ -362,7 +362,7 @@ export function CotizacionEditorModal({
                 <button
                   type="button"
                   onClick={() => onConvertToSale(existingQuote.id)}
-                  className="ml-2 flex items-center gap-1 rounded-lg bg-[#F59E0B] px-3 py-1.5 text-[9px] font-bold text-white transition-all hover:bg-[#D97706]"
+                  className="ml-2 flex items-center gap-1 rounded-lg bg-[#F59E0B] px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-[#D97706]"
                 >
                   <ShoppingCart size={10} />
                   Convertir a Venta
@@ -373,7 +373,7 @@ export function CotizacionEditorModal({
                 type="button"
                 onClick={handleGeneratePDF}
                 disabled={generatingPDF}
-                className="ml-1 flex items-center gap-1 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[9px] font-bold text-[var(--text-secondary)] transition-all hover:bg-[var(--bg-muted)]"
+                className="ml-1 flex items-center gap-1 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-bold text-[var(--text-secondary)] transition-all hover:bg-[var(--bg-muted)]"
               >
                 <Download size={10} />
                 {generatingPDF ? "Generando..." : "PDF"}
@@ -394,7 +394,7 @@ export function CotizacionEditorModal({
               {/* Row 1 */}
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-6">
-                  <label className="mb-1.5 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <label className="mb-1.5 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Cliente *
                   </label>
                   <CustomerCombobox
@@ -405,22 +405,22 @@ export function CotizacionEditorModal({
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="mb-1 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <label className="mb-1 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Validez (días)
                   </label>
                   <input
                     type="number"
                     {...register("validity_days", { valueAsNumber: true })}
-                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-[11px] text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="mb-1 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <label className="mb-1 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Moneda
                   </label>
                   <select
                     {...register("currency")}
-                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-[11px] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
@@ -430,34 +430,34 @@ export function CotizacionEditorModal({
                   </select>
                 </div>
                 <div className="col-span-3">
-                  <label className="mb-1 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  <label className="mb-1 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                     Notas Internas
                   </label>
                   <input
                     type="text"
                     {...register("internal_notes")}
                     placeholder="Solo visibles internamente..."
-                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-[11px] placeholder:text-[var(--text-muted)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm placeholder:text-[var(--text-muted)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
                   />
                 </div>
               </div>
 
               {/* Terms */}
               <div>
-                <label className="mb-1 block text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                <label className="mb-1 block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                   Términos y Condiciones
                 </label>
                 <textarea
                   {...register("terms_html")}
                   rows={2}
-                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-[10px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#8B5CF6] resize-none"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-[#8B5CF6] resize-none"
                 />
               </div>
 
               {/* Product Lines */}
               <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
                 <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
-                  <h3 className="text-[10px] font-semibold text-[var(--text-primary)]">
+                  <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">
                     Líneas de Cotización
                   </h3>
                   <button
@@ -472,7 +472,7 @@ export function CotizacionEditorModal({
                         discount_percent: 0,
                       })
                     }
-                    className="flex items-center gap-1 rounded-lg bg-[#8B5CF6]/10 px-2.5 py-1 text-[9px] font-bold text-[#8B5CF6] transition-colors hover:bg-[#8B5CF6]/20"
+                    className="flex items-center gap-1 rounded-lg bg-[#8B5CF6]/10 px-2.5 py-1 text-xs font-bold text-[#8B5CF6] transition-colors hover:bg-[#8B5CF6]/20"
                   >
                     <Plus size={10} />
                     Agregar Línea
@@ -483,7 +483,7 @@ export function CotizacionEditorModal({
                   <thead>
                     <tr className="border-b border-[var(--border)] bg-[var(--bg-muted)]/50">
                       {["#", "Producto", "Cant.", "Unidad", "Precio Unit.", "Desc.%", "Subtotal", ""].map((h) => (
-                        <th key={h} className="px-3 py-2 text-left text-[8px] font-semibold text-[var(--text-muted)] uppercase">
+                        <th key={h} className="px-3 py-2 text-left text-sm font-semibold text-[var(--text-muted)] uppercase">
                           {h}
                         </th>
                       ))}
@@ -498,7 +498,7 @@ export function CotizacionEditorModal({
 
                       return (
                         <tr key={field.id} className="border-b border-[var(--border)] last:border-0 group">
-                          <td className="px-3 py-2 text-[9px] text-[var(--text-muted)]">{index + 1}</td>
+                          <td className="px-3 py-2 text-xs text-[var(--text-muted)]">{index + 1}</td>
                           <QuoteProductCell
                             index={index}
                             item={item}
@@ -515,13 +515,13 @@ export function CotizacionEditorModal({
                               type="number"
                               min={1}
                               {...register(`items.${index}.quantity`, { valueAsNumber: true })}
-                              className="w-16 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+                              className="w-16 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
                             />
                           </td>
                           <td className="px-2 py-1.5">
                             <select
                               {...register(`items.${index}.unit`)}
-                              className="w-16 rounded border border-[var(--border)] bg-[var(--bg-card)] px-1 py-1.5 text-[10px] focus:outline-none"
+                              className="w-16 rounded border border-[var(--border)] bg-[var(--bg-card)] px-1 py-1.5 text-[13px] focus:outline-none"
                             >
                               {["UND", "KG", "MT", "GL", "LIC", "KIT", "HRS", "SESIÓN"].map((u) => (
                                 <option key={u} value={u}>{u}</option>
@@ -533,7 +533,7 @@ export function CotizacionEditorModal({
                               type="number"
                               step="0.01"
                               {...register(`items.${index}.unit_price`, { valueAsNumber: true })}
-                              className="w-24 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+                              className="w-24 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
                             />
                           </td>
                           <td className="px-2 py-1.5">
@@ -543,11 +543,11 @@ export function CotizacionEditorModal({
                               min={0}
                               max={100}
                               {...register(`items.${index}.discount_percent`, { valueAsNumber: true })}
-                              className="w-14 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+                              className="w-14 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
                             />
                           </td>
                           <td className="px-3 py-1.5">
-                            <span className="text-[10px] font-bold text-[var(--text-primary)] tabular-nums">
+                            <span className="text-[13px] font-bold text-[var(--text-primary)] tabular-nums">
                               ${lineTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </td>
@@ -575,7 +575,7 @@ export function CotizacionEditorModal({
               <div className="flex items-end justify-between">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="mb-1 block text-[8px] font-semibold text-[var(--text-muted)] uppercase">
+                    <label className="mb-1 block text-sm font-semibold text-[var(--text-muted)] uppercase">
                       Descuento Global %
                     </label>
                     <input
@@ -584,18 +584,18 @@ export function CotizacionEditorModal({
                       min={0}
                       max={100}
                       {...register("discount_percent", { valueAsNumber: true })}
-                      className="w-20 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+                      className="w-20 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[8px] font-semibold text-[var(--text-muted)] uppercase">
+                    <label className="mb-1 block text-sm font-semibold text-[var(--text-muted)] uppercase">
                       IVA %
                     </label>
                     <input
                       type="number"
                       step="0.1"
                       {...register("tax_rate", { valueAsNumber: true })}
-                      className="w-20 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[10px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
+                      className="w-20 rounded border border-[var(--border)] bg-[var(--bg-card)] px-2 py-1.5 text-[13px] tabular-nums focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]"
                     />
                   </div>
                 </div>
@@ -603,27 +603,27 @@ export function CotizacionEditorModal({
                 {/* Summary */}
                 <div className="text-right space-y-1">
                   <div className="flex items-center justify-end gap-4">
-                    <span className="text-[9px] text-[var(--text-muted)]">Subtotal</span>
-                    <span className="text-[10px] font-medium text-[var(--text-secondary)] tabular-nums w-28 text-right">
+                    <span className="text-xs text-[var(--text-muted)]">Subtotal</span>
+                    <span className="text-[13px] font-medium text-[var(--text-secondary)] tabular-nums w-28 text-right">
                       ${subtotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex items-center justify-end gap-4">
-                      <span className="text-[9px] text-[var(--text-muted)]">Descuento ({watchDiscount}%)</span>
-                      <span className="text-[10px] text-red-500 tabular-nums w-28 text-right">
+                      <span className="text-xs text-[var(--text-muted)]">Descuento ({watchDiscount}%)</span>
+                      <span className="text-[13px] text-red-500 tabular-nums w-28 text-right">
                         -${discountAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   )}
                   <div className="flex items-center justify-end gap-4">
-                    <span className="text-[9px] text-[var(--text-muted)]">IVA ({watchTax}%)</span>
-                    <span className="text-[10px] text-[var(--text-secondary)] tabular-nums w-28 text-right">
+                    <span className="text-xs text-[var(--text-muted)]">IVA ({watchTax}%)</span>
+                    <span className="text-[13px] text-[var(--text-secondary)] tabular-nums w-28 text-right">
                       ${taxAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="flex items-center justify-end gap-4 pt-1 border-t border-[var(--border)]">
-                    <span className="text-[10px] font-bold text-[var(--text-primary)]">TOTAL</span>
+                    <span className="text-[13px] font-bold text-[var(--text-primary)]">TOTAL</span>
                     <span className="text-base font-bold text-[var(--text-primary)] tabular-nums w-28 text-right">
                       ${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
@@ -635,7 +635,7 @@ export function CotizacionEditorModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-[10px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]"
+                    className="rounded-lg border border-[var(--border)] px-4 py-2 text-[13px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     Cancelar
                   </button>
@@ -643,7 +643,7 @@ export function CotizacionEditorModal({
                     type="submit"
                     disabled={saving}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-lg px-5 py-2 text-[10px] font-bold text-white transition-all",
+                      "flex items-center gap-1.5 rounded-lg px-5 py-2 text-[13px] font-bold text-white transition-all",
                       saving
                         ? "bg-[#8B5CF6]/50 cursor-not-allowed"
                         : "bg-[#8B5CF6] hover:bg-[#7C3AED] shadow-lg shadow-[#8B5CF6]/25"
