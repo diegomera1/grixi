@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import { formatCurrencyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import * as echarts from "echarts/core";
@@ -40,6 +42,8 @@ echarts.use([
 type Props = {
   stages: SalesPipelineStage[];
   opportunities: SalesOpportunity[];
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 };
 
 type StageMetric = {
@@ -53,7 +57,7 @@ type StageMetric = {
 
 // ── Funnel Component ──────────────────────────────
 
-export function PipelineFunnel({ stages, opportunities }: Props) {
+export function PipelineFunnel({ stages, opportunities, currency, convert }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
   const router = useRouter();
@@ -136,9 +140,9 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                 <span style="color:#94a3b8;">Deals</span>
                 <span style="font-weight:600;text-align:right;">${m.count}</span>
                 <span style="color:#94a3b8;">Monto</span>
-                <span style="font-weight:600;text-align:right;">$${(m.amount / 1000).toFixed(0)}K</span>
+                <span style="font-weight:600;text-align:right;">${formatCurrencyCompact(convert(m.amount), currency)}</span>
                 <span style="color:#94a3b8;">Ponderado</span>
-                <span style="font-weight:600;text-align:right;color:#10b981;">$${(m.weighted / 1000).toFixed(0)}K</span>
+                <span style="font-weight:600;text-align:right;color:#10b981;">${formatCurrencyCompact(convert(m.weighted), currency)}</span>
                 <span style="color:#94a3b8;">Conversión</span>
                 <span style="font-weight:600;text-align:right;">${m.conversionFromPrev}%</span>
               </div>
@@ -169,7 +173,7 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
             formatter: (params: { name: string; dataIndex: number }) => {
               const m = metrics[params.dataIndex];
               if (!m) return params.name;
-              return `{name|${params.name}}\n{count|${m.count} deals · $${(m.amount / 1000).toFixed(0)}K}`;
+              return `{name|${params.name}}\n{count|${m.count} deals · ${formatCurrencyCompact(convert(m.amount), currency)}}`;
             },
             rich: {
               name: {
@@ -290,14 +294,14 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
             <DollarSign size={9} className="text-emerald-500" />
             <span className="text-xs text-[var(--text-muted)]">Pipeline</span>
             <span className="text-[13px] font-bold text-[var(--text-primary)] tabular-nums">
-              ${(totalPipeline / 1000).toFixed(0)}K
+              ${formatCurrencyCompact(convert(totalPipeline), currency)}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <Target size={9} className="text-[var(--brand)]" />
             <span className="text-xs text-[var(--text-muted)]">Ponderado</span>
             <span className="text-[13px] font-bold text-emerald-500 tabular-nums">
-              ${(totalWeighted / 1000).toFixed(0)}K
+              ${formatCurrencyCompact(convert(totalWeighted), currency)}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -365,8 +369,8 @@ export function PipelineFunnel({ stages, opportunities }: Props) {
                         style={{ backgroundColor: m.stage.color }}
                       />
                     </div>
-                    <span className="text-[13px] text-[var(--text-muted)] tabular-nums w-10 text-right">
-                      ${(m.amount / 1000).toFixed(0)}K
+                    <span className="text-[13px] text-[var(--text-muted)] tabular-nums w-14 text-right">
+                      {formatCurrencyCompact(convert(m.amount), currency)}
                     </span>
                   </div>
 

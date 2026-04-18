@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Search, FileText, DollarSign, Eye, Download, Plus } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { formatCurrencyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import type { SalesQuote, SalesCustomer, DemoRole, QuoteStatus } from "../types";
 import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS, ROLE_PERMISSIONS } from "../types";
 import { CotizacionEditorModal } from "./cotizacion-editor-modal";
@@ -12,9 +14,11 @@ type Props = {
   quotes: SalesQuote[];
   customers: SalesCustomer[];
   demoRole: DemoRole;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 };
 
-export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
+export function CotizacionesTab({ quotes, customers, demoRole, currency, convert }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | "all">("all");
   const [showEditor, setShowEditor] = useState(false);
@@ -186,12 +190,10 @@ export function CotizacionesTab({ quotes, customers, demoRole }: Props) {
               <div className="flex items-center gap-1">
                 <DollarSign size={11} className="text-emerald-500" />
                 <span className="text-sm font-bold text-[var(--text-primary)] tabular-nums">
-                  {Number(quote.total).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
+                  {formatCurrencyCompact(convert(Number(quote.total)), currency)}
                 </span>
                 <span className="text-xs text-[var(--text-muted)]">
-                  {quote.currency}
+                  {currency}
                 </span>
               </div>
               {quote.discount_percent > 0 && (

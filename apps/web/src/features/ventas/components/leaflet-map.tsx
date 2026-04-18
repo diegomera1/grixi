@@ -12,7 +12,8 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { SalesCustomer, SalesInvoice } from "../types";
-import { fmtMoneyCompact } from "../utils/fmtMoney";
+import { formatCurrencyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 
 // ── Types ─────────────────────────────────────────
 
@@ -43,6 +44,8 @@ type Props = {
   selectedCountry: string | null;
   selectedProvince: string | null;
   onClientSelect?: (client: SalesCustomer) => void;
+  currency?: CurrencyCode;
+  convert?: (v: number) => number;
 };
 
 // ── Country bounding boxes ────────────────────────
@@ -104,7 +107,8 @@ const COUNTRY_FLAGS: Record<string, string> = {
 // ── Helpers ───────────────────────────────────────
 
 // Use centralized formatter
-const fmtUSD = fmtMoneyCompact;
+// Note: fmtUSD is now currency-aware — the actual convert+currency
+// are closured in at the component level via the render functions below
 
 function getHeatColor(ratio: number): string {
   if (ratio > 0.7) return "#10b981";
@@ -127,7 +131,8 @@ function createGlowIcon(
   maxRev: number,
   label: string,
   flag?: string,
-  size: "lg" | "md" | "sm" = "lg"
+  size: "lg" | "md" | "sm" = "lg",
+  fmtAmount: (v: number) => string = (v) => formatCurrencyCompact(v, "USD"),
 ): L.DivIcon {
   const ratio = maxRev > 0 ? revenue / maxRev : 0;
   const color = getHeatColor(ratio);
@@ -167,7 +172,7 @@ function createGlowIcon(
           font-size:${size === "lg" ? 9 : 7}px;font-weight:800;color:#fff;
           text-shadow:0 1px 3px rgba(0,0,0,0.5);z-index:3;
           font-family:system-ui,-apple-system,sans-serif;
-        ">${fmtUSD(revenue)}</div>
+        ">${fmtAmount(revenue)}</div>
       </div>
     `,
   });
@@ -212,10 +217,12 @@ function ProvinceLayer({
   country,
   provinceData,
   onProvinceClick,
+  fmtAmount,
 }: {
   country: string;
   provinceData: Map<string, ProvinceAgg>;
   onProvinceClick: (name: string) => void;
+  fmtAmount: (v: number) => string;
 }) {
   const map = useMap();
   const layerRef = useRef<L.GeoJSON | null>(null);
@@ -295,7 +302,7 @@ function ProvinceLayer({
                 <div class="grixi-tooltip-title">${name}</div>
                 ${
                   data
-                    ? `<div class="grixi-tooltip-row"><span>Revenue</span><b class="text-emerald">${fmtUSD(data.revenue)}</b></div>
+                    ? `<div class="grixi-tooltip-row"><span>Revenue</span><b class="text-emerald">${fmtAmount(data.revenue)}</b></div>
                        <div class="grixi-tooltip-row"><span>Clientes</span><b class="text-blue">${data.clients}</b></div>`
                     : `<div class="grixi-tooltip-empty">Sin datos de clientes</div>`
                 }
@@ -350,7 +357,12 @@ export function LeafletMap({
   selectedCountry,
   selectedProvince,
   onClientSelect,
+  currency = "USD",
+  convert = (v) => v,
 }: Props) {
+  // Currency-aware formatter closure
+  const fmtUSD = (v: number) => formatCurrencyCompact(convert(v), currency);
+
   const [drillLevel, setDrillLevel] = useState<DrillLevel>("world");
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [streetViewCustomer, setStreetViewCustomer] = useState<{ name: string; lat: number; lng: number } | null>(null);
@@ -604,6 +616,7 @@ export function LeafletMap({
             country={selectedCountry}
             provinceData={provinceData}
             onProvinceClick={handleProvinceClick}
+            fmtAmount={fmtUSD}
           />
         )}
 
@@ -613,7 +626,7 @@ export function LeafletMap({
             <Marker
               key={ca.country}
               position={[ca.lat, ca.lng]}
-              icon={createGlowIcon(ca.revenue, maxCountryRev, ca.country, COUNTRY_FLAGS[ca.country], "lg")}
+              icon={createGlowIcon(ca.revenue, maxCountryRev, ca.country, COUNTRY_FLAGS[ca.country], "lg", fmtUSD)}
               eventHandlers={{ click: () => handleCountryClick(ca.country) }}
             >
               <LeafletTooltip className="grixi-map-tooltip" direction="top" offset={[0, -25]}>
@@ -643,7 +656,7 @@ export function LeafletMap({
               <Marker
                 key={p.province}
                 position={[p.lat, p.lng]}
-                icon={createGlowIcon(p.revenue, maxProvRev, p.province, undefined, "md")}
+                icon={createGlowIcon(p.revenue, maxProvRev, p.province, undefined, "md", fmtUSD)}
                 eventHandlers={{ click: () => handleProvinceClick(p.province) }}
               >
                 <LeafletTooltip className="grixi-map-tooltip" direction="top" offset={[0, -18]}>
@@ -676,7 +689,8 @@ export function LeafletMap({
                   maxProvRev,
                   p.province,
                   undefined,
-                  p.province === selectedProvince ? "md" : "sm"
+                  p.province === selectedProvince ? "md" : "sm",
+                  fmtUSD,
                 )}
                 eventHandlers={{ click: () => handleProvinceClick(p.province) }}
               >
@@ -702,7 +716,7 @@ export function LeafletMap({
             <Marker
               key={`city-${cm.name}`}
               position={[cm.lat, cm.lng]}
-              icon={createGlowIcon(cm.revenue, maxCityRev, cm.name, "📍", "md")}
+              icon={createGlowIcon(cm.revenue, maxCityRev, cm.name, "📍", "md", fmtUSD)}
               eventHandlers={{ click: () => handleCityClick(cm.name) }}
             >
               <LeafletTooltip className="grixi-map-tooltip" direction="top" offset={[0, -18]}>
@@ -730,7 +744,7 @@ export function LeafletMap({
               <Marker
                 key={`cust-${cust.id}`}
                 position={[cust.lat!, cust.lng!]}
-                icon={createGlowIcon(rev, maxCustomerRev, cust.business_name, "🏢", "md")}
+                icon={createGlowIcon(rev, maxCustomerRev, cust.business_name, "🏢", "md", fmtUSD)}
                 eventHandlers={{
                   click: () => {
                     if (onClientSelect) {

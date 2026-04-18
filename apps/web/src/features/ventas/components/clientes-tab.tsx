@@ -3,6 +3,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { formatCurrencyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import {
   Search,
   Filter,
@@ -73,10 +75,14 @@ function CustomerCard({
   customer,
   index,
   onClick,
+  currency,
+  convert,
 }: {
   customer: SalesCustomer;
   index: number;
   onClick: () => void;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 }) {
   return (
     <motion.div
@@ -145,7 +151,7 @@ function CustomerCard({
           {STATUS_LABELS[customer.status]}
         </span>
         <span className="ml-auto text-[13px] font-bold text-[var(--text-primary)]">
-          ${(customer.total_revenue / 1000).toFixed(1)}K
+          {formatCurrencyCompact(convert(customer.total_revenue), currency)}
         </span>
         <span className="text-sm text-[var(--text-muted)]">
           {customer.total_orders} ventas
@@ -189,9 +195,11 @@ type Props = {
   customers: SalesCustomer[];
   sellers: SellerProfile[];
   demoRole: DemoRole;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 };
 
-export function ClientesTab({ customers, sellers, demoRole }: Props) {
+export function ClientesTab({ customers, sellers, demoRole, currency, convert }: Props) {
   const [search, setSearch] = useState("");
   const [segmentFilter, setSegmentFilter] = useState<CustomerSegment | "all">(
     "all"
@@ -287,6 +295,8 @@ export function ClientesTab({ customers, sellers, demoRole }: Props) {
             customer={customer}
             index={i}
             onClick={() => setSelectedCustomerId(customer.id)}
+            currency={currency}
+            convert={convert}
           />
         ))}
       </div>

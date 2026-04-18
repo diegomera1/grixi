@@ -13,7 +13,13 @@ import {
   Plus,
   Sparkles,
   Presentation,
+  ChevronDown,
 } from "lucide-react";
+import {
+  convertCurrency,
+  CURRENCY_CONFIG,
+} from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils/cn";
 import type {
   SalesCustomer,
@@ -85,6 +91,14 @@ export function VentasContent({
   const [quotes] = useState(initialQuotes);
   const [alerts, setAlerts] = useState(initialAlerts);
 
+  // ── Currency state ─────────────────────────────
+  const [currency, setCurrency] = useState<CurrencyCode>("USD");
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const convert = useCallback(
+    (v: number) => convertCurrency(v, "USD", currency),
+    [currency]
+  );
+
   // Filter data based on role
   const filteredCustomers = filterByRole(customers, demoRole);
   const filteredOpportunities = filterByRole(opportunities, demoRole);
@@ -133,7 +147,47 @@ export function VentasContent({
               Pipeline comercial, clientes, cotizaciones y facturación
             </p>
           </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Currency Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setCurrencyOpen(!currencyOpen)}
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-muted)]/50 px-2.5 py-1 text-xs font-medium text-[var(--text-primary)] transition-all hover:border-[var(--border-hover)]"
+            >
+              <span className="text-sm">{CURRENCY_CONFIG[currency].flag}</span>
+              <span>{currency}</span>
+              <ChevronDown className={cn("w-3 h-3 text-[var(--text-muted)] transition-transform", currencyOpen && "rotate-180")} />
+            </button>
+            {currencyOpen && (
+              <>
+                <div className="fixed inset-0 z-[55]" onClick={() => setCurrencyOpen(false)} />
+                <div className="absolute right-0 top-full z-[60] mt-1.5 w-48 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-1 shadow-xl">
+                  {(Object.keys(CURRENCY_CONFIG) as CurrencyCode[])
+                    .filter((code) => code !== "GBP")
+                    .map((code) => {
+                      const cfg = CURRENCY_CONFIG[code];
+                      return (
+                        <button
+                          key={code}
+                          onClick={() => { setCurrency(code); setCurrencyOpen(false); }}
+                          className={cn(
+                            "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-all",
+                            currency === code
+                              ? "bg-blue-500/15 text-blue-400"
+                              : "text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]"
+                          )}
+                        >
+                          <span className="text-sm">{cfg.flag}</span>
+                          <span className="flex-1 text-left">{cfg.name}</span>
+                          <span className="font-mono text-[10px] text-[var(--text-muted)]">{code}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </>
+            )}
+          </div>
+
           {ROLE_PERMISSIONS[demoRole].create && (
             <button
               onClick={() => setShowNuevaVenta(true)}
@@ -207,6 +261,8 @@ export function VentasContent({
               topProducts={initialTopProducts}
               demoRole={demoRole}
               onAlertDismiss={handleAlertDismiss}
+              currency={currency}
+              convert={convert}
             />
           )}
           {activeTab === "clientes" && (
@@ -214,6 +270,8 @@ export function VentasContent({
               customers={filteredCustomers}
               sellers={initialSellers}
               demoRole={demoRole}
+              currency={currency}
+              convert={convert}
             />
           )}
           {activeTab === "ventas" && (
@@ -221,6 +279,8 @@ export function VentasContent({
               invoices={filteredInvoices}
               customers={customers}
               demoRole={demoRole}
+              currency={currency}
+              convert={convert}
             />
           )}
           {activeTab === "pipeline" && (
@@ -230,6 +290,8 @@ export function VentasContent({
               sellers={initialSellers}
               onOpportunityMove={handleOpportunityMove}
               demoRole={demoRole}
+              currency={currency}
+              convert={convert}
             />
           )}
           {activeTab === "cotizaciones" && (
@@ -237,6 +299,8 @@ export function VentasContent({
               quotes={filteredQuotes}
               customers={customers}
               demoRole={demoRole}
+              currency={currency}
+              convert={convert}
             />
           )}
           {activeTab === "reportes" && (
@@ -247,6 +311,8 @@ export function VentasContent({
               quotes={quotes}
               activities={initialActivities}
               demoRole={demoRole}
+              currency={currency}
+              convert={convert}
             />
           )}
         </motion.div>

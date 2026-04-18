@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { formatCurrencyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DndContext,
@@ -54,6 +56,8 @@ type Props = {
   sellers: SellerProfile[];
   onOpportunityMove: (oppId: string, newStageId: string) => void;
   demoRole: DemoRole;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 };
 
 // ── Amount Filters ────────────────────────────────
@@ -65,13 +69,7 @@ const AMOUNT_FILTERS = [
   { label: ">$200K", min: 200000, max: Infinity },
 ];
 
-// ── Helpers ───────────────────────────────────────
-
-function fmtAmount(v: number): string {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
-  return `$${v.toFixed(0)}`;
-}
+// Note: fmtAmount is replaced by formatCurrencyCompact in render calls
 
 function daysAgo(dateStr: string | null): number {
   if (!dateStr) return 0;
@@ -87,6 +85,8 @@ function SortableOpportunityCard({
   currentStageId,
   stageColor,
   onQuickMove,
+  currency,
+  convert,
 }: {
   opp: SalesOpportunity;
   index: number;
@@ -94,6 +94,8 @@ function SortableOpportunityCard({
   currentStageId: string;
   stageColor: string;
   onQuickMove: (oppId: string, newStageId: string) => void;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 }) {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
   const moveButtonRef = useRef<HTMLButtonElement>(null);
@@ -170,7 +172,7 @@ function SortableOpportunityCard({
                 {opp.name}
               </p>
               <span className="shrink-0 text-xs font-bold text-emerald-500 tabular-nums">
-                {fmtAmount(Number(opp.amount))}
+                {formatCurrencyCompact(convert(Number(opp.amount)), currency)}
               </span>
             </div>
 
@@ -302,7 +304,7 @@ function SortableOpportunityCard({
 
 // ── Drag Overlay Card (Ghost) ─────────────────────
 
-function DragOverlayCard({ opp }: { opp: SalesOpportunity }) {
+function DragOverlayCard({ opp, currency, convert }: { opp: SalesOpportunity; currency: CurrencyCode; convert: (v: number) => number }) {
   return (
     <div className="w-[220px] rounded-lg border border-[var(--brand)]/30 bg-[var(--bg-card)]/95 p-2.5 shadow-2xl shadow-[var(--brand)]/15 backdrop-blur-md ring-2 ring-[var(--brand)]/20">
       <div className="flex items-start gap-1.5">
@@ -313,7 +315,7 @@ function DragOverlayCard({ opp }: { opp: SalesOpportunity }) {
               {opp.name}
             </p>
             <span className="shrink-0 text-xs font-bold text-emerald-500 tabular-nums">
-              {fmtAmount(Number(opp.amount))}
+              {formatCurrencyCompact(convert(Number(opp.amount)), currency)}
             </span>
           </div>
           <div className="mt-0.5 flex items-center gap-1">
@@ -355,6 +357,8 @@ export function PipelineTab({
   sellers,
   onOpportunityMove,
   demoRole,
+  currency,
+  convert,
 }: Props) {
   const [sellerFilter, setSellerFilter] = useState<string>("all");
   const [amountFilter, setAmountFilter] = useState(0);
@@ -467,7 +471,7 @@ export function PipelineTab({
             </div>
             <div>
               <p className="text-[10px] text-[var(--text-muted)] leading-none">Pipeline</p>
-              <p className="text-sm font-bold text-[var(--text-primary)] tabular-nums">{fmtAmount(totalPipeline)}</p>
+              <p className="text-sm font-bold text-[var(--text-primary)] tabular-nums">{formatCurrencyCompact(convert(totalPipeline), currency)}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -476,7 +480,7 @@ export function PipelineTab({
             </div>
             <div>
               <p className="text-[10px] text-[var(--text-muted)] leading-none">Ponderado</p>
-              <p className="text-sm font-bold text-emerald-500 tabular-nums">{fmtAmount(totalWeighted)}</p>
+              <p className="text-sm font-bold text-emerald-500 tabular-nums">{formatCurrencyCompact(convert(totalWeighted), currency)}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -485,7 +489,7 @@ export function PipelineTab({
             </div>
             <div>
               <p className="text-[10px] text-[var(--text-muted)] leading-none">Ticket Prom.</p>
-              <p className="text-sm font-bold text-[var(--text-primary)] tabular-nums">{fmtAmount(avgDealSize)}</p>
+              <p className="text-sm font-bold text-[var(--text-primary)] tabular-nums">{formatCurrencyCompact(convert(avgDealSize), currency)}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -534,7 +538,7 @@ export function PipelineTab({
       </div>
 
       {/* ═══ Funnel Chart ═══ */}
-      <PipelineFunnel stages={sortedStages} opportunities={filteredOpps} />
+      <PipelineFunnel stages={sortedStages} opportunities={filteredOpps} currency={currency} convert={convert} />
 
       {/* ═══ Kanban Board ═══ */}
       <DndContext
@@ -562,6 +566,8 @@ export function PipelineTab({
                   isOver={overStageId === stage.id}
                   onQuickMove={handleQuickMove}
                   totalPipeline={totalPipeline}
+                  currency={currency}
+                  convert={convert}
                 />
               </SortableContext>
             );
@@ -572,7 +578,7 @@ export function PipelineTab({
           duration: 200,
           easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
         }}>
-          {activeOpp ? <DragOverlayCard opp={activeOpp} /> : null}
+          {activeOpp ? <DragOverlayCard opp={activeOpp} currency={currency} convert={convert} /> : null}
         </DragOverlay>
       </DndContext>
     </div>
@@ -588,6 +594,8 @@ function DroppableColumn({
   isOver,
   onQuickMove,
   totalPipeline,
+  currency,
+  convert,
 }: {
   stage: SalesPipelineStage;
   opportunities: SalesOpportunity[];
@@ -595,6 +603,8 @@ function DroppableColumn({
   isOver: boolean;
   onQuickMove: (oppId: string, newStageId: string) => void;
   totalPipeline: number;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 }) {
   const { setNodeRef } = useSortable({
     id: stage.id,
@@ -654,7 +664,7 @@ function DroppableColumn({
         {/* Metrics row */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold text-emerald-500 tabular-nums">
-            {fmtAmount(stageAmount)}
+            {formatCurrencyCompact(convert(stageAmount), currency)}
           </span>
           <span className="text-[10px] text-[var(--text-muted)]">·</span>
           <span className="text-[10px] text-[var(--text-muted)] tabular-nums">
@@ -724,6 +734,8 @@ function DroppableColumn({
             currentStageId={stage.id}
             stageColor={stage.color}
             onQuickMove={onQuickMove}
+            currency={currency}
+            convert={convert}
           />
         ))}
       </div>

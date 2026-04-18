@@ -23,7 +23,8 @@ import {
 import { cn } from "@/lib/utils/cn";
 import type { SalesInvoice, SalesCustomer } from "../types";
 import { SEGMENT_LABELS, SEGMENT_COLORS } from "../types";
-import { fmtMoneyCompact } from "../utils/fmtMoney";
+import { formatCurrencyCompact as fmtMoneyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import { GeoDrilldown } from "./geo-drilldown";
 
 // ── Dynamic import of Leaflet (no SSR) ────────────
@@ -48,13 +49,15 @@ const LeafletMap = dynamic(
 type Props = {
   invoices: SalesInvoice[];
   customers: SalesCustomer[];
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 };
 
 // ═══════════════════════════════════════════════════
 // WorldHeatmap — wrapper with header + LeafletMap + GeoDrilldown panel
 // ═══════════════════════════════════════════════════
 
-export function WorldHeatmap({ invoices, customers }: Props) {
+export function WorldHeatmap({ invoices, customers, currency, convert }: Props) {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<SalesCustomer | null>(null);
@@ -159,7 +162,7 @@ export function WorldHeatmap({ invoices, customers }: Props) {
           <div className="flex items-center gap-1.5">
             <DollarSign size={9} className="text-emerald-500" />
             <span className="text-[var(--text-muted)]">Revenue</span>
-            <span className="font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(totalRevenue)}</span>
+            <span className="font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(convert(totalRevenue), currency)}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Users size={9} className="text-[#3B82F6]" />
@@ -187,6 +190,8 @@ export function WorldHeatmap({ invoices, customers }: Props) {
             selectedCountry={selectedCountry}
             selectedProvince={selectedProvince}
             onClientSelect={handleClientSelect}
+            currency={currency}
+            convert={convert}
           />
         </motion.div>
 
@@ -208,6 +213,8 @@ export function WorldHeatmap({ invoices, customers }: Props) {
                 showStreetView={showStreetView}
                 onToggleStreetView={() => setShowStreetView(!showStreetView)}
                 onClose={handleClientClose}
+                currency={currency}
+                convert={convert}
               />
             </motion.div>
           ) : drillLevel !== "world" && selectedCountry ? (
@@ -257,7 +264,7 @@ export function WorldHeatmap({ invoices, customers }: Props) {
                   <span className="text-xs font-semibold text-[var(--text-primary)] truncate">{cd.country}</span>
                   <span className="text-[13px] font-bold text-[var(--text-muted)]">{`#${i + 1}`}</span>
                 </div>
-                <p className="mt-1 text-sm font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(cd.revenue)}</p>
+                <p className="mt-1 text-sm font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(convert(cd.revenue), currency)}</p>
                 <div className="mt-1 h-0.5 overflow-hidden rounded-full bg-[var(--bg-muted)]">
                   <motion.div
                     initial={{ width: 0 }}
@@ -289,12 +296,16 @@ function ClientMapDetail({
   showStreetView,
   onToggleStreetView,
   onClose,
+  currency,
+  convert,
 }: {
   client: SalesCustomer;
   clientInvoices: SalesInvoice[];
   showStreetView: boolean;
   onToggleStreetView: () => void;
   onClose: () => void;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 }) {
   const totalRev = Number(client.total_revenue || 0);
   const healthColor = client.health_score >= 80 ? "#10B981" : client.health_score >= 50 ? "#F59E0B" : "#EF4444";
@@ -400,7 +411,7 @@ function ClientMapDetail({
             {/* KPI Grid */}
             <div className="grid grid-cols-3 gap-1.5">
               {[
-                { label: "Revenue", value: fmtMoneyCompact(totalRev), color: "#10B981", icon: DollarSign },
+                { label: "Revenue", value: fmtMoneyCompact(convert(totalRev), currency), color: "#10B981", icon: DollarSign },
                 { label: "Pedidos", value: String(client.total_orders), color: "#3B82F6", icon: Building2 },
                 { label: "Health", value: `${client.health_score}`, color: healthColor, icon: Shield },
                 { label: "NPS", value: `${client.nps_score}`, color: "#8B5CF6", icon: Star },
@@ -428,8 +439,8 @@ function ClientMapDetail({
             <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2.5">
               <h5 className="text-xs font-semibold text-[var(--text-primary)] mb-2">💰 Financiero</h5>
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                <div><span className="text-xs text-[var(--text-muted)] uppercase">Crédito</span><p className="text-xs font-bold text-[var(--text-primary)]">{fmtMoneyCompact(client.credit_limit)}</p></div>
-                <div><span className="text-xs text-[var(--text-muted)] uppercase">Usado</span><p className="text-xs font-bold text-[var(--text-primary)]">{fmtMoneyCompact(client.credit_used)}</p></div>
+                <div><span className="text-xs text-[var(--text-muted)] uppercase">Crédito</span><p className="text-xs font-bold text-[var(--text-primary)]">{fmtMoneyCompact(convert(client.credit_limit), currency)}</p></div>
+                <div><span className="text-xs text-[var(--text-muted)] uppercase">Usado</span><p className="text-xs font-bold text-[var(--text-primary)]">{fmtMoneyCompact(convert(client.credit_used), currency)}</p></div>
                 <div><span className="text-xs text-[var(--text-muted)] uppercase">Pago Prom.</span><p className="text-xs font-bold text-[var(--text-primary)]">{client.payment_avg_days}d (plazo {client.payment_terms}d)</p></div>
                 <div><span className="text-xs text-[var(--text-muted)] uppercase">A Tiempo</span><p className="text-xs font-bold" style={{ color: client.on_time_payment_pct >= 80 ? "#10B981" : "#EF4444" }}>{client.on_time_payment_pct.toFixed(0)}%</p></div>
               </div>
@@ -444,7 +455,7 @@ function ClientMapDetail({
                     <div key={inv.id} className="flex items-center justify-between text-sm">
                       <span className="font-medium text-[var(--text-primary)]">{inv.invoice_number}</span>
                       <span className="text-[var(--text-muted)]">{new Date(inv.sale_date).toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}</span>
-                      <span className="font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(Number(inv.total_usd))}</span>
+                      <span className="font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(convert(Number(inv.total_usd)), currency)}</span>
                     </div>
                   ))}
                 </div>

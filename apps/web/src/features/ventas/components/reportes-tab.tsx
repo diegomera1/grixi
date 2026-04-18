@@ -30,7 +30,9 @@ import type {
   DemoRole,
 } from "../types";
 import { SEGMENT_LABELS, SEGMENT_COLORS, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_COLORS } from "../types";
-import { fmtMoney, fmtMoneyCompact, fmtNum, fmtPct } from "../utils/fmtMoney";
+import { fmtNum, fmtPct } from "../utils/fmtMoney";
+import { formatCurrency as fmtMoney, formatCurrencyCompact as fmtMoneyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import { WorldHeatmap } from "./world-heatmap";
 
 type Props = {
@@ -40,6 +42,8 @@ type Props = {
   quotes: SalesQuote[];
   activities?: SalesActivity[];
   demoRole: DemoRole;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 };
 
 const CHART_COLORS = [
@@ -60,6 +64,8 @@ export function ReportesTab({
   quotes,
   activities = [],
   demoRole,
+  currency,
+  convert,
 }: Props) {
   // Segment distribution
   const segmentDist = useMemo(() => {
@@ -161,14 +167,14 @@ export function ReportesTab({
         {[
           {
             label: "Ingresos Totales USD",
-            value: fmtMoneyCompact(totalUSD),
+            value: fmtMoneyCompact(convert(totalUSD), currency),
             color: "#10B981",
             sub: `${fmtNum(invoices.length, 0)} facturas`,
             hint: "Suma total de todas las facturas emitidas en USD. Incluye pagadas, pendientes y vencidas.",
           },
           {
             label: "Ticket Promedio",
-            value: fmtMoney(avgDealSize, 0),
+            value: fmtMoney(convert(avgDealSize), currency),
             color: "#3B82F6",
             sub: "por factura",
             hint: "Valor medio por factura. Se calcula dividiendo los ingresos totales entre el número de facturas emitidas.",
@@ -215,7 +221,7 @@ export function ReportesTab({
       </div>
 
       {/* World Heatmap — Main Feature */}
-      <WorldHeatmap invoices={invoices} customers={customers} />
+      <WorldHeatmap invoices={invoices} customers={customers} currency={currency} convert={convert} />
 
       {/* Revenue Trend + Segment Pie */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -242,7 +248,7 @@ export function ReportesTab({
                 />
                 <YAxis
                   tick={{ fontSize: 9, fill: "var(--text-muted)" }}
-                  tickFormatter={(v) => fmtMoneyCompact(v)}
+                  tickFormatter={(v) => fmtMoneyCompact(v, currency)}
                 />
                 <Tooltip
                   contentStyle={{
@@ -252,7 +258,7 @@ export function ReportesTab({
                     fontSize: 10,
                   }}
                   formatter={(value) => [
-                    fmtMoney(Number(value), 0),
+                    fmtMoney(convert(Number(value)), currency),
                     "Revenue",
                   ]}
                 />
@@ -399,7 +405,7 @@ export function ReportesTab({
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] font-bold text-emerald-500 tabular-nums">
-                          {fmtMoney(seller.revenue, 0)}
+                          {fmtMoney(convert(seller.revenue), currency)}
                         </span>
                         <div className="hidden sm:block h-1 w-16 overflow-hidden rounded-full bg-[var(--bg-muted)]">
                           <div
@@ -416,7 +422,7 @@ export function ReportesTab({
                     </td>
                     <td className="px-3 py-2">
                       <span className="text-[13px] text-[var(--text-secondary)] tabular-nums">
-                        {fmtMoney(seller.revenue / seller.deals, 0)}
+                        {fmtMoney(convert(seller.revenue / seller.deals), currency)}
                       </span>
                     </td>
                     <td className="px-3 py-2">
@@ -468,14 +474,14 @@ export function ReportesTab({
                     <div className="h-full rounded-full transition-all" style={{ width: `${(data.count / totalInv) * 100}%`, backgroundColor: colors[status] || '#6B7280' }} />
                   </div>
                   <span className="text-xs font-bold text-[var(--text-secondary)] tabular-nums w-8 text-right">{data.count}</span>
-                  <span className="text-xs font-bold text-emerald-500 tabular-nums w-16 text-right">{fmtMoneyCompact(data.total)}</span>
+                  <span className="text-xs font-bold text-emerald-500 tabular-nums w-16 text-right">{fmtMoneyCompact(convert(data.total), currency)}</span>
                 </div>
               ));
             })()}
           </div>
           <div className="mt-3 pt-2 border-t border-[var(--border)] flex justify-between text-sm text-[var(--text-muted)]">
             <span>Total: {fmtNum(invoices.length, 0)} facturas</span>
-            <span className="font-bold text-[var(--text-primary)]">{fmtMoney(totalUSD, 0)}</span>
+            <span className="font-bold text-[var(--text-primary)]">{fmtMoney(convert(totalUSD), currency)}</span>
           </div>
         </motion.div>
 
@@ -512,7 +518,7 @@ export function ReportesTab({
                     </div>
                     <span className="text-sm font-bold tabular-nums w-8 text-right" style={{ color: avgHealth > 70 ? '#10B981' : avgHealth > 45 ? '#F59E0B' : '#EF4444' }}>{avgHealth.toFixed(0)}</span>
                     <span className="text-sm text-[var(--text-muted)] tabular-nums w-12 text-right">NPS {avgNps.toFixed(0)}</span>
-                    <span className="text-sm font-bold text-[var(--text-secondary)] tabular-nums w-14 text-right">{fmtMoneyCompact(avgRev)}</span>
+                    <span className="text-sm font-bold text-[var(--text-secondary)] tabular-nums w-14 text-right">{fmtMoneyCompact(convert(avgRev), currency)}</span>
                   </div>
                 );
               }).filter(Boolean);
@@ -659,7 +665,7 @@ export function ReportesTab({
             </ResponsiveContainer>
           </div>
           <div className="mt-1 text-center text-sm text-[var(--text-muted)]">
-            {fmtNum(opportunities.length, 0)} oportunidades · {fmtMoney(opportunities.reduce((s, o) => s + Number(o.amount), 0), 0)} en pipeline
+            {fmtNum(opportunities.length, 0)} oportunidades · {fmtMoney(convert(opportunities.reduce((s, o) => s + Number(o.amount), 0)), currency)} en pipeline
           </div>
         </motion.div>
 
@@ -697,7 +703,7 @@ export function ReportesTab({
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(data.revenue)}</p>
+                    <p className="text-xs font-bold text-emerald-500 tabular-nums">{fmtMoneyCompact(convert(data.revenue), currency)}</p>
                     <p className="text-[13px] text-[var(--text-muted)]">{fmtNum(data.qty, 0)} uds · {data.count} fact</p>
                   </div>
                 </div>

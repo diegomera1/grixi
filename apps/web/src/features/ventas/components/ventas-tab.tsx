@@ -18,6 +18,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { formatCurrencyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import type { SalesInvoice, SalesCustomer, DemoRole, InvoiceStatus } from "../types";
 import { INVOICE_STATUS_LABELS, INVOICE_STATUS_COLORS } from "../types";
 
@@ -347,9 +349,11 @@ type Props = {
   invoices: SalesInvoice[];
   customers: SalesCustomer[];
   demoRole: DemoRole;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 };
 
-export function VentasTab({ invoices, customers, demoRole }: Props) {
+export function VentasTab({ invoices, customers, demoRole, currency, convert }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "all">("all");
   const [sortBy, setSortBy] = useState<"date" | "amount">("date");
@@ -534,9 +538,7 @@ export function VentasTab({ invoices, customers, demoRole }: Props) {
                   </td>
                   <td className="px-4 py-2.5">
                     <span className="text-[13px] font-bold text-[var(--text-primary)] tabular-nums">
-                      {Number(inv.total).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                      })}
+                      {formatCurrencyCompact(convert(Number(inv.total_usd || inv.total)), currency)}
                     </span>
                   </td>
                   <td className="px-4 py-2.5">

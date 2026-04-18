@@ -67,12 +67,10 @@ import {
   fetchOpportunitiesByCustomer,
   fetchQuotesByCustomer,
 } from "../actions/ventas-actions";
-import { fmtMoneyCompact } from "../utils/fmtMoney";
+import { formatCurrencyCompact, convertCurrency, CURRENCY_CONFIG } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 
 // ── Helpers ────────────────────────────────────────
-
-// Use centralized formatter
-const fmtUSD = fmtMoneyCompact;
 
 function fmtNum(v: number): string {
   return v.toLocaleString("es-EC");
@@ -168,6 +166,11 @@ export function FichaClientePage({ customers }: Props) {
   const [opportunities, setOpportunities] = useState<SalesOpportunity[]>([]);
   const [quotes, setQuotes] = useState<SalesQuote[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Currency state
+  const [currency, setCurrency] = useState<CurrencyCode>("USD");
+  const convert = useCallback((v: number) => convertCurrency(v, "USD", currency), [currency]);
+  const fmtUSD = useCallback((v: number) => formatCurrencyCompact(convert(v), currency), [convert, currency]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -322,6 +325,18 @@ export function FichaClientePage({ customers }: Props) {
         >
           {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
         </button>
+        {/* Currency Selector */}
+        <select
+          value={currency}
+          onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+          className="h-8 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-2 text-xs font-medium text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand)]/30"
+        >
+          {(Object.keys(CURRENCY_CONFIG) as CurrencyCode[]).map((c) => (
+            <option key={c} value={c}>
+              {CURRENCY_CONFIG[c].flag} {c}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Content Area */}

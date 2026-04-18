@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState, useMemo } from "react";
-import { fmtMoney, fmtMoneyCompact, fmtNum } from "../utils/fmtMoney";
+import { fmtNum } from "../utils/fmtMoney";
+import { formatCurrency as fmtMoney, formatCurrencyCompact } from "@/lib/utils/currency";
+import type { CurrencyCode } from "@/lib/utils/currency";
 import { motion, useInView } from "framer-motion";
 import {
   DollarSign,
@@ -52,11 +54,13 @@ function AnimatedValue({
   prefix = "",
   suffix = "",
   decimals = 0,
+  currency,
 }: {
   value: number;
   prefix?: string;
   suffix?: string;
   decimals?: number;
+  currency?: CurrencyCode;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true });
@@ -75,7 +79,7 @@ function AnimatedValue({
           transition={{ duration: 0.3 }}
         >
           {prefix === "$"
-            ? fmtMoneyCompact(value)
+            ? formatCurrencyCompact(value, currency || "USD")
             : `${prefix}${fmtNum(value, decimals)}${suffix}`}
         </motion.span>
       )}
@@ -138,11 +142,13 @@ function KPICard({
   sparkData,
   yoyLabel,
   tooltip,
+  currency,
 }: {
   label: string;
   value: number;
   prefix?: string;
   suffix?: string;
+  currency?: CurrencyCode;
   change?: number;
   changeLabel?: string;
   icon: typeof DollarSign;
@@ -191,7 +197,7 @@ function KPICard({
             )}
           </div>
           <p className="mt-1.5 text-xl font-bold text-[var(--text-primary)]">
-            <AnimatedValue value={value} prefix={prefix} suffix={suffix} />
+            <AnimatedValue value={value} prefix={prefix} suffix={suffix} currency={currency} />
           </p>
         </div>
         <div
@@ -453,7 +459,7 @@ function ConversionFunnel({
 
 // ── Revenue Chart ─────────────────────────────────
 
-function RevenueChart({ invoices }: { invoices: SalesInvoice[] }) {
+function RevenueChart({ invoices, currency }: { invoices: SalesInvoice[]; currency: CurrencyCode }) {
   const [comparison, setComparison] = useState<'month' | 'quarter'>('month');
 
   const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun"];
@@ -522,7 +528,7 @@ function RevenueChart({ invoices }: { invoices: SalesInvoice[] }) {
               tick={{ fontSize: 9, fill: "var(--text-muted)" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v) => fmtMoneyCompact(v)}
+              tickFormatter={(v) => formatCurrencyCompact(v, currency)}
             />
             <Tooltip
               contentStyle={{
@@ -532,7 +538,7 @@ function RevenueChart({ invoices }: { invoices: SalesInvoice[] }) {
                 fontSize: 10,
               }}
               formatter={(value, name) => [
-                fmtMoney(Number(value), 0),
+                fmtMoney(Number(value), currency),
                 name === "actual" ? "Actual" : "Anterior",
               ]}
             />
@@ -562,7 +568,7 @@ function RevenueChart({ invoices }: { invoices: SalesInvoice[] }) {
 
 // ── Top Customers ─────────────────────────────────
 
-function TopCustomers({ customers }: { customers: SalesCustomer[] }) {
+function TopCustomers({ customers, currency, convert }: { customers: SalesCustomer[]; currency: CurrencyCode; convert: (v: number) => number }) {
   const top5 = customers
     .filter((c) => c.total_revenue > 0)
     .sort((a, b) => b.total_revenue - a.total_revenue)
@@ -608,7 +614,7 @@ function TopCustomers({ customers }: { customers: SalesCustomer[] }) {
             </div>
             <div className="text-right">
               <p className="text-[13px] font-bold text-[var(--text-primary)]">
-                {fmtMoneyCompact(c.total_revenue)}
+                {formatCurrencyCompact(convert(c.total_revenue), currency)}
               </p>
               <div
                 className="mt-0.5 rounded-full px-1.5 py-0.5 text-[13px] font-semibold"
@@ -629,7 +635,7 @@ function TopCustomers({ customers }: { customers: SalesCustomer[] }) {
 
 // ── Top Products ──────────────────────────────────
 
-function TopProducts({ products }: { products: TopProduct[] }) {
+function TopProducts({ products, currency, convert }: { products: TopProduct[]; currency: CurrencyCode; convert: (v: number) => number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -669,7 +675,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
               </p>
             </div>
             <p className="text-[13px] font-bold text-[var(--text-primary)]">
-              {fmtMoneyCompact(p.revenue)}
+              {formatCurrencyCompact(convert(p.revenue), currency)}
             </p>
           </div>
         ))}
@@ -767,6 +773,8 @@ type DashboardProps = {
   topProducts: TopProduct[];
   demoRole: DemoRole;
   onAlertDismiss: (id: string) => void;
+  currency: CurrencyCode;
+  convert: (v: number) => number;
 };
 
 // Synthetic sparkline data (6 months) for demo
@@ -789,6 +797,8 @@ export function DashboardTab({
   topProducts,
   demoRole,
   onAlertDismiss,
+  currency,
+  convert,
 }: DashboardProps) {
   const monthTransactions = invoices.filter((i) => {
     const d = new Date(i.sale_date);
@@ -801,8 +811,9 @@ export function DashboardTab({
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <KPICard
           label="Ingresos Totales"
-          value={kpis.totalRevenue}
+          value={convert(kpis.totalRevenue)}
           prefix="$"
+          currency={currency}
           change={kpis.totalRevenueChange}
           changeLabel="vs mes ant."
           icon={DollarSign}
@@ -825,8 +836,9 @@ export function DashboardTab({
         />
         <KPICard
           label="Pipeline"
-          value={kpis.pipelineValue}
+          value={convert(kpis.pipelineValue)}
           prefix="$"
+          currency={currency}
           change={kpis.pipelineValueChange}
           changeLabel="crecimiento"
           icon={Target}
@@ -860,8 +872,9 @@ export function DashboardTab({
         />
         <KPICard
           label="Ticket Promedio"
-          value={kpis.avgDealSize}
+          value={convert(kpis.avgDealSize)}
           prefix="$"
+          currency={currency}
           icon={ShoppingCart}
           color="#F59E0B"
           delay={0.30}
@@ -890,7 +903,7 @@ export function DashboardTab({
 
       {/* Charts Row */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <RevenueChart invoices={invoices} />
+        <RevenueChart invoices={invoices} currency={currency} />
         <MiniPipelineBar stages={pipelineStages} opportunities={opportunities} />
       </div>
 
@@ -900,8 +913,8 @@ export function DashboardTab({
           stages={pipelineStages}
           opportunities={opportunities}
         />
-        <TopCustomers customers={customers} />
-        <TopProducts products={topProducts} />
+        <TopCustomers customers={customers} currency={currency} convert={convert} />
+        <TopProducts products={topProducts} currency={currency} convert={convert} />
         <ActivityFeed />
       </div>
 
