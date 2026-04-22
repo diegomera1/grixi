@@ -1,4 +1,5 @@
 import { createRequestHandler } from "react-router";
+import { createClient } from "@supabase/supabase-js";
 
 declare module "react-router" {
   export interface AppLoadContext {
@@ -82,6 +83,7 @@ function getSecurityHeaders(): Record<string, string> {
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
     "X-XSS-Protection": "1; mode=block",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "Content-Security-Policy": [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com",
@@ -113,6 +115,105 @@ function getCacheControl(pathname: string): string | null {
   }
   // HTML pages — revalidate
   return "no-cache, no-store, must-revalidate";
+}
+
+// ─── Scheduled Maintenance Tasks ──────────────────────────
+
+interface CronResult {
+  task: string;
+  affected: number;
+  error?: string;
+}
+
+async function runMaintenanceTasks(env: Env): Promise<CronResult[]> {
+  const admin = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const results: CronResult[] = [];
+  const now = new Date().toISOString();
+
+  // ── 1. Expire stale invitations ──
+  // Invitations past expires_at that are still 'pending' → mark as 'expired'
+  try {
+    const { data, error } = await admin
+      .from("invitations")
+      .update({ status: "expired", updated_at: now })
+      .eq("status", "pending")
+      .lt("expires_at", now)
+      .select("id");
+
+    results.push({
+      task: "expire_invitations",
+      affected: data?.length || 0,
+      ...(error && { error: error.message }),
+    });
+  } catch (e: any) {
+    results.push({ task: "expire_invitations", affected: 0, error: e.message });
+  }
+
+  // ── 2. Clean stale push subscriptions ──
+  // Subscriptions not used in 90 days are likely dead browsers
+  try {
+    const staleDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await admin
+      .from("push_subscriptions")
+      .delete()
+      .lt("last_used_at", staleDate)
+      .select("id");
+
+    results.push({
+      task: "clean_push_subscriptions",
+      affected: data?.length || 0,
+      ...(error && { error: error.message }),
+    });
+  } catch (e: any) {
+    results.push({ task: "clean_push_subscriptions", affected: 0, error: e.message });
+  }
+
+  // ── 3. Mark old notifications as read ──
+  // Notifications older than 30 days that are still unread → mark as read
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await admin
+      .from("notifications")
+      .update({ read: true })
+      .eq("read", false)
+      .lt("created_at", thirtyDaysAgo)
+      .select("id");
+
+    results.push({
+      task: "auto_read_old_notifications",
+      affected: data?.length || 0,
+      ...(error && { error: error.message }),
+    });
+  } catch (e: any) {
+    results.push({ task: "auto_read_old_notifications", affected: 0, error: e.message });
+  }
+
+  // ── 4. Log maintenance run in audit_logs ──
+  try {
+    const totalAffected = results.reduce((sum, r) => sum + r.affected, 0);
+    const hasErrors = results.some((r) => r.error);
+
+    await admin.from("audit_logs").insert({
+      actor_id: null,
+      action: "system.cron_maintenance",
+      entity_type: "system",
+      entity_id: "cron",
+      metadata: {
+        results,
+        total_affected: totalAffected,
+        has_errors: hasErrors,
+        ran_at: now,
+      },
+      ip_address: "cron-worker",
+    });
+  } catch {
+    // Don't fail the whole cron if audit logging fails
+  }
+
+  return results;
 }
 
 export default {
@@ -224,5 +325,21 @@ export default {
         }
       );
     }
+  },
+
+  // ─── Cron: Automated Maintenance ──────────────────────────
+  // Runs daily at 03:00 UTC (22:00 ECT) to clean up stale data
+  async scheduled(event, env, ctx) {
+    const results = await runMaintenanceTasks(env);
+    const totalAffected = results.reduce((sum, r) => sum + r.affected, 0);
+    const hasErrors = results.some((r) => r.error);
+
+    console.log(JSON.stringify({
+      level: hasErrors ? "warn" : "info",
+      message: `Cron maintenance completed: ${totalAffected} records affected`,
+      results,
+      trigger: event.cron,
+      scheduledTime: new Date(event.scheduledTime).toISOString(),
+    }));
   },
 } satisfies ExportedHandler<Env>;
