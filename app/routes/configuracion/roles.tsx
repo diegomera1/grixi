@@ -3,6 +3,7 @@ import type { Route } from "./+types/configuracion.roles";
 import type { ConfigContext } from "../configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
+import { invalidateCache, cacheKey } from "~/lib/cache/kv";
 import { Shield, Plus, Save, Trash2, ChevronRight, Users } from "lucide-react";
 import { useState } from "react";
 
@@ -64,6 +65,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const { data: org } = await admin.from("organizations")
     .select("id").eq("slug", tenantSlug).maybeSingle();
   if (!org) return Response.json({ error: "Org not found" }, { status: 404, headers });
+  const kv = (env as any).KV_CACHE as KVNamespace | undefined;
 
   if (intent === "create_role") {
     const name = formData.get("name") as string;
@@ -106,6 +108,12 @@ export async function action({ request, context }: Route.ActionArgs) {
       entityId: roleId, organizationId: org.id,
       metadata: { permissionCount: permissionIds.length }, ipAddress: ip,
     });
+    // Invalidate permission cache for ALL members of this org (their role perms may have changed)
+    const { data: orgMembers } = await admin.from("memberships")
+      .select("user_id").eq("organization_id", org.id).eq("role_id", roleId);
+    if (orgMembers) {
+      await invalidateCache(kv, orgMembers.map(m => cacheKey.userPerms(m.user_id, org.id)));
+    }
     return Response.json({ success: true }, { headers });
   }
 

@@ -16,8 +16,14 @@
 		"nodejs_compat"
 	],
 	"routes": [
-		{ "pattern": "grixi.ai", "custom_domain": true },
-		{ "pattern": "*.grixi.ai/*", "zone_name": "grixi.ai" }
+		{
+			"pattern": "grixi.ai",
+			"custom_domain": true
+		},
+		{
+			"pattern": "*.grixi.ai/*",
+			"zone_name": "grixi.ai"
+		}
 	],
 	"workers_dev": true,
 	// Rate Limiting: protección anti-brute-force para rutas admin
@@ -36,6 +42,12 @@
 		{
 			"binding": "ASSETS_BUCKET",
 			"bucket_name": "grixi-assets"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "KV_CACHE",
+			"id": "7c5b87293fa14664b0187d6831e0bcd8"
 		}
 	]
 	// Secrets are configured via `wrangler secret put`:

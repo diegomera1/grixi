@@ -3,6 +3,7 @@ import type { Route } from "./+types/configuracion.equipo";
 import type { ConfigContext } from "../configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
+import { invalidateUserCache } from "~/lib/cache/kv";
 import { Users, UserMinus, UserCheck, Clock, Search, MoreHorizontal, ChevronDown } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -82,6 +83,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   const { data: org } = await admin.from("organizations")
     .select("id").eq("slug", tenantSlug).maybeSingle();
   if (!org) return Response.json({ error: "Org not found" }, { status: 404, headers });
+  const kv = (env as any).KV_CACHE as KVNamespace | undefined;
 
   // ── RBAC: Verify actor has team management permission ──
   const { data: pa } = await admin.from("platform_admins")
@@ -151,6 +153,9 @@ export async function action({ request, context }: Route.ActionArgs) {
       entityId: membershipId, organizationId: org.id,
       metadata: { newRoleId }, ipAddress: ip,
     });
+    // Invalidate cached permissions for the affected member
+    const { data: affected } = await admin.from("memberships").select("user_id").eq("id", membershipId).maybeSingle();
+    if (affected) await invalidateUserCache(kv, affected.user_id, [org.id]);
     return Response.json({ success: true }, { headers });
   }
 
@@ -166,6 +171,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       entityId: membershipId, organizationId: org.id,
       metadata: { suspendedUserId: targetUserId }, ipAddress: ip,
     });
+    if (targetUserId) await invalidateUserCache(kv, targetUserId, [org.id]);
     return Response.json({ success: true }, { headers });
   }
 
@@ -191,6 +197,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       entityId: membershipId, organizationId: org.id,
       metadata: { removedUserId: targetUserId }, ipAddress: ip,
     });
+    if (targetUserId) await invalidateUserCache(kv, targetUserId, [org.id]);
     return Response.json({ success: true }, { headers });
   }
 

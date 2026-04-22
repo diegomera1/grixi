@@ -3,6 +3,7 @@ import type { Route } from "./+types/configuracion.organizacion";
 import type { ConfigContext } from "../configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
+import { invalidateOrgCache } from "~/lib/cache/kv";
 import { Save, Building2, Globe, Palette, Mail, Calendar, Shield, Image, Upload } from "lucide-react";
 import { useState, useRef } from "react";
 
@@ -84,6 +85,10 @@ export async function action({ request, context }: Route.ActionArgs) {
       entityId: org.id, organizationId: org.id,
       metadata: { name, timezone, currency, primaryColor, billingEmail }, ipAddress: ip,
     });
+
+    // Invalidate cached org config (settings/branding changed)
+    const kv = (env as any).KV_CACHE as KVNamespace | undefined;
+    await invalidateOrgCache(kv, org.id);
 
     return Response.json({ success: true }, { headers });
   }

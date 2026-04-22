@@ -2,6 +2,7 @@ import { redirect, useLoaderData, useNavigate, Outlet } from "react-router";
 import { useState, useEffect, useCallback, type ComponentType } from "react";
 import type { Route } from "./+types/authenticated";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { getCachedOrFetch, cacheKey, CACHE_TTL } from "~/lib/cache/kv";
 import { BottomTabBar } from "~/components/layout/bottom-tab-bar";
 import { PWASplash } from "~/components/pwa/pwa-splash";
 import { InstallPrompt } from "~/components/pwa/install-prompt";
@@ -53,20 +54,37 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   if (!user) return redirect("/", { headers });
 
   const admin = createSupabaseAdminClient(env);
+  const kv = (env as any).KV_CACHE as KVNamespace | undefined;
 
-  // Platform admin check
-  const { data: platformAdmin } = await admin
-    .from("platform_admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Platform admin check (cached 10 min)
+  const { data: platformAdmin } = await getCachedOrFetch(
+    kv,
+    cacheKey.platformAdmin(user.id),
+    async () => {
+      const { data } = await admin
+        .from("platform_admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    CACHE_TTL.PLATFORM_ADMIN
+  );
 
-  // Resolve user's organizations via memberships
-  const { data: memberships } = await admin
-    .from("memberships")
-    .select("organization_id, status, roles(name, hierarchy_level), organizations(id, name, slug, status, settings, logo_url)")
-    .eq("user_id", user.id)
-    .eq("status", "active");
+  // Resolve user's organizations via memberships (cached 5 min)
+  const { data: memberships } = await getCachedOrFetch(
+    kv,
+    cacheKey.userOrgs(user.id),
+    async () => {
+      const { data } = await admin
+        .from("memberships")
+        .select("organization_id, status, roles(name, hierarchy_level), organizations(id, name, slug, status, settings, logo_url)")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+      return data;
+    },
+    CACHE_TTL.USER_ORGS
+  );
 
   const organizations = (memberships || []).map((m: any) => ({
     id: m.organizations?.id,
@@ -125,24 +143,32 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     return redirect("/suspended", { headers });
   }
 
-  // ── Fetch user permissions for current org ──
+  // ── Fetch user permissions for current org (cached 3 min) ──
   let permissions: string[] = [];
   if (currentOrg) {
-    if (platformAdmin) {
-      const { data: allPerms } = await admin.from("permissions").select("key");
-      permissions = (allPerms || []).map((p: any) => p.key);
-    } else {
-      const { data: userPerms } = await admin
-        .from("memberships")
-        .select("roles(role_permissions(permissions(key)))")
-        .eq("user_id", user.id)
-        .eq("organization_id", currentOrg.id)
-        .eq("status", "active")
-        .maybeSingle();
-      
-      const rolePerms = (userPerms as any)?.roles?.role_permissions || [];
-      permissions = rolePerms.map((rp: any) => rp.permissions?.key).filter(Boolean);
-    }
+    const { data: cachedPerms } = await getCachedOrFetch(
+      kv,
+      cacheKey.userPerms(user.id, currentOrg.id),
+      async () => {
+        if (platformAdmin) {
+          const { data: allPerms } = await admin.from("permissions").select("key");
+          return (allPerms || []).map((p: any) => p.key);
+        } else {
+          const { data: userPerms } = await admin
+            .from("memberships")
+            .select("roles(role_permissions(permissions(key)))")
+            .eq("user_id", user.id)
+            .eq("organization_id", currentOrg.id)
+            .eq("status", "active")
+            .maybeSingle();
+          
+          const rolePerms = (userPerms as any)?.roles?.role_permissions || [];
+          return rolePerms.map((rp: any) => rp.permissions?.key).filter(Boolean);
+        }
+      },
+      CACHE_TTL.USER_PERMS
+    );
+    permissions = cachedPerms;
   }
 
   // Set org cookie for persistence
