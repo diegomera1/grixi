@@ -1,11 +1,11 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "grixi-app",
+	"name": "grixi-app-staging",
 	"account_id": "9f03d559ba7dab48269e40938b495350",
 	"compatibility_date": "2026-03-17",
 	"main": "./workers/app.ts",
 	"vars": {
-		"APP_ENV": "production",
+		"APP_ENV": "staging",
 		"APP_DOMAIN": "grixi.ai"
 	},
 	"observability": {
@@ -17,19 +17,15 @@
 	],
 	"routes": [
 		{
-			"pattern": "grixi.ai",
+			"pattern": "staging.grixi.ai",
 			"custom_domain": true
-		},
-		{
-			"pattern": "*.grixi.ai/*",
-			"zone_name": "grixi.ai"
 		}
 	],
 	"workers_dev": true,
 	"ratelimits": [
 		{
 			"name": "ADMIN_RATE_LIMITER",
-			"namespace_id": "1001",
+			"namespace_id": "1002",
 			"simple": {
 				"limit": 30,
 				"period": 60
@@ -39,16 +35,13 @@
 	"r2_buckets": [
 		{
 			"binding": "ASSETS_BUCKET",
-			"bucket_name": "grixi-assets"
+			"bucket_name": "grixi-assets-staging"
 		}
 	],
 	"kv_namespaces": [
 		{
 			"binding": "KV_CACHE",
-			"id": "7c5b87293fa14664b0187d6831e0bcd8"
+			"id": "53320387b19a4a4087c014967009c268"
 		}
-	],
-	"triggers": {
-		"crons": ["0 3 * * *"]
-	}
+	]
 }
