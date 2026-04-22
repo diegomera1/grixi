@@ -4,6 +4,8 @@ import type { ConfigContext } from "../configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { sendInvitationEmail } from "~/lib/email.server";
+import { schemas } from "~/lib/validation/schemas";
+import { validateAction } from "~/lib/validation/parse";
 import { Mail, Copy, Check, X, Clock, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
 
@@ -56,9 +58,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   if (!org) return Response.json({ error: "Org not found" }, { status: 404, headers });
 
   if (intent === "invite") {
-    const email = formData.get("email") as string;
-    const roleId = formData.get("role_id") as string;
-    if (!email || !roleId) return Response.json({ error: "Email y rol requeridos" }, { status: 400, headers });
+    const validated = validateAction(formData, schemas.invite, headers);
+    if (validated instanceof Response) return validated;
+    const { email, role_id: roleId } = validated;
 
     // Check if already invited
     const { data: existing } = await admin.from("invitations")
@@ -118,7 +120,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "cancel") {
-    const invId = formData.get("invitation_id") as string;
+    const validated = validateAction(formData, schemas.cancelInvitation, headers);
+    if (validated instanceof Response) return validated;
+    const { invitation_id: invId } = validated;
     await admin.from("invitations").update({ status: "cancelled" }).eq("id", invId);
     await logAuditEvent(admin, {
       actorId: user.id, action: "invitation.cancel", entityType: "invitation",
@@ -128,7 +132,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "resend") {
-    const invId = formData.get("invitation_id") as string;
+    const validated = validateAction(formData, schemas.resendInvitation, headers);
+    if (validated instanceof Response) return validated;
+    const { invitation_id: invId } = validated;
     const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await admin.from("invitations")
       .update({ expires_at: newExpiry })

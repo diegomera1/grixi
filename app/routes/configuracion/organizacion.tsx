@@ -4,6 +4,8 @@ import type { ConfigContext } from "../configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { invalidateOrgCache } from "~/lib/cache/kv";
+import { schemas } from "~/lib/validation/schemas";
+import { validateAction } from "~/lib/validation/parse";
 import { Save, Building2, Globe, Palette, Mail, Calendar, Shield, Image, Upload } from "lucide-react";
 import { useState, useRef } from "react";
 
@@ -60,11 +62,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "update_org") {
-    const name = formData.get("name") as string;
-    const timezone = formData.get("timezone") as string;
-    const currency = formData.get("currency") as string;
-    const primaryColor = formData.get("primary_color") as string;
-    const billingEmail = formData.get("billing_email") as string;
+    const validated = validateAction(formData, schemas.updateOrg, headers);
+    if (validated instanceof Response) return validated;
+    const { name, timezone, currency, primary_color: primaryColor, billing_email: billingEmail } = validated;
 
     const settings = {
       ...(org.settings || {}),
@@ -94,9 +94,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "add_domain") {
-    const domain = formData.get("domain") as string;
-    const autoRole = formData.get("auto_role") as string;
-    if (!domain) return Response.json({ error: "Dominio requerido" }, { status: 400, headers });
+    const validated = validateAction(formData, schemas.addDomain, headers);
+    if (validated instanceof Response) return validated;
+    const { domain, auto_role: autoRole } = validated;
 
     const { error } = await admin.from("domain_whitelists").insert({
       organization_id: org.id, domain, auto_role: autoRole || "member", created_by: user.id,
@@ -111,7 +111,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "remove_domain") {
-    const domainId = formData.get("domain_id") as string;
+    const validated = validateAction(formData, schemas.removeDomain, headers);
+    if (validated instanceof Response) return validated;
+    const { domain_id: domainId } = validated;
     await admin.from("domain_whitelists").delete().eq("id", domainId);
     await logAuditEvent(admin, {
       actorId: user.id, action: "domain.remove", entityType: "domain_whitelist",

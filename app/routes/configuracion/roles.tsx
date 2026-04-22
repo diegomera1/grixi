@@ -4,6 +4,8 @@ import type { ConfigContext } from "../configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { invalidateCache, cacheKey } from "~/lib/cache/kv";
+import { schemas } from "~/lib/validation/schemas";
+import { validateAction } from "~/lib/validation/parse";
 import { Shield, Plus, Save, Trash2, ChevronRight, Users } from "lucide-react";
 import { useState } from "react";
 
@@ -68,10 +70,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   const kv = (env as any).KV_CACHE as KVNamespace | undefined;
 
   if (intent === "create_role") {
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
-    const hierarchyLevel = parseInt(formData.get("hierarchy_level") as string) || 30;
-    if (!name) return Response.json({ error: "Nombre requerido" }, { status: 400, headers });
+    const validated = validateAction(formData, schemas.createRole, headers);
+    if (validated instanceof Response) return validated;
+    const { name, description, hierarchy_level: hierarchyLevel } = validated;
 
     const { data: newRole, error } = await admin.from("roles").insert({
       organization_id: org.id,
@@ -93,8 +94,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "update_permissions") {
-    const roleId = formData.get("role_id") as string;
-    const permissionIds = JSON.parse(formData.get("permission_ids") as string) as string[];
+    const validated = validateAction(formData, schemas.updatePermissions, headers);
+    if (validated instanceof Response) return validated;
+    const { role_id: roleId, permission_ids: permissionIds } = validated;
 
     await admin.from("role_permissions").delete().eq("role_id", roleId);
     if (permissionIds.length > 0) {
@@ -118,7 +120,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "delete_role") {
-    const roleId = formData.get("role_id") as string;
+    const validated = validateAction(formData, schemas.deleteRole, headers);
+    if (validated instanceof Response) return validated;
+    const { role_id: roleId } = validated;
     await admin.from("role_permissions").delete().eq("role_id", roleId);
     const { error } = await admin.from("roles").delete().eq("id", roleId).eq("is_system", false);
     if (error) return Response.json({ error: error.message }, { status: 400, headers });

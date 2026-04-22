@@ -1,6 +1,6 @@
 # Estado Actual — GRIXI-APP
 
-**Última actualización:** 2026-04-02 (Sesión 3 — Hardening)
+**Última actualización:** 2026-04-22 (Sesión 2 — Hardening Arquitectónico)
 
 ---
 
@@ -21,17 +21,22 @@
 | Push Notifications | ✅ Configurado | VAPID keys en CF secrets + Supabase tables |
 | CSRF Protection | ✅ Activo | X-GRIXI-Client header en mutation APIs |
 | Supabase Realtime | ✅ Habilitado | 7 tablas en publication |
+| KV Cache (Edge) | ✅ Activo | `KV_CACHE` — platform_admin, user_orgs, user_perms |
+| Cron Worker | ✅ Activo | `0 3 * * *` — expira invitaciones, limpia push subs, auto-read notifs |
+| HSTS | ✅ Activo | `max-age=31536000; includeSubDomains; preload` |
+| Zod Validation | ✅ Activo | 15 schemas, 13 intents validados en 4 actions |
 
 ## Base de Datos — Producción
 
 | Métrica | Valor |
 |---------|-------|
-| Tablas | 19 (todas con RLS ✅) |
-| Migraciones | 17 |
+| Tablas | 21 (todas con RLS ✅) |
+| Migraciones | 21 |
 | RLS Policies | 31+ |
 | Funciones PostgreSQL | 10 |
 | Triggers | 5+ |
 | Tablas con Realtime | 7 |
+| Índices audit_logs | 6 (optimizados — 4 duplicados eliminados) |
 
 ### Datos en Producción
 
@@ -216,6 +221,9 @@
 | `lib/i18n/en.ts` | Traducciones inglés |
 | `lib/i18n/pt.ts` | Traducciones portugués |
 | `lib/api-fetch.ts` | Wrapper fetch con CSRF header (X-GRIXI-Client: 1) |
+| `lib/cache/kv.ts` | KV Cache: getCachedOrFetch, invalidación granular, TTLs |
+| `lib/validation/schemas.ts` | 15 schemas Zod para validación de actions |
+| `lib/validation/parse.ts` | parseFormData + validateAction helpers |
 
 ## Arquitectura Multi-Tenant
 
@@ -257,6 +265,8 @@
 | 9 | RLS (29+ policies) | Aislamiento por org_id |
 | 10 | CSRF Header | `X-GRIXI-Client: 1` requerido en POST/PUT/DELETE/PATCH a `/api/*` |
 | 11 | Owner Protection | No se puede eliminar al último owner de una org |
+| 12 | HSTS | `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` |
+| 13 | Zod Validation | Validación estricta de inputs en todos los actions server-side |
 
 ## Dependencias
 
@@ -326,10 +336,10 @@
 
 ## Próximos Pasos
 
-1. Command Center (Cmd+K) — modal global de búsqueda
-2. Seed data para Finanzas (transacciones de demo)
-3. Org Logo upload + Favicon dinámico
-4. Login Page animaciones mejoradas
+1. Staging Environment (wrangler env + preview URLs)
+2. Plan Enforcement — validar permisos por plan de suscripción
+3. Command Center (Cmd+K) — modal global de búsqueda
+4. Seed data para Finanzas (transacciones de demo)
 5. Módulo Almacenes (tablas + UI + 3D warehouse)
 6. Módulo Compras (vendors, POs, PRs)
 7. Error boundaries globales por tenant

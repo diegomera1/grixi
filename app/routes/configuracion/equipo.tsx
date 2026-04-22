@@ -4,6 +4,8 @@ import type { ConfigContext } from "../configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { invalidateUserCache } from "~/lib/cache/kv";
+import { schemas } from "~/lib/validation/schemas";
+import { validateAction } from "~/lib/validation/parse";
 import { Users, UserMinus, UserCheck, Clock, Search, MoreHorizontal, ChevronDown } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -139,9 +141,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "change_role") {
-    const membershipId = formData.get("membership_id") as string;
-    const newRoleId = formData.get("role_id") as string;
-    if (!membershipId || !newRoleId) return Response.json({ error: "Datos incompletos" }, { status: 400, headers });
+    const validated = validateAction(formData, schemas.changeRole, headers);
+    if (validated instanceof Response) return validated;
+    const { membership_id: membershipId, role_id: newRoleId } = validated;
 
     const { error } = await admin.from("memberships")
       .update({ role_id: newRoleId })
@@ -160,8 +162,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "suspend") {
-    const membershipId = formData.get("membership_id") as string;
-    const targetUserId = formData.get("user_id") as string;
+    const validated = validateAction(formData, schemas.suspendMember, headers);
+    if (validated instanceof Response) return validated;
+    const { membership_id: membershipId, user_id: targetUserId } = validated;
     const validationError = await validateTargetMember(membershipId, targetUserId);
     if (validationError) return Response.json({ error: validationError }, { status: 400, headers });
 
@@ -176,7 +179,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "reactivate") {
-    const membershipId = formData.get("membership_id") as string;
+    const validated = validateAction(formData, schemas.reactivateMember, headers);
+    if (validated instanceof Response) return validated;
+    const { membership_id: membershipId } = validated;
     await admin.from("memberships").update({ status: "active" }).eq("id", membershipId);
     await logAuditEvent(admin, {
       actorId: user.id, action: "member.reactivate" as any, entityType: "membership",
@@ -186,8 +191,9 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "remove") {
-    const membershipId = formData.get("membership_id") as string;
-    const targetUserId = formData.get("user_id") as string;
+    const validated = validateAction(formData, schemas.removeMember, headers);
+    if (validated instanceof Response) return validated;
+    const { membership_id: membershipId, user_id: targetUserId } = validated;
     const validationError = await validateTargetMember(membershipId, targetUserId);
     if (validationError) return Response.json({ error: validationError }, { status: 400, headers });
 
