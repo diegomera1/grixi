@@ -1,4 +1,5 @@
 import { useLoaderData, useOutletContext } from "react-router";
+import { RouteErrorBoundary } from "~/components/route-error-boundary";
 import { createSupabaseServerClient } from "~/lib/supabase/client.server";
 import type { Route } from "./+types/finanzas";
 import type { TenantContext } from "./authenticated";
@@ -61,4 +62,8 @@ export default function Finanzas() {
       </Suspense>
     </div>
   );
+}
+
+export function ErrorBoundary({ error }: { error: unknown }) {
+  return <RouteErrorBoundary error={error} moduleName="Finanzas" />;
 }

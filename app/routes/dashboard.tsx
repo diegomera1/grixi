@@ -1,6 +1,7 @@
 import { redirect, useLoaderData, useOutletContext, useRouteLoaderData } from "react-router";
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { Route } from "./+types/dashboard";
+import { RouteErrorBoundary } from "~/components/route-error-boundary";
 import type { TenantContext } from "./authenticated";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { DashboardHero } from "~/components/dashboard/hero";
@@ -350,4 +351,8 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  return <RouteErrorBoundary error={error} moduleName="Dashboard" />;
 }

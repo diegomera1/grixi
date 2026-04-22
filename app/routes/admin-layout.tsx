@@ -1,4 +1,5 @@
 import { redirect, useLoaderData, Outlet } from "react-router";
+import { RouteErrorBoundary } from "~/components/route-error-boundary";
 import type { Route } from "./+types/admin-layout";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { isPlatformTenant } from "~/lib/platform-guard";
@@ -135,4 +136,8 @@ export default function AdminLayout() {
       </div>
     </AdminCtx.Provider>
   );
+}
+
+export function ErrorBoundary({ error }: { error: unknown }) {
+  return <RouteErrorBoundary error={error} moduleName="Panel Admin" />;
 }

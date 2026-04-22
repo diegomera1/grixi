@@ -1,4 +1,5 @@
 import { useOutletContext } from "react-router";
+import { RouteErrorBoundary } from "~/components/route-error-boundary";
 import type { TenantContext } from "./authenticated";
 
 export const meta = () => [{ title: "Notificaciones — GRIXI" }];
@@ -345,4 +346,8 @@ export default function NotificacionesPage() {
       `}</style>
     </div>
   );
+}
+
+export function ErrorBoundary({ error }: { error: unknown }) {
+  return <RouteErrorBoundary error={error} moduleName="Notificaciones" />;
 }

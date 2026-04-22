@@ -1,4 +1,5 @@
 import { redirect, useLoaderData, Outlet, NavLink } from "react-router";
+import { RouteErrorBoundary } from "~/components/route-error-boundary";
 import type { Route } from "./+types/configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { requirePermissionAny } from "~/lib/permission-guard.server";
@@ -158,4 +159,8 @@ export default function ConfiguracionLayout() {
       <Outlet context={configContext} />
     </div>
   );
+}
+
+export function ErrorBoundary({ error }: { error: unknown }) {
+  return <RouteErrorBoundary error={error} moduleName="Configuración" />;
 }
