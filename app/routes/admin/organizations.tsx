@@ -101,26 +101,16 @@ export async function action({ request, context }: Route.ActionArgs) {
 
     // Auto-assign default permissions to each role
     if (newRoles) {
-      // Get all permissions and their min_plan
-      const { data: allPerms } = await admin.from("permissions").select("id, key, min_plan");
+      const { data: allPerms } = await admin.from("permissions").select("id, key");
       if (allPerms) {
-        const planHierarchy: Record<string, number> = { starter: 1, professional: 2, enterprise: 3 };
-        const orgPlanLevel = planHierarchy[plan] || 0;
-
-        // Filter permissions available for this plan
-        const availablePerms = allPerms.filter((p: any) => {
-          const permLevel = planHierarchy[p.min_plan || "starter"] || 0;
-          return permLevel <= orgPlanLevel;
-        });
-
         // Permission sets by role
-        const viewPerms = availablePerms.filter((p: any) => p.key.endsWith(".view"));
-        const memberPerms = availablePerms.filter((p: any) => ["dashboard.view", "ai.chat", "profile.manage"].includes(p.key));
+        const viewPerms = allPerms.filter((p: any) => p.key.endsWith(".view"));
+        const memberPerms = allPerms.filter((p: any) => ["dashboard.view", "ai.chat", "profile.manage"].includes(p.key));
 
         const rolePermInserts: { role_id: string; permission_id: string }[] = [];
         for (const role of newRoles) {
           let permsForRole: any[] = [];
-          if (role.name === "owner" || role.name === "admin") permsForRole = availablePerms;
+          if (role.name === "owner" || role.name === "admin") permsForRole = allPerms;
           else if (role.name === "member") permsForRole = memberPerms;
           else if (role.name === "viewer") permsForRole = viewPerms;
 

@@ -25,11 +25,11 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   const [rolesRes, permsRes, membershipsRes] = await Promise.all([
     admin.from("roles")
-      .select("id, name, hierarchy_level, is_system, is_default, description, role_permissions(permission_id, permissions(id, key, description, category, min_plan))")
+      .select("id, name, hierarchy_level, is_system, is_default, description, role_permissions(permission_id, permissions(id, key, description, category))")
       .eq("organization_id", org.id)
       .order("hierarchy_level", { ascending: false }),
     admin.from("permissions")
-      .select("id, key, description, category, min_plan")
+      .select("id, key, description, category")
       .order("category").order("key"),
     admin.from("memberships")
       .select("role_id")
@@ -137,12 +137,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   return Response.json({ error: "Unknown intent" }, { status: 400, headers });
 }
 
-const PLAN_COLORS: Record<string, string> = {
-  starter: "#3B82F6", professional: "#8B5CF6", enterprise: "#F59E0B",
-};
-const PLAN_HIERARCHY: Record<string, number> = {
-  demo: 0, starter: 1, professional: 2, enterprise: 3,
-};
+
 
 export default function RolesTab() {
   const { roles, allPermissions, orgPlan, memberCounts } = useLoaderData<typeof loader>() as any;
@@ -155,7 +150,7 @@ export default function RolesTab() {
   const [newLevel, setNewLevel] = useState("30");
   const [editedPerms, setEditedPerms] = useState<Record<string, string[]>>({});
 
-  const orgPlanLevel = PLAN_HIERARCHY[orgPlan] || 0;
+
 
   const permsByCategory = allPermissions.reduce((acc: Record<string, any[]>, p: any) => {
     const cat = p.category || "general";
@@ -206,7 +201,7 @@ export default function RolesTab() {
         <div>
           <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Roles de la Organización</h3>
           <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-            Gestionar roles y permisos granulares · Plan actual: <span className="font-semibold">{orgPlan}</span>
+            Gestionar roles y permisos granulares
           </p>
         </div>
         <button
@@ -303,25 +298,15 @@ export default function RolesTab() {
                         style={{ color: "var(--muted-foreground)" }}>{category}</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                         {(perms as any[]).map((perm: any) => {
-                          const permPlanLevel = PLAN_HIERARCHY[perm.min_plan || "starter"] || 0;
-                          const isAvailable = permPlanLevel <= orgPlanLevel;
                           const isChecked = currentPerms.includes(perm.id);
                           return (
-                            <label key={perm.id} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors cursor-pointer ${
-                              !isAvailable ? "opacity-30 cursor-not-allowed" : "hover:bg-white/[0.03]"
-                            }`}>
+                            <label key={perm.id} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors cursor-pointer hover:bg-white/[0.03]">
                               <input
-                                type="checkbox" checked={isChecked} disabled={!isAvailable}
+                                type="checkbox" checked={isChecked}
                                 onChange={() => togglePerm(role.id, perm.id, currentPerms)}
                                 className="h-3.5 w-3.5 rounded border accent-purple-500"
                               />
                               <span style={{ color: "var(--foreground)" }}>{perm.key}</span>
-                              {perm.min_plan && perm.min_plan !== "starter" && (
-                                <span className="rounded-full px-1.5 py-0 text-[8px] font-bold uppercase"
-                                  style={{ backgroundColor: (PLAN_COLORS[perm.min_plan] || "#999") + "20", color: PLAN_COLORS[perm.min_plan] || "#999" }}>
-                                  {perm.min_plan}
-                                </span>
-                              )}
                             </label>
                           );
                         })}

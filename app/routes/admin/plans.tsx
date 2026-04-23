@@ -92,24 +92,17 @@ export async function action({ request, context }: Route.ActionArgs) {
 
     // Recalculate permissions for roles in this org
     const { data: roles } = await admin.from("roles").select("id, name").eq("organization_id", orgId);
-    const { data: allPerms } = await admin.from("permissions").select("id, key, min_plan");
+    const { data: allPerms } = await admin.from("permissions").select("id, key");
 
     if (roles && allPerms) {
-      const planHierarchy: Record<string, number> = { starter: 1, professional: 2, enterprise: 3 };
-      const newPlanLevel = planHierarchy[newPlan] || 0;
-      const availablePerms = allPerms.filter((p: any) => {
-        const permLevel = planHierarchy[p.min_plan || "starter"] || 0;
-        return permLevel <= newPlanLevel;
-      });
-
       for (const role of roles) {
         // Delete existing, re-assign
         await admin.from("role_permissions").delete().eq("role_id", role.id);
 
         let permsForRole: any[] = [];
-        if (role.name === "owner" || role.name === "admin") permsForRole = availablePerms;
-        else if (role.name === "member") permsForRole = availablePerms.filter((p: any) => ["dashboard.view", "ai.chat", "profile.manage"].includes(p.key));
-        else if (role.name === "viewer") permsForRole = availablePerms.filter((p: any) => p.key.endsWith(".view"));
+        if (role.name === "owner" || role.name === "admin") permsForRole = allPerms;
+        else if (role.name === "member") permsForRole = allPerms.filter((p: any) => ["dashboard.view", "ai.chat", "profile.manage"].includes(p.key));
+        else if (role.name === "viewer") permsForRole = allPerms.filter((p: any) => p.key.endsWith(".view"));
 
         const inserts = permsForRole.map((p: any) => ({ role_id: role.id, permission_id: p.id }));
         if (inserts.length > 0) await admin.from("role_permissions").insert(inserts);

@@ -1,5 +1,6 @@
 import { useLoaderData, useOutletContext } from "react-router";
 import { RouteErrorBoundary } from "~/components/route-error-boundary";
+import { ModuleGuard } from "~/components/shared/module-guard";
 import { createSupabaseServerClient } from "~/lib/supabase/client.server";
 import type { Route } from "./+types/finanzas";
 import type { TenantContext } from "./authenticated";
@@ -46,21 +47,23 @@ export default function Finanzas() {
   const { transactions, costCenters } = useLoaderData<typeof loader>();
 
   return (
-    <div className="w-full">
-      <Suspense
-        fallback={
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-20" style={{ minHeight: 400 }}>
-            <div className="w-8 h-8 border-3 border-brand border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm text-muted-foreground">Cargando módulo de finanzas...</p>
-          </div>
-        }
-      >
-        <FinanceContent
-          initialTransactions={transactions}
-          costCenters={costCenters}
-        />
-      </Suspense>
-    </div>
+    <ModuleGuard module="finanzas">
+      <div className="w-full">
+        <Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-20" style={{ minHeight: 400 }}>
+              <div className="w-8 h-8 border-3 border-brand border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-sm text-muted-foreground">Cargando módulo de finanzas...</p>
+            </div>
+          }
+        >
+          <FinanceContent
+            initialTransactions={transactions}
+            costCenters={costCenters}
+          />
+        </Suspense>
+      </div>
+    </ModuleGuard>
   );
 }
 

@@ -37,6 +37,8 @@ export interface TenantContext {
   } | null;
   /** User's permission keys for the current org (e.g. ['dashboard.view', 'finance.manage']) */
   permissions: string[];
+  /** Modules enabled for the current org (e.g. ['dashboard', 'finanzas', 'ai']) */
+  enabledModules: string[];
   organizations: Array<{ id: string; name: string; slug: string; role: string; status: string }>;
   /** Subdomain slug from URL, e.g. "empresa-x" from empresa-x.grixi.ai */
   tenantSlug: string | null;
@@ -191,6 +193,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       isPlatformAdmin: !!platformAdmin,
       currentOrg,
       permissions,
+      enabledModules: currentOrg?.settings?.enabled_modules ?? ["dashboard"],
       organizations,
       tenantSlug,
       env: {

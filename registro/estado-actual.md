@@ -1,6 +1,6 @@
 # Estado Actual — GRIXI-APP
 
-**Última actualización:** 2026-04-22 (Sesión 2 — Hardening Arquitectónico)
+**Última actualización:** 2026-04-23 (Sesión 1 — Hardening Fase 2)
 
 ---
 
@@ -31,8 +31,8 @@
 | Métrica | Valor |
 |---------|-------|
 | Tablas | 21 (todas con RLS ✅) |
-| Migraciones | 21 |
-| RLS Policies | 31+ |
+| Migraciones | 24 |
+| RLS Policies | 24 (consolidadas — sin duplicados) |
 | Funciones PostgreSQL | 10 |
 | Triggers | 5+ |
 | Tablas con Realtime | 7 |
@@ -72,7 +72,7 @@
 | `memberships` | ✅ | Usuario ↔ Org con rol (status: active/invited/suspended) |
 | `profiles` | ✅ | Perfil personal (PK = auth.users.id) |
 | `roles` | ✅ | Roles RBAC por tenant (is_system, hierarchy_level, is_default) |
-| `permissions` | ✅ | Catálogo global de permisos (key: "module.action", min_plan) |
+| `permissions` | ✅ | Catálogo global de permisos (key: "module.action") |
 | `role_permissions` | ✅ | Asignaciones rol → permiso |
 | `invitations` | ✅ | Invitaciones con token, expires_at, status |
 | `audit_logs` | ✅ | Eventos de auditoría con IP tracking |
@@ -104,8 +104,6 @@
 | `update_updated_at` | TRIGGER | Auto-actualiza timestamp |
 | `verify_whitelist_access` | SECURITY DEFINER | Verifica acceso por dominio/invitación |
 
-### 16 Migraciones
-
 | # | Versión | Nombre |
 |---|---------|--------|
 | 1 | `20260325054720` | `core_multitenant_tables` |
@@ -124,6 +122,14 @@
 | 14 | `20260329215243` | `audit_triggers_system` |
 | 15 | `20260329215625` | `harden_platform_admins` |
 | 16 | `20260329221157` | `admin_portal_tables_and_realtime` |
+| 17 | `20260401050343` | `push_notifications_and_realtime` |
+| 18 | `20260401113145` | `tenant_notifications` |
+| 19 | `20260402015000` | `create_login_history` |
+| 20 | `20260422034911` | `drop_duplicate_audit_indexes` |
+| 21 | `20260422042704` | `security_performance_fixes` |
+| 22 | `20260422042749` | `consolidate_rls_policies` |
+| 23 | `20260423032916` | `consolidate_remaining_rls_policies` |
+| 24 | `20260423033011` | `consolidate_rls_phase3_remove_old_authenticated` |
 
 ## Módulos
 
@@ -132,7 +138,7 @@
 | Auth | ✅ Implementado | 100% | Google OAuth + PKCE + session cookie |
 | Admin Panel | ✅ Implementado | 100% | 7 páginas, Recharts, audit timeline, org CRUD |
 | Multi-Tenant | ✅ Implementado | 100% | Subdomain routing + branding + membership guard |
-| RBAC | ✅ Implementado | 100% | 43 permisos, 20 roles, hierarchy_level, min_plan |
+| RBAC | ✅ Implementado | 100% | 43 permisos, 20 roles, hierarchy_level, puro RBAC (sin plan gating) |
 | Email Transaccional | ✅ Implementado | 100% | Resend API, template premium, invitaciones |
 | Configuración Tenant | ✅ Implementado | 100% | 5 secciones: Org, Equipo, Roles, Invitaciones, Auditoría |
 | Dashboard | ✅ Implementado | 95% | SSR loader, KPIs reales, Recharts, audit timeline, skeletons |
@@ -262,7 +268,7 @@
 | 6 | Actions (POST) | `isPlatformTenant()` → 403 |
 | 7 | DB `platform_admins` | Solo admins acceden a panel admin |
 | 8 | Sidebar (UI) | Links admin ocultos si no es admin |
-| 9 | RLS (29+ policies) | Aislamiento por org_id |
+| 9 | RLS (24 policies) | Aislamiento por org_id |
 | 10 | CSRF Header | `X-GRIXI-Client: 1` requerido en POST/PUT/DELETE/PATCH a `/api/*` |
 | 11 | Owner Protection | No se puede eliminar al último owner de una org |
 | 12 | HSTS | `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` |
@@ -337,9 +343,30 @@
 ## Próximos Pasos
 
 1. Staging Environment (wrangler env + preview URLs)
-2. Plan Enforcement — validar permisos por plan de suscripción
+2. ~~Plan Enforcement~~ → Eliminado, reemplazado por Module Gating
 3. Command Center (Cmd+K) — modal global de búsqueda
 4. Seed data para Finanzas (transacciones de demo)
 5. Módulo Almacenes (tablas + UI + 3D warehouse)
 6. Módulo Compras (vendors, POs, PRs)
-7. Error boundaries globales por tenant
+7. ~~Error boundaries globales~~ → ✅ Implementado (5 rutas)
+
+## Arquitectura de Control de Acceso
+
+### Feature Control Flow
+```
+Platform Admin → Habilita módulos por org (enabled_modules en settings)
+Tenant Admin → Asigna permisos a roles (RBAC puro, sin restricciones por plan)
+Usuario → Acceso según permisos de su rol + módulos habilitados
+```
+
+### Module Gating
+- Server: `lib/module-guard.server.ts` — `requireModule()`
+- Client: `components/shared/module-guard.tsx` — `<ModuleGuard module="X">`
+- Rutas protegidas: `finanzas.tsx`, `ai.tsx`
+- Platform admins siempre bypass
+
+### Error Boundaries
+- Global: `root.tsx`
+- Por módulo: `dashboard.tsx`, `configuracion.tsx`, `finanzas.tsx`, `notificaciones.tsx`, `admin-layout.tsx`
+- Componente: `components/route-error-boundary.tsx`
+

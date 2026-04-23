@@ -5,6 +5,7 @@
 import { Suspense, lazy, useState, useEffect, type ComponentType } from "react";
 import { useOutletContext } from "react-router";
 import { apiFetch } from "~/lib/api-fetch";
+import { ModuleGuard } from "~/components/shared/module-guard";
 import type { TenantContext } from "./authenticated";
 import type { Route } from "./+types/ai";
 import { createSupabaseServerClient } from "~/lib/supabase/client.server";
@@ -81,12 +82,14 @@ export default function AiPage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-40 flex bg-primary">
-      <ClientOnlyChat
-        conversations={conversations}
-        userName={tenantCtx?.user?.name}
-        userAvatar={tenantCtx?.user?.avatar}
-      />
-    </div>
+    <ModuleGuard module="ai">
+      <div className="fixed inset-0 z-40 flex bg-primary">
+        <ClientOnlyChat
+          conversations={conversations}
+          userName={tenantCtx?.user?.name}
+          userAvatar={tenantCtx?.user?.avatar}
+        />
+      </div>
+    </ModuleGuard>
   );
 }
