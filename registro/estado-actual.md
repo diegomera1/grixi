@@ -1,6 +1,6 @@
 # Estado Actual — GRIXI-APP
 
-**Última actualización:** 2026-04-23 (Sesión 1 — Hardening Fase 2)
+**Última actualización:** 2026-04-23 (Sesión 2 — Deploy + OAuth Fix)
 
 ---
 
@@ -14,6 +14,7 @@
 | CI/CD (GitHub Actions) | ✅ Configurado | `.github/workflows/deploy.yml` — push a main |
 | Dominio grixi.ai | ✅ Activo | Custom domain + wildcard `*.grixi.ai` |
 | Google Workspace CLI | ✅ Configurado | `dmera@grixi.ai` via `gws` |
+| Google OAuth (GCP) | ⚠️ Pendiente | Client creado en `grixi-workspace` (External+Prod) — falta actualizar Supabase |
 | Observability | ✅ Habilitado | `wrangler.jsonc` → `observability.enabled: true` |
 | Resend (Email) | ✅ Configurado | `RESEND_API_KEY` en Cloudflare secrets |
 | Gemini AI | ✅ Configurado | `GEMINI_API_KEY` en Cloudflare secrets |
@@ -337,18 +338,24 @@
 | Métrica | Valor |
 |---------|-------|
 | Rama principal | `main` |
+| Último commit | `534350e` (2026-04-23) |
+| Último deploy | Version `e5d132af` (Cloudflare Workers) |
 | Remoto | `https://github.com/GRIXI/grixi-app.git` |
 | Package manager | pnpm 10.24.0 |
 
 ## Próximos Pasos
 
-1. Staging Environment (wrangler env + preview URLs)
-2. ~~Plan Enforcement~~ → Eliminado, reemplazado por Module Gating
-3. Command Center (Cmd+K) — modal global de búsqueda
-4. Seed data para Finanzas (transacciones de demo)
-5. Módulo Almacenes (tablas + UI + 3D warehouse)
-6. Módulo Compras (vendors, POs, PRs)
-7. ~~Error boundaries globales~~ → ✅ Implementado (5 rutas)
+1. **🔴 CRÍTICO: Actualizar Google OAuth en Supabase** — Reemplazar Client ID/Secret con los de `grixi-workspace`
+   - Client ID: `225748449252-o1a3cmtiriu18aquag8v2h41qf3pq405.apps.googleusercontent.com`
+   - Ir a: Supabase → Auth → Providers → Google
+2. Activar Leaked Password Protection en Supabase Auth Settings
+3. Staging Environment (wrangler env + preview URLs)
+4. ~~Plan Enforcement~~ → Eliminado, reemplazado por Module Gating
+5. Command Center (Cmd+K) — modal global de búsqueda
+6. Seed data para Finanzas (transacciones de demo)
+7. Módulo Almacenes (tablas + UI + 3D warehouse)
+8. Módulo Compras (vendors, POs, PRs)
+9. ~~Error boundaries globales~~ → ✅ Implementado (5 rutas)
 
 ## Arquitectura de Control de Acceso
 
