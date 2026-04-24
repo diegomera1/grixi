@@ -1,23 +1,27 @@
-import { useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 /**
  * Hook that wraps theme toggling with the View Transition API
  * for a smooth radial clip-path animation.
  *
- * Adapted from Grixi demo (next-themes) for React Router (cookie-based).
- * Falls back to instant switch if the API is not available.
+ * Uses reactive state so toggling the theme doesn't cause
+ * parent components (like the Orb menu) to lose their state.
  */
 export function useThemeTransition() {
-  const isDark = typeof document !== "undefined"
-    ? document.documentElement.classList.contains("dark")
-    : false;
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof document === "undefined") return "dark";
+    return document.documentElement.classList.contains("dark") ? "dark" : "light";
+  });
 
-  const theme = isDark ? "dark" : "light";
+  // Sync if the class changes externally (e.g. SSR hydration mismatch)
+  useEffect(() => {
+    const current = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    if (current !== theme) setTheme(current);
+  }, []);
 
   const toggleTheme = useCallback(
     (e?: React.MouseEvent) => {
-      const currentlyDark = document.documentElement.classList.contains("dark");
-      const newTheme = currentlyDark ? "light" : "dark";
+      const newTheme = theme === "dark" ? "light" : "dark";
 
       const applyTheme = () => {
         if (newTheme === "dark") {
@@ -27,6 +31,8 @@ export function useThemeTransition() {
         }
         // Persist via cookie (read by root loader on SSR)
         document.cookie = `grixi_theme=${newTheme}; Path=/; SameSite=Lax; Secure; Max-Age=31536000`;
+        // Update reactive state AFTER DOM mutation
+        setTheme(newTheme);
       };
 
       // If View Transition API not available, just switch
@@ -49,7 +55,7 @@ export function useThemeTransition() {
         applyTheme();
       });
     },
-    []
+    [theme]
   );
 
   return { theme, toggleTheme };
