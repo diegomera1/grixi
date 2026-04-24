@@ -14,6 +14,7 @@ import { ToastProvider } from "~/components/shared/toast";
 import { Breadcrumbs } from "~/components/shared/breadcrumbs";
 import { SessionTimeout } from "~/components/shared/session-timeout";
 import { PullToRefresh } from "~/components/pwa/pull-to-refresh";
+import { PasskeyPromptBanner } from "~/components/shared/passkey-prompt-banner";
 
 // Client-only wrapper to avoid SSR issues with framer-motion + browser APIs  
 function ClientOnlyOrb({ data, notifs }: { data: any; notifs: any }) {
@@ -44,6 +45,8 @@ export interface TenantContext {
   tenantSlug: string | null;
   /** Public env vars for client-side Supabase */
   env: { SUPABASE_URL: string; SUPABASE_ANON_KEY: string };
+  /** Whether the user has at least one passkey registered */
+  hasPasskeys: boolean;
 }
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -173,6 +176,11 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     permissions = cachedPerms;
   }
 
+  // ── Check if user has passkeys registered ──
+  const { count: passkeyCount } = await admin.from("user_passkeys")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
   // Set org cookie for persistence
   const responseCookies: string[] = [];
   if (currentOrg) {
@@ -200,6 +208,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
         SUPABASE_URL: env.SUPABASE_URL,
         SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY,
       },
+      hasPasskeys: (passkeyCount || 0) > 0,
     } satisfies TenantContext,
     { headers: responseHeaders }
   );
@@ -294,6 +303,13 @@ export default function AuthenticatedLayout() {
 
       {/* A2HS Install Prompt — bottom-left, priority 2 (8s delay) */}
       <InstallPrompt
+        activeBannerId={activeBannerId}
+        onBannerChange={handleBannerChange}
+      />
+
+      {/* Passkey Prompt — bottom-left, priority 3 (10s delay) */}
+      <PasskeyPromptBanner
+        hasPasskeys={data.hasPasskeys}
         activeBannerId={activeBannerId}
         onBannerChange={handleBannerChange}
       />

@@ -21,6 +21,10 @@ export default [
   route("api/push/cleanup", "routes/api.push.cleanup.ts"),
   route("api/health", "routes/api.health.ts"),
 
+  // Passkey auth API (public — used from login page)
+  route("api/auth/passkey/auth-options", "routes/api.auth.passkey.auth-options.ts"),
+  route("api/auth/passkey/auth-verify", "routes/api.auth.passkey.auth-verify.ts"),
+
   // ── Admin Portal (admin.grixi.ai) — layout independiente ──
   layout("routes/admin-layout.tsx", [
     route("admin", "routes/admin/index.tsx"),
@@ -39,6 +43,11 @@ export default [
     route("finanzas", "routes/finanzas.tsx"),
     route("ai", "routes/ai.tsx"),
     route("notificaciones", "routes/notificaciones.tsx"),
+    route("perfil", "routes/perfil.tsx"),
+
+    // Passkey registration API (requires auth session)
+    route("api/auth/passkey/register-options", "routes/api.auth.passkey.register-options.ts"),
+    route("api/auth/passkey/register-verify", "routes/api.auth.passkey.register-verify.ts"),
 
     // Tenant Configuration (owner/admin only)
     route("configuracion", "routes/configuracion.tsx", [
@@ -47,7 +56,6 @@ export default [
       route("roles", "routes/configuracion/roles.tsx"),
       route("auditoria", "routes/configuracion/auditoria.tsx"),
       route("organizacion", "routes/configuracion/organizacion.tsx"),
-      route("perfil", "routes/configuracion/perfil.tsx"),
     ]),
   ]),
 

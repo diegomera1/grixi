@@ -1,4 +1,5 @@
 import { redirect, useLoaderData } from "react-router";
+import { useState, useEffect } from "react";
 import type { Route } from "./+types/login";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { AnimatedNodes } from "~/components/login/animated-nodes";
@@ -84,6 +85,15 @@ export default function LoginPage() {
           {/* Google Sign-In */}
           <div className="w-full button-enter">
             <GoogleSignInButton
+              supabaseUrl={supabaseUrl}
+              supabaseAnonKey={supabaseAnonKey}
+              brandColor={brandColor}
+            />
+          </div>
+
+          {/* Passkey Sign-In */}
+          <div className="w-full mt-3 button-enter" style={{ animationDelay: "0.65s" }}>
+            <PasskeySignInButton
               supabaseUrl={supabaseUrl}
               supabaseAnonKey={supabaseAnonKey}
               brandColor={brandColor}
@@ -210,5 +220,128 @@ function GoogleSignInButton({
       </svg>
       <span className="tracking-wide">Iniciar sesión con Google</span>
     </button>
+  );
+}
+
+function PasskeySignInButton({
+  supabaseUrl,
+  supabaseAnonKey,
+  brandColor,
+}: {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  brandColor: string;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [supported, setSupported] = useState(false);
+
+  // Only show if browser supports WebAuthn + conditional mediation (passkeys exist)
+  useEffect(() => {
+    async function checkSupport() {
+      try {
+        if (
+          typeof window === "undefined" ||
+          !window.PublicKeyCredential
+        ) return;
+
+        // Check if the browser can do conditional UI (passkey autofill)
+        // This also implicitly checks if passkeys are available for this RP
+        const available = await PublicKeyCredential.isConditionalMediationAvailable?.();
+        // Fallback: at minimum check platform authenticator support
+        const platform = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.();
+        setSupported(!!(available || platform));
+      } catch {
+        // WebAuthn not supported
+      }
+    }
+    checkSupport();
+  }, []);
+
+  const handlePasskeySignIn = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+
+      // 1. Get auth options from server (include CSRF header)
+      const optRes = await fetch("/api/auth/passkey/auth-options", {
+        method: "POST",
+        headers: { "X-GRIXI-Client": "1" },
+      });
+      if (!optRes.ok) throw new Error("No se pudieron obtener opciones de autenticación");
+      const options = await optRes.json();
+
+      // 2. Start browser authentication ceremony
+      const assertion = await startAuthentication({ optionsJSON: options });
+
+      // 3. Verify with server
+      const verRes = await fetch("/api/auth/passkey/auth-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-GRIXI-Client": "1" },
+        body: JSON.stringify({ assertion, challenge: options.challenge }),
+      });
+
+      if (!verRes.ok) {
+        const err = await verRes.json();
+        throw new Error(err.error || "Verificación fallida");
+      }
+
+      const { email, tokenHash } = await verRes.json();
+
+      // 4. Create Supabase session using the token hash
+      const { createBrowserClient } = await import("@supabase/ssr");
+      const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: "magiclink",
+      });
+
+      if (otpError) throw new Error(otpError.message);
+
+      // 5. Redirect to dashboard
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        setError(null); // User cancelled — no error
+      } else {
+        setError(err.message || "Error al autenticar con passkey");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Don't render if browser doesn't support WebAuthn
+  if (!supported) return null;
+
+  return (
+    <div>
+      <button
+        onClick={handlePasskeySignIn}
+        disabled={loading}
+        className="group flex w-full items-center justify-center gap-3 rounded-xl
+          bg-white/[0.04] backdrop-blur-md border border-white/[0.06]
+          px-5 py-3.5 text-sm font-medium text-white/70
+          transition-all duration-300 ease-out
+          hover:bg-white/[0.08] hover:border-white/[0.12] hover:text-white/90
+          active:scale-[0.97] disabled:opacity-50"
+      >
+        {loading ? (
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white/90" />
+        ) : (
+          <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" opacity="0.7" />
+            <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" opacity="0.5" />
+            <path d="M15.5 7.5l2.5 2.5L21 7" opacity="0.9" />
+          </svg>
+        )}
+        <span className="tracking-wide">{loading ? "Verificando..." : "Iniciar sesión con Passkey"}</span>
+      </button>
+      {error && (
+        <p className="mt-2 text-center text-[11px] text-red-400/80">{error}</p>
+      )}
+    </div>
   );
 }

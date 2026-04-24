@@ -11,6 +11,7 @@ import {
   Check, CheckCheck, Trash2, ExternalLink,
   Info, CheckCircle2, AlertTriangle, AlertCircle, Zap,
   Warehouse, ShoppingCart, Users, Truck, Bot,
+  UserCircle,
 } from "lucide-react";
 import { useThemeTransition } from "~/lib/hooks/use-theme-transition";
 import { GrixiAiLogo } from "~/features/ai/components/grixi-ai-logo";
@@ -683,7 +684,14 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
               <div className="border-t border-border" />
               <div className="p-1.5">
                 <button
-                  onClick={() => { handleNavigate("/dashboard"); }}
+                  onClick={() => { handleNavigate("/perfil"); }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-medium text-text-secondary transition-colors hover:bg-muted hover:text-text-primary"
+                >
+                  <UserCircle size={13} />
+                  Mi Perfil
+                </button>
+                <button
+                  onClick={() => { handleNavigate("/configuracion"); }}
                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] font-medium text-text-secondary transition-colors hover:bg-muted hover:text-text-primary"
                 >
                   <Settings size={13} />

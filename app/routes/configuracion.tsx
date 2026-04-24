@@ -3,7 +3,7 @@ import { RouteErrorBoundary } from "~/components/route-error-boundary";
 import type { Route } from "./+types/configuracion";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 import { requirePermissionAny } from "~/lib/permission-guard.server";
-import { Users, Mail, Shield, ScrollText, Building2, ArrowLeft, UserCircle } from "lucide-react";
+import { Users, Mail, Shield, ScrollText, Building2, ArrowLeft } from "lucide-react";
 import type { TenantContext } from "./authenticated";
 import { useOutletContext } from "react-router";
 
@@ -16,7 +16,6 @@ const TABS = [
   { id: "roles", label: "Roles y Permisos", href: "/configuracion/roles", icon: Shield },
   { id: "auditoria", label: "Auditoría", href: "/configuracion/auditoria", icon: ScrollText },
   { id: "organizacion", label: "Organización", href: "/configuracion/organizacion", icon: Building2 },
-  { id: "perfil", label: "Mi Perfil", href: "/configuracion/perfil", icon: UserCircle },
 ];
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -125,7 +124,6 @@ export default function ConfiguracionLayout() {
             roles: "roles.manage",
             auditoria: "admin.audit",
             organizacion: "org.configure",
-            perfil: null, // accessible to all users
           };
           const requiredPerm = tabPerms[tab.id];
           const hasAccess = requiredPerm === null || isPlatformAdmin || (
