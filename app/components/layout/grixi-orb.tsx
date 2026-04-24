@@ -109,6 +109,7 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
   const [mounted, setMounted] = useState(false);
   const collapseTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
+  const isThemeTransitionRef = useRef(false);
 
   // AI Chat state
   const [aiOpen, setAiOpen] = useState(false);
@@ -185,6 +186,8 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
 
   const handleMouseLeave = useCallback(() => {
     if (showUserPopover) return;
+    // Don't collapse during theme transitions (View Transition API fires mouseleave)
+    if (isThemeTransitionRef.current) return;
     collapseTimerRef.current = setTimeout(() => {
       if (state === "peek") setState("orb");
       if (state === "panel") setState("orb");
@@ -1017,7 +1020,14 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
                     </div>
                     {mounted && (
                       <button
-                        onClick={(e) => toggleTheme(e)}
+                        onClick={(e) => {
+                          // Guard: prevent orb collapse during view transition
+                          isThemeTransitionRef.current = true;
+                          if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+                          toggleTheme(e);
+                          // Release guard after transition settles
+                          setTimeout(() => { isThemeTransitionRef.current = false; }, 600);
+                        }}
                         className="rounded-lg p-2 text-text-muted transition-all hover:bg-muted hover:text-text-secondary"
                         title="Cambiar tema"
                       >
@@ -1203,7 +1213,12 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
                   </div>
                   <div className="flex items-center gap-1">
                     {mounted && (
-                      <button onClick={(e) => toggleTheme(e)} className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-muted hover:text-text-primary" title={theme === "dark" ? "Modo claro" : "Modo oscuro"}>
+                      <button onClick={(e) => {
+                        isThemeTransitionRef.current = true;
+                        if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+                        toggleTheme(e);
+                        setTimeout(() => { isThemeTransitionRef.current = false; }, 600);
+                      }} className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-muted hover:text-text-primary" title={theme === "dark" ? "Modo claro" : "Modo oscuro"}>
                         {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
                       </button>
                     )}
