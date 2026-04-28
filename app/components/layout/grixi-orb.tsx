@@ -93,8 +93,13 @@ interface OrbNotifs {
   deleteNotification: (id: string) => void;
 }
 
+interface OrbPush {
+  status: { supported: boolean; permission: string; subscribed: boolean; loading: boolean };
+  requestPermission: () => Promise<boolean>;
+}
+
 // ─── Main Component ─────────────────────────────────────
-export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNotifs }) {
+export function GrixiOrb({ data, notifs, push }: { data: TenantContext; notifs?: OrbNotifs; push?: OrbPush }) {
   const navigate = useNavigate();
   const location = useLocation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1018,21 +1023,37 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
                             </div>
 
                             {/* Footer */}
-                            {notifs && notifs.notifications.length > 0 && (
-                              <div className="border-t border-border px-3 py-2">
+                            <div className="border-t border-border">
+                              {/* Push enable CTA */}
+                              {push && push.status.supported && !push.status.subscribed && (
+                                <button
+                                  onClick={async () => {
+                                    await push.requestPermission();
+                                  }}
+                                  disabled={push.status.loading}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-[10px] text-amber-600 dark:text-amber-400 transition-colors hover:bg-amber-500/5"
+                                >
+                                  <Bell size={11} className="shrink-0" />
+                                  <span className="font-medium">
+                                    {push.status.loading ? "Activando..." : "Activar notificaciones push"}
+                                  </span>
+                                </button>
+                              )}
+                              {/* Ver todas */}
+                              {notifs && notifs.notifications.length > 0 && (
                                 <button
                                   onClick={() => {
                                     navigate("/notificaciones");
                                     setShowNotifDropdown(false);
                                     setState("orb");
                                   }}
-                                  className="flex w-full items-center justify-center gap-1 rounded-lg py-1 text-[10px] font-medium text-brand transition-colors hover:bg-brand/5"
+                                  className="flex w-full items-center justify-center gap-1 py-1.5 text-[10px] font-medium text-brand transition-colors hover:bg-brand/5"
                                 >
                                   Ver todas
                                   <ExternalLink size={9} />
                                 </button>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </motion.div>
                         )}
                       </AnimatePresence>

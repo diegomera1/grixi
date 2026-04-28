@@ -18,13 +18,13 @@ import { PasskeyPromptBanner } from "~/components/shared/passkey-prompt-banner";
 import { CommandPalette } from "~/components/shared/command-palette";
 
 // Client-only wrapper to avoid SSR issues with framer-motion + browser APIs  
-function ClientOnlyOrb({ data, notifs }: { data: any; notifs: any }) {
-  const [Orb, setOrb] = useState<ComponentType<{ data: any; notifs?: any }> | null>(null);
+function ClientOnlyOrb({ data, notifs, push }: { data: any; notifs: any; push?: any }) {
+  const [Orb, setOrb] = useState<ComponentType<{ data: any; notifs?: any; push?: any }> | null>(null);
   useEffect(() => {
     import("~/components/layout/grixi-orb").then((m) => setOrb(() => m.GrixiOrb));
   }, []);
   if (!Orb) return null;
-  return <Orb data={data} notifs={notifs} />;
+  return <Orb data={data} notifs={notifs} push={push} />;
 }
 
 export interface TenantContext {
@@ -299,7 +299,7 @@ export default function AuthenticatedLayout() {
 
       {/* GRIXI Orb — desktop floating navigation + AI (client-only) */}
       <div className="hidden md:block">
-        <ClientOnlyOrb data={data} notifs={notifs} />
+        <ClientOnlyOrb data={data} notifs={notifs} push={push} />
       </div>
 
       {/* Push Permission Banner — bottom-right, priority 1 (5s delay) */}
