@@ -9,6 +9,7 @@ import { InstallPrompt } from "~/components/pwa/install-prompt";
 import { PushPermissionBanner } from "~/components/notifications/push-permission-banner";
 import { useLastRoute, getLastRoute } from "~/lib/hooks/use-last-route";
 import { useNotifications } from "~/lib/hooks/use-notifications";
+import { initRealtimeClient } from "~/lib/hooks/use-realtime";
 import { usePushNotifications } from "~/lib/hooks/use-push-notifications";
 import { ToastProvider } from "~/components/shared/toast";
 import { Breadcrumbs } from "~/components/shared/breadcrumbs";
@@ -221,6 +222,13 @@ export default function AuthenticatedLayout() {
 
   // Track last visited route for PWA
   useLastRoute();
+
+  // Initialize Realtime client for browser-side subscriptions
+  useEffect(() => {
+    if (data.env?.SUPABASE_URL && data.env?.SUPABASE_ANON_KEY) {
+      initRealtimeClient(data.env.SUPABASE_URL, data.env.SUPABASE_ANON_KEY);
+    }
+  }, [data.env?.SUPABASE_URL, data.env?.SUPABASE_ANON_KEY]);
 
   // Notifications — per-tenant, realtime
   const notifs = useNotifications(data.currentOrg?.id);
