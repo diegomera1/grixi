@@ -49,6 +49,8 @@ export interface TenantContext {
   env: { SUPABASE_URL: string; SUPABASE_ANON_KEY: string };
   /** Whether the user has at least one passkey registered */
   hasPasskeys: boolean;
+  /** Realtime notifications from layout (shared with child pages) */
+  notifs?: import("~/lib/hooks/use-notifications").UseNotificationsReturn;
 }
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -223,12 +225,14 @@ export default function AuthenticatedLayout() {
   // Track last visited route for PWA
   useLastRoute();
 
-  // Initialize Realtime client SYNCHRONOUSLY so hooks can subscribe immediately
-  if (typeof window !== "undefined" && data.env?.SUPABASE_URL && data.env?.SUPABASE_ANON_KEY) {
-    initRealtimeClient(data.env.SUPABASE_URL, data.env.SUPABASE_ANON_KEY);
-  }
+  // Initialize Realtime client — uses @supabase/ssr cookie-based auth
+  useEffect(() => {
+    if (data.env?.SUPABASE_URL && data.env?.SUPABASE_ANON_KEY) {
+      initRealtimeClient(data.env.SUPABASE_URL, data.env.SUPABASE_ANON_KEY);
+    }
+  }, [data.env?.SUPABASE_URL, data.env?.SUPABASE_ANON_KEY]);
 
-  // Notifications — per-tenant, realtime
+  // Notifications — per-tenant, realtime (subscription waits for auth internally)
   const notifs = useNotifications(data.currentOrg?.id);
 
   // Push notifications
@@ -295,7 +299,7 @@ export default function AuthenticatedLayout() {
         <main className="platform-dot-grid relative h-screen overflow-y-auto overflow-x-hidden px-4 pb-6 pt-4 has-bottom-nav md:px-6 md:pb-6 lg:px-8">
           <div className="relative z-10 enter-fade">
             <Breadcrumbs />
-            <Outlet context={data} />
+            <Outlet context={{ ...data, notifs }} />
           </div>
         </main>
       </PullToRefresh>

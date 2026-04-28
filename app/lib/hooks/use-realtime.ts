@@ -1,24 +1,15 @@
-import { useEffect, useRef, useCallback } from "react";
-import { createClient, type RealtimeChannel } from "@supabase/supabase-js";
+import { useEffect, useRef } from "react";
+import { createBrowserClient } from "@supabase/ssr";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
-// Supabase client for browser — uses anon key (RLS enforced)
-let browserClient: ReturnType<typeof createClient> | null = null;
+// ═══════════════════════════════════════════════════════════
+// Supabase Realtime — Browser client via @supabase/ssr
+// Uses cookie-based auth automatically (same as server client)
+// ═══════════════════════════════════════════════════════════
 
-function getBrowserClient() {
-  if (browserClient) return browserClient;
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
-  // These are public — safe to expose in browser
-  const url = (window as any).__SUPABASE_URL__ || "";
-  const key = (window as any).__SUPABASE_ANON_KEY__ || "";
-
-  if (!url || !key) return null;
-
-  browserClient = createClient(url, key, {
-    realtime: {
-      params: { eventsPerSecond: 5 },
-    },
-  });
-
+export function getBrowserClient() {
   return browserClient;
 }
 
@@ -38,55 +29,53 @@ interface UseRealtimeOptions {
 
 /**
  * Hook for Supabase Realtime subscriptions.
- * Automatically subscribes/unsubscribes on mount/unmount.
+ * Uses @supabase/ssr browser client with cookie-based auth for RLS.
  */
 export function useRealtimeSubscription(options: UseRealtimeOptions) {
   const { table, schema = "public", event = "*", filter, enabled = true, onInsert, onUpdate, onDelete, onChange } = options;
   const channelRef = useRef<RealtimeChannel | null>(null);
+  // Store callbacks in refs to avoid re-subscribing on every render
+  const callbacksRef = useRef({ onInsert, onUpdate, onDelete, onChange });
+  callbacksRef.current = { onInsert, onUpdate, onDelete, onChange };
 
   useEffect(() => {
-    if (!enabled) return;
-
-    const client = getBrowserClient();
-    if (!client) return;
+    if (!enabled || !browserClient) return;
 
     const channelName = `realtime:${table}:${filter || "all"}`;
 
-    const channelConfig: any = {
-      event,
-      schema,
-      table,
-    };
+    const channelConfig: any = { event, schema, table };
     if (filter) channelConfig.filter = filter;
 
-    const channel = client
+    const channel = browserClient
       .channel(channelName)
       .on("postgres_changes", channelConfig, (payload: any) => {
-        onChange?.(payload);
+        callbacksRef.current.onChange?.(payload);
 
         switch (payload.eventType) {
           case "INSERT":
-            onInsert?.(payload);
+            callbacksRef.current.onInsert?.(payload);
             break;
           case "UPDATE":
-            onUpdate?.(payload);
+            callbacksRef.current.onUpdate?.(payload);
             break;
           case "DELETE":
-            onDelete?.(payload);
+            callbacksRef.current.onDelete?.(payload);
             break;
         }
       })
       .subscribe((status: string) => {
         if (status === "SUBSCRIBED") {
           console.log(`[Realtime] ✓ Subscribed to ${table}`);
+        } else {
+          console.warn(`[Realtime] ${status} for ${table}`);
         }
       });
 
     channelRef.current = channel;
 
     return () => {
-      if (channelRef.current) {
-        client.removeChannel(channelRef.current);
+      if (channelRef.current && browserClient) {
+        browserClient.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
@@ -94,16 +83,13 @@ export function useRealtimeSubscription(options: UseRealtimeOptions) {
 }
 
 /**
- * Initialize the browser Supabase client with env variables passed from server.
- * Call this once in the root layout — SYNCHRONOUSLY before hooks.
+ * Initialize the browser Supabase client using @supabase/ssr.
+ * This reads auth from cookies automatically — no manual setSession needed.
  */
 export function initRealtimeClient(url: string, anonKey: string) {
-  (window as any).__SUPABASE_URL__ = url;
-  (window as any).__SUPABASE_ANON_KEY__ = anonKey;
-  // Eagerly create client so hooks can use it immediately
-  if (!browserClient) {
-    browserClient = createClient(url, anonKey, {
-      realtime: { params: { eventsPerSecond: 5 } },
-    });
-  }
+  if (typeof window === "undefined") return;
+  if (browserClient) return; // Already initialized
+
+  browserClient = createBrowserClient(url, anonKey);
+  console.log("[Realtime] ✓ Browser client initialized via @supabase/ssr");
 }

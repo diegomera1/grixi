@@ -31,7 +31,7 @@ export interface Notification {
   actor_name: string | null;
 }
 
-interface UseNotificationsReturn {
+export interface UseNotificationsReturn {
   notifications: Notification[];
   unreadCount: number;
   totalCount: number;

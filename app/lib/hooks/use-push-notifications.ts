@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "~/lib/api-fetch";
 
 // The VAPID public key — must match the one in Cloudflare Workers secrets
-const VAPID_PUBLIC_KEY = "BKmdyYzqhH96VTCZsvs_8Q4E0ayKCQcx_VvGSBNQBMcg80T4GfaZ01VNbtYk-SLpr8-P_4dmsx38q8dJMD2HyTs";
+const VAPID_PUBLIC_KEY = "BB9IOX6QnG-Q9GFYp-OB_WtceecuFUi_rrxNZ83R5_Lj4fDRdyhHpP040l_uPSg4oHO2QHUV8cuNHXKQnLlPeyo";
 
 interface PushStatus {
   supported: boolean;

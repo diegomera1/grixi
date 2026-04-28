@@ -4,7 +4,7 @@ import type { TenantContext } from "./authenticated";
 
 export const meta = () => [{ title: "Notificaciones — GRIXI" }];
 export const handle = { breadcrumb: "Notificaciones" };
-import { useNotifications } from "~/lib/hooks/use-notifications";
+import type { Notification } from "~/lib/hooks/use-notifications";
 import {
   Bell, Check, CheckCheck, Trash2, Inbox, BellOff, BellRing,
   Info, CheckCircle2, AlertTriangle, AlertCircle, Zap,
@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import type { Notification } from "~/lib/hooks/use-notifications";
 
 // ═══════════════════════════════════════════════════════════
 // Notification Center — Centro de notificaciones premium
@@ -69,11 +68,11 @@ function formatDate(dateStr: string): string {
 
 export default function NotificacionesPage() {
   const ctx = useOutletContext<TenantContext>();
-  const orgId = ctx.currentOrg?.id;
+  // Use shared notifications from layout context (realtime)
   const {
     notifications, unreadCount, loading,
     markAsRead, markAllRead, deleteNotification, deleteAll, isLive,
-  } = useNotifications(orgId);
+  } = ctx.notifs!;
 
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
