@@ -15,6 +15,7 @@ import { Breadcrumbs } from "~/components/shared/breadcrumbs";
 import { SessionTimeout } from "~/components/shared/session-timeout";
 import { PullToRefresh } from "~/components/pwa/pull-to-refresh";
 import { PasskeyPromptBanner } from "~/components/shared/passkey-prompt-banner";
+import { CommandPalette } from "~/components/shared/command-palette";
 
 // Client-only wrapper to avoid SSR issues with framer-motion + browser APIs  
 function ClientOnlyOrb({ data, notifs }: { data: any; notifs: any }) {
@@ -275,6 +276,9 @@ export default function AuthenticatedLayout() {
     <div className="relative h-screen overflow-hidden bg-bg-primary">
       {/* PWA Splash (standalone only) */}
       <PWASplash />
+
+      {/* Command Palette — Cmd+K */}
+      <CommandPalette />
 
       {/* Main content — full screen with bottom nav spacing on mobile */}
       <PullToRefresh>

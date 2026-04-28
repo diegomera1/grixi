@@ -6,7 +6,9 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
+  useNavigation,
 } from "react-router";
+import { useEffect, useState, useRef } from "react";
 import type { Route } from "./+types/root";
 import { createSupabaseServerClient } from "~/lib/supabase/client.server";
 import { detectLocale, loadTranslations, type Locale } from "~/lib/i18n";
@@ -44,6 +46,53 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   );
 }
 
+// ─── Navigation Progress Bar ──────────────────────────
+function NavigationProgress() {
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
+  const [progress, setProgress] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+
+  useEffect(() => {
+    if (isNavigating) {
+      setProgress(0);
+      setVisible(true);
+      // Animate to ~90% over time
+      let p = 0;
+      intervalRef.current = setInterval(() => {
+        p += (90 - p) * 0.08;
+        setProgress(Math.min(p, 90));
+      }, 50);
+    } else if (visible) {
+      // Complete and fade
+      clearInterval(intervalRef.current);
+      setProgress(100);
+      const t = setTimeout(() => { setVisible(false); setProgress(0); }, 300);
+      return () => clearTimeout(t);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [isNavigating]);
+
+  if (!visible) return null;
+  return (
+    <div
+      className="fixed inset-x-0 top-0 z-[9999] h-[2.5px] pointer-events-none"
+      style={{ opacity: progress >= 100 ? 0 : 1, transition: "opacity 300ms ease" }}
+    >
+      <div
+        className="h-full rounded-r-full"
+        style={{
+          width: `${progress}%`,
+          background: "linear-gradient(90deg, var(--brand, #7C3AED), var(--brand-light, #A78BFA))",
+          boxShadow: "0 0 10px var(--brand, #7C3AED), 0 0 5px var(--brand, #7C3AED)",
+          transition: progress >= 100 ? "width 200ms ease" : "width 50ms linear",
+        }}
+      />
+    </div>
+  );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useLoaderData<typeof loader>() as any;
   const locale = (data?.locale ?? "es") as Locale;
@@ -68,6 +117,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="min-h-screen antialiased">
+        <NavigationProgress />
         {children}
         <ScrollRestoration />
         <Scripts />
