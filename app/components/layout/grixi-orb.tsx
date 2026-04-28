@@ -789,17 +789,28 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", stiffness: 350, damping: 28 }}
-              className="mb-2 w-[210px] overflow-hidden rounded-2xl border border-border bg-surface/95 shadow-2xl backdrop-blur-xl"
+              className="mb-2 w-[210px] rounded-2xl border border-border bg-surface/95 shadow-2xl backdrop-blur-xl"
             >
-              {/* Brand */}
+              {/* Brand — Tenant */}
               <div className="flex items-center gap-2.5 border-b border-border px-3.5 py-3">
                 <div className="relative shrink-0">
-                  <div className="absolute inset-0 rounded-lg bg-brand opacity-10 blur-md" />
-                  <div className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-brand text-white text-[10px] font-bold">G</div>
+                  {data.currentOrg?.logoUrl ? (
+                    <img src={data.currentOrg.logoUrl} alt={data.currentOrg.name} className="h-7 w-7 rounded-lg object-cover ring-1 ring-border" />
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 rounded-lg opacity-10 blur-md" style={{ backgroundColor: data.currentOrg?.settings?.brand_color || '#7C3AED' }} />
+                      <div
+                        className="relative flex h-7 w-7 items-center justify-center rounded-lg text-[10px] font-bold text-white"
+                        style={{ backgroundColor: data.currentOrg?.settings?.brand_color || '#7C3AED' }}
+                      >
+                        {(data.currentOrg?.name || 'G').charAt(0).toUpperCase()}
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div>
-                  <span className="font-serif text-sm font-semibold italic text-text-primary">GRIXI</span>
-                  <p className="text-[8px] font-medium text-text-muted">Enterprise Platform</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-semibold text-text-primary truncate">{data.currentOrg?.name || 'GRIXI'}</p>
+                  <p className="text-[8px] font-medium text-text-muted">Powered by GRIXI</p>
                 </div>
               </div>
 
@@ -1211,12 +1222,19 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
                 {/* Mobile nav header */}
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-[#7C3AED] to-[#A78BFA]">
-                      <Sparkles className="text-white" size={16} />
-                    </div>
+                    {data.currentOrg?.logoUrl ? (
+                      <img src={data.currentOrg.logoUrl} alt={data.currentOrg.name} className="h-8 w-8 rounded-lg object-cover ring-1 ring-border" />
+                    ) : (
+                      <div
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white"
+                        style={{ backgroundColor: data.currentOrg?.settings?.brand_color || '#7C3AED' }}
+                      >
+                        {(data.currentOrg?.name || 'G').charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
-                      <p className="text-sm font-bold text-text-primary">GRIXI</p>
-                      <p className="text-[10px] text-text-muted">{data.currentOrg?.name || "Sin organización"}</p>
+                      <p className="text-sm font-bold text-text-primary">{data.currentOrg?.name || 'GRIXI'}</p>
+                      <p className="text-[10px] text-text-muted">Powered by GRIXI</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
