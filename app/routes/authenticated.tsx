@@ -223,12 +223,10 @@ export default function AuthenticatedLayout() {
   // Track last visited route for PWA
   useLastRoute();
 
-  // Initialize Realtime client for browser-side subscriptions
-  useEffect(() => {
-    if (data.env?.SUPABASE_URL && data.env?.SUPABASE_ANON_KEY) {
-      initRealtimeClient(data.env.SUPABASE_URL, data.env.SUPABASE_ANON_KEY);
-    }
-  }, [data.env?.SUPABASE_URL, data.env?.SUPABASE_ANON_KEY]);
+  // Initialize Realtime client SYNCHRONOUSLY so hooks can subscribe immediately
+  if (typeof window !== "undefined" && data.env?.SUPABASE_URL && data.env?.SUPABASE_ANON_KEY) {
+    initRealtimeClient(data.env.SUPABASE_URL, data.env.SUPABASE_ANON_KEY);
+  }
 
   // Notifications — per-tenant, realtime
   const notifs = useNotifications(data.currentOrg?.id);

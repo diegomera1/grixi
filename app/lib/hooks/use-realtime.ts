@@ -11,10 +11,7 @@ function getBrowserClient() {
   const url = (window as any).__SUPABASE_URL__ || "";
   const key = (window as any).__SUPABASE_ANON_KEY__ || "";
 
-  if (!url || !key) {
-    console.warn("[Realtime] Supabase URL/Key not available for realtime");
-    return null;
-  }
+  if (!url || !key) return null;
 
   browserClient = createClient(url, key, {
     realtime: {
@@ -98,9 +95,15 @@ export function useRealtimeSubscription(options: UseRealtimeOptions) {
 
 /**
  * Initialize the browser Supabase client with env variables passed from server.
- * Call this once in the root layout.
+ * Call this once in the root layout — SYNCHRONOUSLY before hooks.
  */
 export function initRealtimeClient(url: string, anonKey: string) {
   (window as any).__SUPABASE_URL__ = url;
   (window as any).__SUPABASE_ANON_KEY__ = anonKey;
+  // Eagerly create client so hooks can use it immediately
+  if (!browserClient) {
+    browserClient = createClient(url, anonKey, {
+      realtime: { params: { eventsPerSecond: 5 } },
+    });
+  }
 }

@@ -114,6 +114,28 @@ export function useNotifications(orgId: string | null | undefined): UseNotificat
       }
       setTotalCount((c) => c + 1);
       setIsLive(true);
+
+      // Show browser native notification (push-like when app is open)
+      if (typeof window !== "undefined" && "Notification" in window && window.Notification.permission === "granted") {
+        try {
+          navigator.serviceWorker?.ready?.then((reg) => {
+            reg.showNotification(newNotif.title, {
+              body: newNotif.body || "",
+              icon: "/icon-192.png",
+              badge: "/icon-192.png",
+              tag: `grixi-${newNotif.id}`,
+              data: { url: newNotif.action_url || "/notificaciones" },
+            });
+          }).catch(() => {
+            // Fallback: direct Notification API
+            new window.Notification(newNotif.title, {
+              body: newNotif.body || "",
+              icon: "/icon-192.png",
+              tag: `grixi-${newNotif.id}`,
+            });
+          });
+        } catch {}
+      }
     },
     onUpdate: (payload) => {
       const updated = payload.new as Notification;
