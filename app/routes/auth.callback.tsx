@@ -29,6 +29,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
+  const isLinking = url.searchParams.get("linking") === "true";
 
   if (!code) {
     return redirect("/?error=generic");
@@ -41,7 +42,21 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   if (authError || !sessionData.user) {
     console.error("Auth callback error:", authError);
-    return redirect("/?error=auth_failed");
+    return redirect(isLinking ? "/perfil?tab=accounts&error=link_failed" : "/?error=auth_failed");
+  }
+
+  // ── Identity Linking flow: redirect back to profile ──
+  if (isLinking) {
+    const admin = createSupabaseAdminClient(env);
+    const ip = getClientIP(request);
+    await logAuditEvent(admin, {
+      actorId: sessionData.user.id,
+      action: "identity.linked",
+      entityType: "identity",
+      metadata: { provider: sessionData.user.app_metadata?.provider || "unknown", ip },
+      ipAddress: ip,
+    });
+    return redirect("/perfil?tab=accounts&linked=success", { headers });
   }
 
   const userEmail = sessionData.user.email;

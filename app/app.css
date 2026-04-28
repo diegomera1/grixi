@@ -500,3 +500,180 @@ body {
 .ai-breathing {
   animation: breathing-pulse 3s ease-in-out infinite;
 }
+
+/* ─── Login — Premium Auth Buttons ──────────────────── */
+
+/* Shimmer sweep on hover */
+@keyframes login-shimmer {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
+}
+
+.btn-auth {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s var(--ease-spring);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Shimmer layer */
+.btn-auth::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 40%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.06) 60%,
+    transparent 100%
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  pointer-events: none;
+}
+
+/* Click flash overlay */
+.btn-auth::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--click-x, 50%) var(--click-y, 50%), rgba(255,255,255,0.15), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.btn-auth:active::before {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+.btn-auth:hover::after {
+  animation: login-shimmer 0.75s ease-out;
+}
+
+/* Primary auth button (Google) — stands out */
+.btn-auth-primary {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.05),
+    0 4px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+.btn-auth-primary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(139, 92, 246, 0.35);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 20px rgba(139, 92, 246, 0.12),
+    0 0 60px rgba(139, 92, 246, 0.04),
+    0 8px 32px -8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.btn-auth-primary:active {
+  transform: translateY(0) scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Secondary auth button (Microsoft, Passkey) */
+.btn-auth-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btn-auth-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px -4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.btn-auth-secondary:active {
+  transform: translateY(0) scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Email button — active/open state */
+.btn-auth-email-open {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border-color: rgba(139, 92, 246, 0.25) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Passkey security tint */
+.btn-auth-passkey:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow:
+    0 0 16px rgba(16, 185, 129, 0.08),
+    0 4px 16px -4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Login divider — "o continúa con" */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0 4px;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+}
+
+/* Logo glow ring */
+@keyframes logo-glow-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.12); }
+}
+
+.logo-glow-ring {
+  position: absolute;
+  inset: -12px;
+  border-radius: 20px;
+  background: radial-gradient(
+    circle,
+    rgba(139, 92, 246, 0.2) 0%,
+    rgba(139, 92, 246, 0.05) 50%,
+    transparent 70%
+  );
+  animation: logo-glow-pulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Reduce motion: disable login animations */
+@media (prefers-reduced-motion: reduce) {
+  .btn-auth:hover::after {
+    animation: none;
+  }
+
+  .btn-auth-primary:hover,
+  .btn-auth-secondary:hover {
+    transform: none;
+  }
+
+  .logo-glow-ring {
+    animation: none;
+    opacity: 0.3;
+  }
+}
