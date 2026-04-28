@@ -1120,8 +1120,18 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
                 )}
               </AnimatePresence>
             </div>
-            {/* Active dot */}
-            {activeModule && (
+            {/* Notification badge (priority) or Active module dot */}
+            {(notifs?.unreadCount ?? 0) > 0 ? (
+              <motion.span
+                key="notif-badge"
+                className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white shadow-sm ring-2 ring-surface"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 20 }}
+              >
+                {(notifs?.unreadCount ?? 0) > 9 ? "9+" : notifs?.unreadCount}
+              </motion.span>
+            ) : activeModule ? (
               <motion.span
                 layoutId="orb-dot"
                 className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface"
@@ -1130,7 +1140,7 @@ export function GrixiOrb({ data, notifs }: { data: TenantContext; notifs?: OrbNo
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
               />
-            )}
+            ) : null}
           </motion.button>
 
           {/* ── AI Satellite Bubble ── */}
