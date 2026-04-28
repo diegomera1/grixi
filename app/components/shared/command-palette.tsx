@@ -1,14 +1,15 @@
 /**
  * Command Palette — Cmd+K global search & navigation
  * 
- * Usage: Import into authenticated layout. Opens with Cmd+K / Ctrl+K.
+ * Permission-aware: only shows routes the user can access.
+ * Uses window.location for reliable navigation.
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Search, LayoutDashboard, DollarSign, Settings, Users, Shield, ScrollText,
   Mail, Building2, Bell, MessageSquare, User, Sparkles, ArrowRight,
-  Command, Keyboard,
+  Keyboard,
 } from "lucide-react";
 
 interface CommandItem {
@@ -16,24 +17,29 @@ interface CommandItem {
   label: string;
   description?: string;
   icon: typeof Search;
-  action: string; // path to navigate
+  action: string;
   category: "nav" | "config" | "quick";
   keywords?: string[];
+  /** Permission key required to see this command */
+  requiredPermission?: string;
+  /** Module key required (must be in enabledModules) */
+  requiredModule?: string;
 }
 
 const COMMANDS: CommandItem[] = [
-  // Navigation
+  // Navigation — always visible
   { id: "dashboard", label: "Dashboard", description: "Panel principal", icon: LayoutDashboard, action: "/dashboard", category: "nav", keywords: ["inicio", "home", "panel"] },
-  { id: "finanzas", label: "Finanzas", description: "Módulo financiero", icon: DollarSign, action: "/finanzas", category: "nav", keywords: ["finance", "dinero", "contabilidad"] },
-  { id: "ai", label: "GRIXI AI", description: "Asistente inteligente", icon: Sparkles, action: "/ai", category: "nav", keywords: ["chat", "gemini", "inteligencia"] },
+  { id: "profile", label: "Mi Perfil", description: "Datos personales y seguridad", icon: User, action: "/perfil", category: "nav", keywords: ["cuenta", "avatar", "password", "contraseña"] },
   { id: "notifications", label: "Notificaciones", description: "Centro de alertas", icon: Bell, action: "/notificaciones", category: "nav", keywords: ["alertas", "avisos"] },
-  { id: "profile", label: "Mi Perfil", description: "Datos personales y seguridad", icon: User, action: "/perfil", category: "nav", keywords: ["cuenta", "avatar", "password"] },
-  // Config
-  { id: "config-team", label: "Equipo", description: "Gestionar miembros", icon: Users, action: "/configuracion", category: "config", keywords: ["miembros", "team", "personas"] },
-  { id: "config-invites", label: "Invitaciones", description: "Enviar invitaciones", icon: Mail, action: "/configuracion/invitaciones", category: "config", keywords: ["invitar", "email"] },
-  { id: "config-roles", label: "Roles y Permisos", description: "Control de acceso RBAC", icon: Shield, action: "/configuracion/roles", category: "config", keywords: ["permisos", "rbac", "acceso"] },
-  { id: "config-audit", label: "Auditoría", description: "Log de actividad", icon: ScrollText, action: "/configuracion/auditoria", category: "config", keywords: ["logs", "historial", "actividad"] },
-  { id: "config-org", label: "Organización", description: "Ajustes de la organización", icon: Building2, action: "/configuracion/organizacion", category: "config", keywords: ["empresa", "branding", "logo"] },
+  // Navigation — module-gated
+  { id: "finanzas", label: "Finanzas", description: "Módulo financiero", icon: DollarSign, action: "/finanzas", category: "nav", keywords: ["finance", "dinero", "contabilidad"], requiredModule: "finanzas" },
+  { id: "ai", label: "GRIXI AI", description: "Asistente inteligente", icon: Sparkles, action: "/ai", category: "nav", keywords: ["chat", "gemini", "inteligencia"], requiredModule: "ai" },
+  // Config — permission-gated
+  { id: "config-team", label: "Equipo", description: "Gestionar miembros", icon: Users, action: "/configuracion", category: "config", keywords: ["miembros", "team", "personas"], requiredPermission: "members.manage" },
+  { id: "config-invites", label: "Invitaciones", description: "Enviar invitaciones", icon: Mail, action: "/configuracion/invitaciones", category: "config", keywords: ["invitar", "email"], requiredPermission: "members.manage" },
+  { id: "config-roles", label: "Roles y Permisos", description: "Control de acceso RBAC", icon: Shield, action: "/configuracion/roles", category: "config", keywords: ["permisos", "rbac", "acceso"], requiredPermission: "roles.manage" },
+  { id: "config-audit", label: "Auditoría", description: "Log de actividad", icon: ScrollText, action: "/configuracion/auditoria", category: "config", keywords: ["logs", "historial", "actividad"], requiredPermission: "admin.audit" },
+  { id: "config-org", label: "Organización", description: "Ajustes de la organización", icon: Building2, action: "/configuracion/organizacion", category: "config", keywords: ["empresa", "branding", "logo"], requiredPermission: "org.configure" },
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -42,13 +48,32 @@ const CATEGORY_LABELS: Record<string, string> = {
   quick: "Acciones rápidas",
 };
 
-export function CommandPalette() {
+interface CommandPaletteProps {
+  permissions?: string[];
+  enabledModules?: string[];
+  isPlatformAdmin?: boolean;
+}
+
+export function CommandPalette({ permissions = [], enabledModules = [], isPlatformAdmin = false }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Filter commands by permissions and enabled modules
+  const availableCommands = COMMANDS.filter((cmd) => {
+    // Permission check
+    if (cmd.requiredPermission) {
+      if (!isPlatformAdmin && !permissions.includes(cmd.requiredPermission)) return false;
+    }
+    // Module check
+    if (cmd.requiredModule) {
+      if (!enabledModules.includes(cmd.requiredModule)) return false;
+    }
+    return true;
+  });
 
   // Keyboard shortcut
   useEffect(() => {
@@ -72,8 +97,8 @@ export function CommandPalette() {
     }
   }, [open]);
 
-  // Filter commands
-  const filtered = COMMANDS.filter((cmd) => {
+  // Filter commands by search query
+  const filtered = availableCommands.filter((cmd) => {
     if (!query) return true;
     const q = query.toLowerCase();
     return (
@@ -94,7 +119,13 @@ export function CommandPalette() {
 
   const execute = useCallback((cmd: CommandItem) => {
     setOpen(false);
-    navigate(cmd.action);
+    // Use navigate for SPA routing
+    try {
+      navigate(cmd.action);
+    } catch {
+      // Fallback: hard navigation
+      window.location.href = cmd.action;
+    }
   }, [navigate]);
 
   // Keyboard navigation
@@ -106,6 +137,7 @@ export function CommandPalette() {
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter" && flatList[selectedIndex]) {
+      e.preventDefault();
       execute(flatList[selectedIndex]);
     }
   };
@@ -148,7 +180,7 @@ export function CommandPalette() {
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }}
               onKeyDown={handleKeyDown}
-              placeholder="Buscar página, acción o configuración..."
+              placeholder="Buscar página o configuración..."
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]"
               style={{ color: "var(--text-primary)" }}
             />
@@ -163,7 +195,7 @@ export function CommandPalette() {
             {flatList.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                  No se encontraron resultados para "{query}"
+                  No se encontraron resultados para &ldquo;{query}&rdquo;
                 </p>
               </div>
             ) : (
@@ -179,8 +211,9 @@ export function CommandPalette() {
                     return (
                       <button
                         key={cmd.id}
+                        type="button"
                         data-index={globalIndex}
-                        onClick={() => execute(cmd)}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); execute(cmd); }}
                         onMouseEnter={() => setSelectedIndex(globalIndex)}
                         className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors"
                         style={{

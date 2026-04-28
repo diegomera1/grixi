@@ -8,6 +8,7 @@ import {
   BarChart3,
   Bell,
   ArrowRight,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router";
@@ -47,15 +48,19 @@ const NAV_KEYS: Record<string, string> = {
 };
 
 export function QuickAccess({ enabledModules, t }: QuickAccessProps) {
-  // Filter to only modules enabled for this org (exclude dashboard, admin, usuarios)
   const modules = ALL_MODULES.filter((m) => enabledModules.includes(m.key));
 
   return (
     <div className="enter-fade stagger-8 rounded-xl border border-border bg-surface p-5">
-      <h3 className="mb-4 text-sm font-semibold text-text-primary">
-        {t("dash.quick.title")}
-      </h3>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text-primary">
+          {t("dash.quick.title")}
+        </h3>
+        <span className="text-[10px] text-text-muted">
+          {modules.filter(m => m.route).length} activos
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {modules.map((mod) => {
           const Icon = mod.icon;
           const isActive = mod.route !== null;
@@ -63,21 +68,33 @@ export function QuickAccess({ enabledModules, t }: QuickAccessProps) {
 
           const inner = (
             <div
-              className={`group relative flex items-center gap-3 rounded-lg border p-3 transition-all ${
+              className={`group relative flex items-center gap-3 rounded-xl border p-3.5 transition-all duration-300 ${
                 isActive
-                  ? "card-interactive border-border cursor-pointer"
-                  : "border-transparent opacity-50 cursor-default"
+                  ? "border-border cursor-pointer hover:border-border-hover hover:shadow-md"
+                  : "border-dashed border-border/50 cursor-default"
               }`}
-              style={isActive ? { background: `color-mix(in oklch, ${mod.color} 5%, var(--bg-surface))` } : undefined}
+              style={isActive ? {
+                background: `linear-gradient(135deg, var(--bg-surface), color-mix(in oklch, ${mod.color} 4%, var(--bg-surface)))`,
+              } : undefined}
             >
               <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110"
-                style={{ background: `color-mix(in oklch, ${mod.color} 12%, transparent)` }}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300 ${
+                  isActive ? "group-hover:scale-110 group-hover:shadow-lg" : ""
+                }`}
+                style={{
+                  background: `color-mix(in oklch, ${mod.color} ${isActive ? "12" : "6"}%, transparent)`,
+                }}
               >
-                <Icon size={18} style={{ color: mod.color }} strokeWidth={1.8} />
+                <Icon
+                  size={18}
+                  style={{ color: isActive ? mod.color : "var(--text-muted)" }}
+                  strokeWidth={1.8}
+                />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-text-primary truncate capitalize">
+                <p className={`text-xs font-medium truncate capitalize ${
+                  isActive ? "text-text-primary" : "text-text-muted"
+                }`}>
                   {label}
                 </p>
                 <p className="text-[10px] text-text-muted">
@@ -87,13 +104,11 @@ export function QuickAccess({ enabledModules, t }: QuickAccessProps) {
               {isActive && (
                 <ArrowRight
                   size={14}
-                  className="shrink-0 text-text-muted transition-transform duration-200 group-hover:translate-x-0.5"
+                  className="shrink-0 text-text-muted transition-all duration-300 group-hover:translate-x-1 group-hover:text-text-secondary"
                 />
               )}
               {!isActive && (
-                <span className="absolute right-2 top-2 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium text-text-muted">
-                  {t("dash.modules.coming")}
-                </span>
+                <Lock size={12} className="shrink-0 text-text-muted/40" />
               )}
             </div>
           );

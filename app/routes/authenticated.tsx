@@ -277,8 +277,12 @@ export default function AuthenticatedLayout() {
       {/* PWA Splash (standalone only) */}
       <PWASplash />
 
-      {/* Command Palette — Cmd+K */}
-      <CommandPalette />
+      {/* Command Palette — Cmd+K (permission-aware) */}
+      <CommandPalette
+        permissions={data.permissions}
+        enabledModules={data.enabledModules}
+        isPlatformAdmin={data.isPlatformAdmin}
+      />
 
       {/* Main content — full screen with bottom nav spacing on mobile */}
       <PullToRefresh>
