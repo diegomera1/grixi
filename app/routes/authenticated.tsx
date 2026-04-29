@@ -51,6 +51,8 @@ export interface TenantContext {
   hasPasskeys: boolean;
   /** Realtime notifications from layout (shared with child pages) */
   notifs?: import("~/lib/hooks/use-notifications").UseNotificationsReturn;
+  /** Feature flags resolved for current tenant */
+  featureFlags?: Record<string, boolean>;
 }
 
 export async function loader({ request, context }: Route.LoaderArgs) {
@@ -185,6 +187,14 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
 
+  // ── Feature Flags (cached 30s via KV) ──
+  const { getFeatureFlags } = await import("~/lib/feature-flags.server");
+  const featureFlags = await getFeatureFlags(
+    env as any,
+    currentOrg?.id,
+    { getCachedOrFetch }
+  );
+
   // Set org cookie for persistence
   const responseCookies: string[] = [];
   if (currentOrg) {
@@ -213,6 +223,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
         SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY,
       },
       hasPasskeys: (passkeyCount || 0) > 0,
+      featureFlags,
     } satisfies TenantContext,
     { headers: responseHeaders }
   );
@@ -224,6 +235,21 @@ export default function AuthenticatedLayout() {
 
   // Track last visited route for PWA
   useLastRoute();
+
+  // Error tracking — capture client-side errors with user context
+  useEffect(() => {
+    import("~/lib/error-tracking").then(({ initErrorTracking, setErrorTrackingContext }) => {
+      initErrorTracking({ userId: data.user?.id, organizationId: data.currentOrg?.id });
+      setErrorTrackingContext({ userId: data.user?.id, organizationId: data.currentOrg?.id });
+    });
+  }, [data.user?.id, data.currentOrg?.id]);
+
+  // Analytics — track page views
+  useEffect(() => {
+    import("~/lib/analytics").then(({ trackPageView }) => {
+      trackPageView({ userId: data.user?.id, organizationId: data.currentOrg?.id });
+    });
+  }, []);
 
   // Initialize Realtime client — uses @supabase/ssr cookie-based auth
   useEffect(() => {
