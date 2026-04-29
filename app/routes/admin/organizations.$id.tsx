@@ -5,8 +5,10 @@ import { isPlatformTenant } from "~/lib/platform-guard";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { sendInvitationEmail } from "~/lib/email.server";
 import {
-  ArrowLeft, Users, Puzzle, Mail, Globe, Settings, Save, Shield, Trash2, Plus,
+  ArrowLeft, Users, Mail, Globe, Settings, Save, Shield, Trash2, Plus,
   ToggleLeft, ToggleRight, Flag, Sparkles, Box, Zap,
+  LayoutDashboard, ScrollText, Lock, AlertTriangle, Clock, Activity,
+  Key, MonitorSmartphone, ChevronDown, ChevronRight, Archive, Pause, Play,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -39,7 +41,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const orgId = params.id;
 
-  const [orgRes, membersRes, invitationsRes, domainsRes, rolesRes, permsRes, flagsRes, overridesRes] = await Promise.all([
+  const [orgRes, membersRes, invitationsRes, domainsRes, rolesRes, permsRes, flagsRes, overridesRes, auditRes, passkeysRes] = await Promise.all([
     admin.from("organizations").select("*").eq("id", orgId).single(),
     admin.from("memberships").select("*, roles(name, hierarchy_level)")
       .eq("organization_id", orgId).eq("status", "active"),
@@ -49,7 +51,15 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     admin.from("permissions").select("id, key, description, module").order("module").order("key"),
     admin.from("feature_flags").select("*").order("category").order("name"),
     admin.from("feature_flag_overrides").select("*").eq("organization_id", orgId),
+    admin.from("audit_logs").select("*").eq("organization_id", orgId).order("created_at", { ascending: false }).limit(100),
+    admin.from("user_passkeys").select("user_id"),
   ]);
+
+  // Fetch login history for org members (needs membersRes first)
+  const memberUserIds = (membersRes.data || []).map((m: any) => m.user_id);
+  const loginHistRes = memberUserIds.length > 0
+    ? await admin.from("login_history").select("*").in("user_id", memberUserIds).order("created_at", { ascending: false }).limit(50)
+    : { data: [] };
 
   if (!orgRes.data) return redirect("/admin/organizations", { headers });
 
@@ -78,11 +88,24 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     overrideMap[o.flag_key] = { id: o.id, enabled: o.enabled };
   }
 
+  // Build login history per user for members tab
+  const loginsByUser: Record<string, any[]> = {};
+  for (const lh of (loginHistRes.data || [])) {
+    if (!loginsByUser[lh.user_id]) loginsByUser[lh.user_id] = [];
+    loginsByUser[lh.user_id].push(lh);
+  }
+
+  // Passkey users
+  const passKeyUserIds = new Set((passkeysRes.data || []).map((p: any) => p.user_id));
+
   return Response.json({
     org: orgRes.data,
     members: (membersRes.data || []).map((m: any) => ({
       ...m,
       user: memberUsers[m.user_id] || { email: "—", name: "—" },
+      lastLogin: loginsByUser[m.user_id]?.[0]?.created_at || null,
+      loginCount: loginsByUser[m.user_id]?.length || 0,
+      hasPasskey: passKeyUserIds.has(m.user_id),
     })),
     invitations: invitationsRes.data || [],
     domains: domainsRes.data || [],
@@ -90,6 +113,13 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     allPermissions: permsRes.data || [],
     featureFlags: allFlags,
     flagOverrides: overrideMap,
+    auditLogs: auditRes.data || [],
+    loginHistory: loginHistRes.data || [],
+    securityStats: {
+      totalLogins: (loginHistRes.data || []).length,
+      passkeysEnabled: memberUserIds.filter(uid => passKeyUserIds.has(uid)).length,
+      uniqueIPs: new Set((loginHistRes.data || []).map((l: any) => l.ip_address).filter(Boolean)).size,
+    },
   }, { headers });
 }
 
@@ -331,23 +361,41 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return Response.json({ success: true }, { headers });
   }
 
+  if (intent === "change_org_status") {
+    const newStatus = formData.get("new_status") as string;
+    if (!["active", "suspended", "archived"].includes(newStatus)) {
+      return Response.json({ error: "Estado inválido" }, { status: 400, headers });
+    }
+    await admin.from("organizations").update({ status: newStatus }).eq("id", orgId);
+    await logAuditEvent(admin, {
+      actorId: user.id, action: `organization.${newStatus}`, entityType: "organization",
+      entityId: orgId, metadata: { newStatus }, ipAddress: ip, organizationId: orgId,
+    });
+    return Response.json({ success: true }, { headers });
+  }
+
   return Response.json({ error: "Unknown intent" }, { status: 400, headers });
 }
 
 const TABS = [
+  { id: "overview", label: "Overview", icon: <LayoutDashboard size={16} /> },
   { id: "members", label: "Miembros", icon: <Users size={16} /> },
-  { id: "roles", label: "Roles & Permisos", icon: <Shield size={16} /> },
-  { id: "features", label: "Features & Módulos", icon: <Flag size={16} /> },
+  { id: "roles", label: "Roles", icon: <Shield size={16} /> },
+  { id: "features", label: "Features", icon: <Flag size={16} /> },
   { id: "invitations", label: "Invitaciones", icon: <Mail size={16} /> },
   { id: "domains", label: "Dominios", icon: <Globe size={16} /> },
-  { id: "settings", label: "Configuración", icon: <Settings size={16} /> },
+  { id: "audit", label: "Auditoría", icon: <ScrollText size={16} /> },
+  { id: "security", label: "Seguridad", icon: <Lock size={16} /> },
+  { id: "settings", label: "Config", icon: <Settings size={16} /> },
 ];
 
 export default function OrgDetail() {
-  const { org, members, invitations, domains, roles, allPermissions, featureFlags, flagOverrides } = useLoaderData<typeof loader>();
+  const { org, members, invitations, domains, roles, allPermissions, featureFlags, flagOverrides, auditLogs, loginHistory, securityStats } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
-  const [activeTab, setActiveTab] = useState("members");
+  const [activeTab, setActiveTab] = useState("overview");
   const settings = org.settings || {};
+  const color = settings.primary_color || "#6366F1";
+  const age = Math.floor((Date.now() - new Date(org.created_at).getTime()) / (1000 * 60 * 60 * 24));
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -358,17 +406,26 @@ export default function OrgDetail() {
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold" style={{ backgroundColor: (settings.primary_color || "#6366F1") + "20", color: settings.primary_color || "#6366F1" }}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold" style={{ backgroundColor: color + "20", color }}>
               {org.name.charAt(0)}
             </div>
             <div>
               <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>{org.name}</h1>
-              <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>{org.slug}.grixi.ai</p>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "var(--muted-foreground)" }}>
+                <span>{org.slug}.grixi.ai</span>
+                <span>·</span>
+                <span>{age} días activo</span>
+                <span>·</span>
+                <span>{members.length} miembros</span>
+              </div>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: org.status === "active" ? "#16A34A20" : "#EF444420", color: org.status === "active" ? "#16A34A" : "#EF4444" }}>{org.status}</span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium" style={{
+            backgroundColor: org.status === "active" ? "#16A34A20" : org.status === "suspended" ? "#F59E0B20" : "#EF444420",
+            color: org.status === "active" ? "#16A34A" : org.status === "suspended" ? "#F59E0B" : "#EF4444"
+          }}>{org.status}</span>
           <span className="rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>{settings.plan || "demo"}</span>
         </div>
       </div>
@@ -379,7 +436,7 @@ export default function OrgDetail() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${activeTab === tab.id ? "border-purple-500 text-white" : "border-transparent hover:text-white/70"}`}
+            className={`flex items-center gap-1.5 px-3 py-3 text-[12px] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${activeTab === tab.id ? "border-purple-500 text-white" : "border-transparent hover:text-white/70"}`}
             style={{ color: activeTab === tab.id ? "var(--foreground)" : "var(--muted-foreground)" }}
           >
             {tab.icon} {tab.label}
@@ -388,12 +445,109 @@ export default function OrgDetail() {
       </div>
 
       {/* Tab Content */}
+      {activeTab === "overview" && <OverviewTab org={org} members={members} roles={roles} featureFlags={featureFlags} flagOverrides={flagOverrides} auditLogs={auditLogs} invitations={invitations} domains={domains} settings={settings} securityStats={securityStats} color={color} />}
       {activeTab === "members" && <MembersTab members={members} roles={roles} fetcher={fetcher} />}
       {activeTab === "roles" && <RolesTab roles={roles} allPermissions={allPermissions} settings={settings} fetcher={fetcher} />}
       {activeTab === "features" && <FeaturesTab featureFlags={featureFlags} flagOverrides={flagOverrides} fetcher={fetcher} />}
       {activeTab === "invitations" && <InvitationsTab invitations={invitations} roles={roles} fetcher={fetcher} />}
       {activeTab === "domains" && <DomainsTab domains={domains} fetcher={fetcher} />}
-      {activeTab === "settings" && <SettingsTab settings={settings} fetcher={fetcher} />}
+      {activeTab === "audit" && <AuditTab auditLogs={auditLogs} />}
+      {activeTab === "security" && <SecurityTab loginHistory={loginHistory} members={members} securityStats={securityStats} />}
+      {activeTab === "settings" && <SettingsTab settings={settings} fetcher={fetcher} org={org} />}
+    </div>
+  );
+}
+
+function OverviewTab({ org, members, roles, featureFlags, flagOverrides, auditLogs, invitations, domains, settings, securityStats, color }: any) {
+  const resolveFlag = (f: any) => flagOverrides[f.key] ? flagOverrides[f.key].enabled : f.default_enabled;
+  const activeFlags = featureFlags.filter((f: any) => resolveFlag(f)).length;
+  const pendingInvites = invitations.filter((i: any) => i.status === "pending").length;
+  const kpis = [
+    { label: "Miembros", value: members.length, max: settings.max_users || 10, color: "#6366F1", icon: Users },
+    { label: "Roles", value: roles.length, color: "#10B981", icon: Shield },
+    { label: "Features Activos", value: activeFlags, max: featureFlags.length, color: "#F59E0B", icon: Flag },
+    { label: "Eventos Auditoría", value: auditLogs.length, color: "#8B5CF6", icon: ScrollText },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {kpis.map((k) => {
+          const Icon = k.icon;
+          return (
+            <div key={k.label} className="rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: k.color + "15" }}>
+                  <Icon size={14} style={{ color: k.color }} />
+                </div>
+                <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{k.label}</span>
+              </div>
+              <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--foreground)" }}>{k.value}</p>
+              {k.max && <p className="text-[10px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>de {k.max} máximo</p>}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Quick Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Invitaciones Pendientes", value: pendingInvites, color: "#F97316" },
+          { label: "Dominios", value: domains.length, color: "#06B6D4" },
+          { label: "Logins Recientes", value: securityStats.totalLogins, color: "#3B82F6" },
+          { label: "Passkeys Activos", value: securityStats.passkeysEnabled, color: "#16A34A" },
+        ].map((s) => (
+          <div key={s.label} className="flex items-center gap-3 rounded-xl border px-4 py-3" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            <span className="text-lg font-bold tabular-nums" style={{ color: s.color }}>{s.value}</span>
+            <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Org Info + Activity Timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Org Info */}
+        <div className="rounded-xl border p-5" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+          <h3 className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--muted-foreground)" }}>Información</h3>
+          <div className="space-y-2.5">
+            {[
+              ["Nombre", org.name],
+              ["Slug", org.slug + ".grixi.ai"],
+              ["Plan", (settings.plan || "demo").toUpperCase()],
+              ["Estado", org.status],
+              ["Creada", new Date(org.created_at).toLocaleDateString("es", { day: "2-digit", month: "long", year: "numeric" })],
+              ["Color", settings.primary_color || "#6366F1"],
+              ["Email Billing", settings.billing_email || "—"],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between">
+                <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{k}</span>
+                <span className="text-[11px] font-medium" style={{ color: k === "Color" ? (v as string) : "var(--foreground)" }}>{v as string}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="rounded-xl border p-5" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+          <h3 className="text-[11px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--muted-foreground)" }}>Actividad Reciente</h3>
+          <div className="space-y-2">
+            {auditLogs.slice(0, 8).map((log: any, i: number) => (
+              <div key={log.id || i} className="flex items-start gap-2.5">
+                <div className="mt-1 h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#6366F1" }} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium truncate" style={{ color: "var(--foreground)" }}>{log.action}</p>
+                  <p className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>
+                    {new Date(log.created_at).toLocaleString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {log.ip_address && ` · ${log.ip_address}`}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {auditLogs.length === 0 && <p className="text-[11px] italic" style={{ color: "var(--muted-foreground)" }}>Sin actividad registrada</p>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -411,7 +565,7 @@ function MembersTab({ members, roles, fetcher }: { members: any[]; roles: any[];
       <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
         <table className="w-full">
           <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
-            {["Usuario", "Rol", "Nivel", "Desde", "Acciones"].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
+            {["Usuario", "Rol", "Último Login", "Passkey", "Acciones"].map(h => <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
           </tr></thead>
           <tbody>
             {filtered.map((m: any) => (
@@ -430,8 +584,19 @@ function MembersTab({ members, roles, fetcher }: { members: any[]; roles: any[];
                     {roles.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                 </td>
-                <td className="px-5 py-3.5"><span className="font-mono text-[11px] tabular-nums" style={{ color: "var(--muted-foreground)" }}>{m.roles?.hierarchy_level ?? "—"}</span></td>
-                <td className="px-5 py-3.5"><span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{new Date(m.joined_at || m.created_at).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" })}</span></td>
+                <td className="px-5 py-3.5">
+                  {m.lastLogin ? (
+                    <div>
+                      <p className="text-[11px]" style={{ color: "var(--foreground)" }}>{new Date(m.lastLogin).toLocaleDateString("es", { day: "2-digit", month: "short" })}</p>
+                      <p className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>{m.loginCount} logins</p>
+                    </div>
+                  ) : <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>—</span>}
+                </td>
+                <td className="px-5 py-3.5">
+                  {m.hasPasskey ? (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: "#16A34A15", color: "#16A34A" }}><Key size={10} /> Activo</span>
+                  ) : <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>—</span>}
+                </td>
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-1">
                     <button onClick={() => fetcher.submit({ intent: "suspend_member", membership_id: m.id, current_status: m.status || "active" }, { method: "post" })} className="rounded-lg px-2 py-1 text-[10px] font-medium transition-colors hover:bg-white/5" style={{ color: "#F59E0B" }}>Suspender</button>
@@ -893,44 +1058,255 @@ function DomainsTab({ domains, fetcher }: { domains: any[]; fetcher: any }) {
   );
 }
 
-function SettingsTab({ settings, fetcher }: { settings: any; fetcher: any }) {
+function AuditTab({ auditLogs }: { auditLogs: any[] }) {
+  const [search, setSearch] = useState("");
+  const [actionFilter, setActionFilter] = useState("all");
+  const actions = useMemo(() => [...new Set(auditLogs.map((l: any) => l.action))], [auditLogs]);
+  const filtered = auditLogs.filter((l: any) => {
+    if (actionFilter !== "all" && l.action !== actionFilter) return false;
+    if (search && !l.action.toLowerCase().includes(search.toLowerCase()) && !l.entity_type?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const ACTION_COLORS: Record<string, string> = {
+    "organization": "#6366F1", "membership": "#10B981", "feature_flag": "#F59E0B",
+    "role": "#3B82F6", "invitation": "#EC4899", "domain": "#06B6D4",
+  };
+  const getColor = (action: string) => {
+    for (const [key, color] of Object.entries(ACTION_COLORS)) {
+      if (action.includes(key)) return color;
+    }
+    return "#6366F1";
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar acción…" className="rounded-lg border px-3 py-1.5 text-xs outline-none flex-1" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+        <select value={actionFilter} onChange={e => setActionFilter(e.target.value)} className="rounded-lg border px-3 py-1.5 text-xs outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+          <option value="all">Todas las acciones</option>
+          {actions.map(a => <option key={a} value={a}>{a}</option>)}
+        </select>
+        <span className="text-[10px] font-medium px-2 py-1 rounded-full" style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>{filtered.length}</span>
+      </div>
+
+      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+        <table className="w-full">
+          <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
+            {["Fecha", "Acción", "Entidad", "IP", "Detalles"].map(h => <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {filtered.slice(0, 50).map((log: any, i: number) => (
+              <tr key={log.id || i} className="border-b last:border-b-0 transition-colors hover:bg-white/[0.02]" style={{ borderColor: "var(--border)" }}>
+                <td className="px-4 py-3">
+                  <span className="text-[11px] tabular-nums" style={{ color: "var(--foreground)" }}>
+                    {new Date(log.created_at).toLocaleString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: getColor(log.action) + "15", color: getColor(log.action) }}>{log.action}</span>
+                </td>
+                <td className="px-4 py-3"><span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{log.entity_type || "—"}</span></td>
+                <td className="px-4 py-3"><span className="text-[10px] font-mono" style={{ color: "var(--muted-foreground)" }}>{log.ip_address || "—"}</span></td>
+                <td className="px-4 py-3">
+                  {log.metadata && Object.keys(log.metadata).length > 0 ? (
+                    <code className="text-[9px] rounded px-1.5 py-0.5" style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>{JSON.stringify(log.metadata).slice(0, 80)}</code>
+                  ) : <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>—</span>}
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>Sin eventos de auditoría</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SecurityTab({ loginHistory, members, securityStats }: { loginHistory: any[]; members: any[]; securityStats: any }) {
+  const memberMap = useMemo(() => {
+    const m: Record<string, any> = {};
+    for (const mem of members) m[mem.user_id] = mem.user;
+    return m;
+  }, [members]);
+
+  return (
+    <div className="space-y-5">
+      {/* Security KPIs */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "Logins Recientes", value: securityStats.totalLogins, color: "#3B82F6", icon: Activity },
+          { label: "Passkeys Habilitados", value: `${securityStats.passkeysEnabled}/${members.length}`, color: "#16A34A", icon: Key },
+          { label: "IPs Únicas", value: securityStats.uniqueIPs, color: "#F59E0B", icon: MonitorSmartphone },
+        ].map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="flex items-center gap-3 rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: s.color + "15" }}>
+                <Icon size={16} style={{ color: s.color }} />
+              </div>
+              <div>
+                <p className="text-lg font-bold tabular-nums" style={{ color: "var(--foreground)" }}>{s.value}</p>
+                <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{s.label}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Login History Table */}
+      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+        <div className="px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+          <h3 className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Historial de Logins</h3>
+        </div>
+        <table className="w-full">
+          <thead><tr className="border-b" style={{ borderColor: "var(--border)" }}>
+            {["Usuario", "Fecha", "IP", "Método"].map(h => <th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {loginHistory.slice(0, 30).map((lh: any, i: number) => {
+              const user = memberMap[lh.user_id];
+              return (
+                <tr key={lh.id || i} className="border-b last:border-b-0 hover:bg-white/[0.02]" style={{ borderColor: "var(--border)" }}>
+                  <td className="px-5 py-2.5"><span className="text-[11px] font-medium" style={{ color: "var(--foreground)" }}>{user?.name || user?.email || lh.user_id?.slice(0, 8)}</span></td>
+                  <td className="px-5 py-2.5"><span className="text-[11px] tabular-nums" style={{ color: "var(--muted-foreground)" }}>{new Date(lh.created_at).toLocaleString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span></td>
+                  <td className="px-5 py-2.5"><span className="text-[10px] font-mono" style={{ color: "var(--muted-foreground)" }}>{lh.ip_address || "—"}</span></td>
+                  <td className="px-5 py-2.5"><span className="rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: "#6366F115", color: "#6366F1" }}>{lh.provider || "email"}</span></td>
+                </tr>
+              );
+            })}
+            {loginHistory.length === 0 && <tr><td colSpan={4} className="px-5 py-8 text-center text-sm" style={{ color: "var(--muted-foreground)" }}>Sin logins registrados</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab({ settings, fetcher, org }: { settings: any; fetcher: any; org: any }) {
   const [plan, setPlan] = useState(settings.plan || "demo");
   const [maxUsers, setMaxUsers] = useState(settings.max_users || 10);
   const [primaryColor, setPrimaryColor] = useState(settings.primary_color || "#7c3aed");
   const [billingEmail, setBillingEmail] = useState(settings.billing_email || "");
+  const [confirmAction, setConfirmAction] = useState<string | null>(null);
 
   const save = () => {
     fetcher.submit({ intent: "update_settings", plan, max_users: String(maxUsers), primary_color: primaryColor, billing_email: billingEmail }, { method: "post" });
   };
 
+  const changeStatus = (newStatus: string) => {
+    fetcher.submit({ intent: "change_org_status", new_status: newStatus }, { method: "post" });
+    setConfirmAction(null);
+  };
+
   return (
-    <div className="rounded-xl border p-6" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Plan</label>
-          <select value={plan} onChange={e => setPlan(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
-            <option value="demo">Demo</option><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option>
-          </select>
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Máximo de usuarios</label>
-          <input type="number" value={maxUsers} onChange={e => setMaxUsers(Number(e.target.value))} className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Color primario</label>
-          <div className="flex items-center gap-3">
-            <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="h-10 w-10 rounded cursor-pointer border-0" />
-            <input type="text" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="flex-1 rounded-lg border px-3 py-2 text-sm font-mono outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+    <div className="space-y-6">
+      {/* General Settings */}
+      <div className="rounded-xl border p-6" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+        <h3 className="text-[12px] font-bold uppercase tracking-wider mb-4" style={{ color: "var(--muted-foreground)" }}>Configuración General</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Plan</label>
+            <select value={plan} onChange={e => setPlan(e.target.value)} className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }}>
+              <option value="demo">Demo</option><option value="starter">Starter</option><option value="professional">Professional</option><option value="enterprise">Enterprise</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Máximo de usuarios</label>
+            <input type="number" value={maxUsers} onChange={e => setMaxUsers(Number(e.target.value))} className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Color primario</label>
+            <div className="flex items-center gap-3">
+              <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="h-10 w-10 rounded cursor-pointer border-0" />
+              <input type="text" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="flex-1 rounded-lg border px-3 py-2 text-sm font-mono outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Email de facturación</label>
+            <input type="email" value={billingEmail} onChange={e => setBillingEmail(e.target.value)} placeholder="billing@empresa.com" className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
           </div>
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>Email de facturación</label>
-          <input type="email" value={billingEmail} onChange={e => setBillingEmail(e.target.value)} placeholder="billing@empresa.com" className="w-full rounded-lg border px-3 py-2 text-sm outline-none" style={{ backgroundColor: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+        <button onClick={save} className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white" style={{ backgroundColor: "#7c3aed" }}>
+          <Save size={16} /> Guardar Configuración
+        </button>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="rounded-xl border-2 p-6" style={{ borderColor: "#EF444440" }}>
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle size={16} style={{ color: "#EF4444" }} />
+          <h3 className="text-[12px] font-bold uppercase tracking-wider" style={{ color: "#EF4444" }}>Zona de Peligro</h3>
+        </div>
+
+        <div className="space-y-3">
+          {/* Suspend */}
+          {org.status === "active" && (
+            <div className="flex items-center justify-between rounded-lg border px-4 py-3" style={{ borderColor: "var(--border)" }}>
+              <div>
+                <p className="text-[12px] font-medium" style={{ color: "var(--foreground)" }}>Suspender organización</p>
+                <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>Los miembros no podrán acceder. Reversible.</p>
+              </div>
+              {confirmAction === "suspend" ? (
+                <div className="flex gap-2">
+                  <button onClick={() => changeStatus("suspended")} className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-white" style={{ backgroundColor: "#F59E0B" }}>Confirmar</button>
+                  <button onClick={() => setConfirmAction(null)} className="rounded-lg px-3 py-1.5 text-[11px]" style={{ color: "var(--muted-foreground)" }}>Cancelar</button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmAction("suspend")} className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-white/5" style={{ borderColor: "#F59E0B40", color: "#F59E0B" }}>
+                  <Pause size={12} /> Suspender
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Restore from suspended */}
+          {org.status === "suspended" && (
+            <div className="flex items-center justify-between rounded-lg border px-4 py-3" style={{ borderColor: "var(--border)" }}>
+              <div>
+                <p className="text-[12px] font-medium" style={{ color: "var(--foreground)" }}>Restaurar organización</p>
+                <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>Reactivar acceso para todos los miembros.</p>
+              </div>
+              <button onClick={() => changeStatus("active")} className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium text-white" style={{ backgroundColor: "#16A34A" }}>
+                <Play size={12} /> Restaurar
+              </button>
+            </div>
+          )}
+
+          {/* Archive */}
+          {org.status !== "archived" && (
+            <div className="flex items-center justify-between rounded-lg border px-4 py-3" style={{ borderColor: "var(--border)" }}>
+              <div>
+                <p className="text-[12px] font-medium" style={{ color: "var(--foreground)" }}>Archivar organización</p>
+                <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>Mover a archivo. Los datos se conservan pero la org queda inactiva.</p>
+              </div>
+              {confirmAction === "archive" ? (
+                <div className="flex gap-2">
+                  <button onClick={() => changeStatus("archived")} className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-white" style={{ backgroundColor: "#EF4444" }}>Confirmar Archivo</button>
+                  <button onClick={() => setConfirmAction(null)} className="rounded-lg px-3 py-1.5 text-[11px]" style={{ color: "var(--muted-foreground)" }}>Cancelar</button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmAction("archive")} className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-white/5" style={{ borderColor: "#EF444440", color: "#EF4444" }}>
+                  <Archive size={12} /> Archivar
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Restore from archived */}
+          {org.status === "archived" && (
+            <div className="flex items-center justify-between rounded-lg border px-4 py-3" style={{ borderColor: "var(--border)" }}>
+              <div>
+                <p className="text-[12px] font-medium" style={{ color: "var(--foreground)" }}>Restaurar desde archivo</p>
+                <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>Reactivar la organización archivada.</p>
+              </div>
+              <button onClick={() => changeStatus("active")} className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium text-white" style={{ backgroundColor: "#16A34A" }}>
+                <Play size={12} /> Restaurar
+              </button>
+            </div>
+          )}
         </div>
       </div>
-      <button onClick={save} className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white" style={{ backgroundColor: "#7c3aed" }}>
-        <Save size={16} /> Guardar Configuración
-      </button>
     </div>
   );
 }
