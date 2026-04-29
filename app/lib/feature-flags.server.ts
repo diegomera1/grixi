@@ -16,7 +16,7 @@ export type FeatureFlags = Record<string, boolean>;
 
 interface FlagEnv {
   SUPABASE_URL: string;
-  SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
   KV_CACHE?: KVNamespace;
 }
 
@@ -54,7 +54,7 @@ async function fetchFlags(
   organizationId: string | null | undefined
 ): Promise<FeatureFlags> {
   const { createClient } = await import("@supabase/supabase-js");
-  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
   // Get all global flags
   const { data: flags } = await supabase
