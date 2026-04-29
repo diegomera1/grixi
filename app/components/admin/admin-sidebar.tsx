@@ -1,7 +1,7 @@
 import { NavLink, useLocation, Form } from "react-router";
 import {
   LayoutDashboard, Building2, Users, History, CreditCard,
-  Bell, Settings, LogOut, Shield, Radio,
+  Bell, Settings, LogOut, Shield, Radio, Flag, Bug, BarChart3,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -17,6 +17,9 @@ const NAV_ITEMS = [
   { to: "/admin/audit", label: "Auditoría", icon: History },
   { to: "/admin/plans", label: "Planes & Billing", icon: CreditCard },
   { to: "/admin/notifications", label: "Notificaciones", icon: Bell },
+  { to: "/admin/feature-flags", label: "Feature Flags", icon: Flag },
+  { to: "/admin/errors", label: "Errores", icon: Bug },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/settings", label: "Configuración", icon: Settings },
 ];
 

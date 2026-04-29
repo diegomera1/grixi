@@ -20,6 +20,8 @@ export default [
   route("api/push/send", "routes/api.push.send.ts"),
   route("api/push/cleanup", "routes/api.push.cleanup.ts"),
   route("api/health", "routes/api.health.ts"),
+  route("api/errors", "routes/api.errors.ts"),
+  route("api/analytics", "routes/api.analytics.ts"),
 
   // Passkey auth API (public — used from login page)
   route("api/auth/passkey/auth-options", "routes/api.auth.passkey.auth-options.ts"),
@@ -34,6 +36,9 @@ export default [
     route("admin/audit", "routes/admin/audit.tsx"),
     route("admin/plans", "routes/admin/plans.tsx"),
     route("admin/notifications", "routes/admin/notifications.tsx"),
+    route("admin/feature-flags", "routes/admin/feature-flags.tsx"),
+    route("admin/errors", "routes/admin/errors.tsx"),
+    route("admin/analytics", "routes/admin/analytics.tsx"),
     route("admin/settings", "routes/admin/settings.tsx"),
   ]),
 
