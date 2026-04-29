@@ -4,8 +4,11 @@ import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/sup
 import { isPlatformTenant } from "~/lib/platform-guard";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { sendInvitationEmail } from "~/lib/email.server";
-import { ArrowLeft, Users, Puzzle, Mail, Globe, Settings, Save, Shield, Trash2, Plus } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft, Users, Puzzle, Mail, Globe, Settings, Save, Shield, Trash2, Plus,
+  ToggleLeft, ToggleRight, Flag, Sparkles, Box, Zap,
+} from "lucide-react";
+import { useState, useMemo } from "react";
 
 const ALL_MODULES = [
   { id: "dashboard", name: "Dashboard", color: "#6366F1" },
@@ -36,7 +39,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const orgId = params.id;
 
-  const [orgRes, membersRes, invitationsRes, domainsRes, rolesRes, permsRes] = await Promise.all([
+  const [orgRes, membersRes, invitationsRes, domainsRes, rolesRes, permsRes, flagsRes, overridesRes] = await Promise.all([
     admin.from("organizations").select("*").eq("id", orgId).single(),
     admin.from("memberships").select("*, roles(name, hierarchy_level)")
       .eq("organization_id", orgId).eq("status", "active"),
@@ -44,6 +47,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     admin.from("domain_whitelists").select("*").eq("organization_id", orgId),
     admin.from("roles").select("id, name, hierarchy_level, is_system, is_default, description, role_permissions(permission_id, permissions(id, key, description, module))").eq("organization_id", orgId).order("hierarchy_level", { ascending: false }),
     admin.from("permissions").select("id, key, description, module").order("module").order("key"),
+    admin.from("feature_flags").select("*").order("category").order("name"),
+    admin.from("feature_flag_overrides").select("*").eq("organization_id", orgId),
   ]);
 
   if (!orgRes.data) return redirect("/admin/organizations", { headers });
@@ -65,6 +70,14 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     });
   }
 
+  // Build resolved flags for this org
+  const allFlags = flagsRes.data || [];
+  const orgOverrides = overridesRes.data || [];
+  const overrideMap: Record<string, { id: string; enabled: boolean }> = {};
+  for (const o of orgOverrides) {
+    overrideMap[o.flag_key] = { id: o.id, enabled: o.enabled };
+  }
+
   return Response.json({
     org: orgRes.data,
     members: (membersRes.data || []).map((m: any) => ({
@@ -75,6 +88,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     domains: domainsRes.data || [],
     roles: rolesRes.data || [],
     allPermissions: permsRes.data || [],
+    featureFlags: allFlags,
+    flagOverrides: overrideMap,
   }, { headers });
 }
 
@@ -212,6 +227,47 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return Response.json({ success: true }, { headers });
   }
 
+  if (intent === "toggle_feature") {
+    const flagKey = formData.get("flag_key") as string;
+    const enabled = formData.get("enabled") === "true";
+    const useDefault = formData.get("use_default") === "true";
+
+    if (useDefault) {
+      // Remove override → fall back to global default
+      await admin.from("feature_flag_overrides").delete()
+        .eq("flag_key", flagKey).eq("organization_id", orgId);
+    } else {
+      // Upsert override for this org
+      await admin.from("feature_flag_overrides").upsert({
+        flag_key: flagKey, organization_id: orgId, enabled,
+      }, { onConflict: "flag_key,organization_id" });
+    }
+
+    // Also sync to org.settings.enabled_modules for backwards compat
+    if (flagKey.startsWith("module_")) {
+      const moduleId = flagKey.replace("module_", "");
+      const { data: org } = await admin.from("organizations").select("settings").eq("id", orgId).single();
+      const settings = org?.settings || {};
+      let modules: string[] = settings.enabled_modules || ["dashboard"];
+      const resolvedEnabled = useDefault
+        ? (await admin.from("feature_flags").select("default_enabled").eq("key", flagKey).single()).data?.default_enabled ?? false
+        : enabled;
+      if (resolvedEnabled && !modules.includes(moduleId)) {
+        modules = [...modules, moduleId];
+      } else if (!resolvedEnabled) {
+        modules = modules.filter((m: string) => m !== moduleId);
+      }
+      await admin.from("organizations").update({ settings: { ...settings, enabled_modules: modules } }).eq("id", orgId);
+    }
+
+    await logAuditEvent(admin, {
+      actorId: user.id, action: "feature_flag.toggle", entityType: "feature_flag_overrides",
+      entityId: `${flagKey}:${orgId}`, metadata: { flagKey, enabled, useDefault, orgId }, ipAddress: ip,
+      organizationId: orgId,
+    });
+    return Response.json({ success: true }, { headers });
+  }
+
   if (intent === "update_settings") {
     const plan = formData.get("plan") as string;
     const maxUsers = parseInt(formData.get("max_users") as string) || 10;
@@ -281,14 +337,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 const TABS = [
   { id: "members", label: "Miembros", icon: <Users size={16} /> },
   { id: "roles", label: "Roles & Permisos", icon: <Shield size={16} /> },
-  { id: "modules", label: "Módulos", icon: <Puzzle size={16} /> },
+  { id: "features", label: "Features & Módulos", icon: <Flag size={16} /> },
   { id: "invitations", label: "Invitaciones", icon: <Mail size={16} /> },
   { id: "domains", label: "Dominios", icon: <Globe size={16} /> },
   { id: "settings", label: "Configuración", icon: <Settings size={16} /> },
 ];
 
 export default function OrgDetail() {
-  const { org, members, invitations, domains, roles, allPermissions } = useLoaderData<typeof loader>();
+  const { org, members, invitations, domains, roles, allPermissions, featureFlags, flagOverrides } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [activeTab, setActiveTab] = useState("members");
   const settings = org.settings || {};
@@ -334,7 +390,7 @@ export default function OrgDetail() {
       {/* Tab Content */}
       {activeTab === "members" && <MembersTab members={members} roles={roles} fetcher={fetcher} />}
       {activeTab === "roles" && <RolesTab roles={roles} allPermissions={allPermissions} settings={settings} fetcher={fetcher} />}
-      {activeTab === "modules" && <ModulesTab settings={settings} fetcher={fetcher} />}
+      {activeTab === "features" && <FeaturesTab featureFlags={featureFlags} flagOverrides={flagOverrides} fetcher={fetcher} />}
       {activeTab === "invitations" && <InvitationsTab invitations={invitations} roles={roles} fetcher={fetcher} />}
       {activeTab === "domains" && <DomainsTab domains={domains} fetcher={fetcher} />}
       {activeTab === "settings" && <SettingsTab settings={settings} fetcher={fetcher} />}
@@ -550,37 +606,138 @@ function RolesTab({ roles, allPermissions, settings, fetcher }: { roles: any[]; 
   );
 }
 
-function ModulesTab({ settings, fetcher }: { settings: any; fetcher: any }) {
-  const [modules, setModules] = useState<string[]>(settings.enabled_modules || ["dashboard"]);
+const CATEGORY_META: Record<string, { label: string; description: string; color: string; icon: any }> = {
+  module:       { label: "Módulos", description: "Módulos principales de la plataforma", color: "#6366F1", icon: Box },
+  general:      { label: "General", description: "Funcionalidades generales del sistema", color: "#10B981", icon: Settings },
+  beta:         { label: "Beta", description: "Funcionalidades en prueba", color: "#F59E0B", icon: Sparkles },
+  experimental: { label: "Experimental", description: "Features experimentales", color: "#EF4444", icon: Zap },
+};
 
-  const toggle = (id: string) => {
-    if (id === "dashboard") return; // dashboard always on
-    setModules(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
+function FeaturesTab({ featureFlags, flagOverrides, fetcher }: { featureFlags: any[]; flagOverrides: Record<string, { id: string; enabled: boolean }>; fetcher: any }) {
+  const grouped = useMemo(() => {
+    return featureFlags.reduce((acc: Record<string, any[]>, f: any) => {
+      const cat = f.category || "general";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(f);
+      return acc;
+    }, {} as Record<string, any[]>);
+  }, [featureFlags]);
+
+  const handleToggle = (flagKey: string, currentEnabled: boolean) => {
+    fetcher.submit(
+      { intent: "toggle_feature", flag_key: flagKey, enabled: String(!currentEnabled), use_default: "false" },
+      { method: "post" }
+    );
   };
 
-  const save = () => {
-    fetcher.submit({ intent: "update_modules", modules: JSON.stringify(modules) }, { method: "post" });
+  const handleResetToDefault = (flagKey: string) => {
+    fetcher.submit(
+      { intent: "toggle_feature", flag_key: flagKey, enabled: "false", use_default: "true" },
+      { method: "post" }
+    );
   };
+
+  const resolveFlag = (flag: any): { enabled: boolean; isOverridden: boolean } => {
+    const override = flagOverrides[flag.key];
+    if (override) return { enabled: override.enabled, isOverridden: true };
+    return { enabled: flag.default_enabled, isOverridden: false };
+  };
+
+  const totalEnabled = featureFlags.filter((f: any) => resolveFlag(f).enabled).length;
+  const totalOverrides = Object.keys(flagOverrides).length;
 
   return (
-    <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-        {ALL_MODULES.map((mod) => {
-          const enabled = modules.includes(mod.id);
-          return (
-            <button key={mod.id} onClick={() => toggle(mod.id)} disabled={mod.id === "dashboard"}
-              className={`flex items-center gap-3 rounded-xl border p-4 transition-all ${enabled ? "ring-2" : "opacity-50"}`}
-              style={{ backgroundColor: "var(--card)", borderColor: enabled ? mod.color : "var(--border)", boxShadow: enabled ? `0 0 12px ${mod.color}15` : "none" }}
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold" style={{ backgroundColor: `${mod.color}20`, color: mod.color }}>{mod.name.charAt(0)}</div>
-              <div className="text-left"><p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{mod.name}</p><p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{enabled ? "Activo" : "Inactivo"}</p></div>
-            </button>
-          );
-        })}
+    <div className="space-y-5">
+      {/* Summary */}
+      <div className="flex items-center gap-4 rounded-xl border p-4" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: "#6366F115" }}>
+          <Flag size={18} style={{ color: "#6366F1" }} />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Features de esta Organización</p>
+          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+            {totalEnabled} de {featureFlags.length} activos · {totalOverrides} override{totalOverrides !== 1 ? "s" : ""} configurado{totalOverrides !== 1 ? "s" : ""}
+          </p>
+        </div>
       </div>
-      <button onClick={save} className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white" style={{ backgroundColor: "#7c3aed" }}>
-        <Save size={16} /> Guardar Módulos
-      </button>
+
+      {/* By Category */}
+      {Object.entries(CATEGORY_META).map(([catKey, catMeta]) => {
+        const flags = grouped[catKey];
+        if (!flags || flags.length === 0) return null;
+        const CatIcon = catMeta.icon;
+
+        return (
+          <div key={catKey} className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--card)", borderColor: "var(--border)" }}>
+            {/* Category header */}
+            <div className="flex items-center gap-2.5 border-b px-5 py-3.5" style={{ borderColor: "var(--border)" }}>
+              <CatIcon size={15} style={{ color: catMeta.color }} />
+              <div>
+                <h3 className="text-[12px] font-bold uppercase tracking-wider" style={{ color: "var(--foreground)" }}>{catMeta.label}</h3>
+                <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{catMeta.description}</p>
+              </div>
+              <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: `${catMeta.color}15`, color: catMeta.color }}>
+                {flags.filter((f: any) => resolveFlag(f).enabled).length}/{flags.length}
+              </span>
+            </div>
+
+            {/* Flag rows */}
+            <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+              {flags.map((flag: any) => {
+                const { enabled, isOverridden } = resolveFlag(flag);
+                return (
+                  <div key={flag.key} className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.02]">
+                    {/* Info */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[12px] font-medium" style={{ color: "var(--foreground)" }}>{flag.name}</p>
+                        <code className="rounded px-1.5 py-0.5 text-[9px] font-mono" style={{ backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }}>{flag.key}</code>
+                        {isOverridden && (
+                          <span className="rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider" style={{ backgroundColor: "#F59E0B15", color: "#F59E0B" }}>Override</span>
+                        )}
+                      </div>
+                      {flag.description && (
+                        <p className="mt-0.5 text-[10px]" style={{ color: "var(--muted-foreground)" }}>{flag.description}</p>
+                      )}
+                      {!isOverridden && (
+                        <p className="mt-0.5 text-[9px] italic" style={{ color: "var(--muted-foreground)" }}>
+                          Usando default global: {flag.default_enabled ? "ON" : "OFF"}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Reset to default */}
+                    {isOverridden && (
+                      <button
+                        onClick={() => handleResetToDefault(flag.key)}
+                        className="rounded-lg px-2.5 py-1 text-[9px] font-medium transition-colors hover:bg-white/5"
+                        style={{ color: "var(--muted-foreground)" }}
+                      >
+                        Reset
+                      </button>
+                    )}
+
+                    {/* Toggle */}
+                    <button
+                      onClick={() => handleToggle(flag.key, enabled)}
+                      className="flex items-center gap-2 transition-all"
+                    >
+                      {enabled ? (
+                        <ToggleRight size={28} style={{ color: "#16A34A" }} />
+                      ) : (
+                        <ToggleLeft size={28} style={{ color: "var(--muted-foreground)" }} />
+                      )}
+                      <span className="w-7 text-[11px] font-bold" style={{ color: enabled ? "#16A34A" : "var(--muted-foreground)" }}>
+                        {enabled ? "ON" : "OFF"}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
