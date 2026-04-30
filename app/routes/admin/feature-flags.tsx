@@ -6,8 +6,8 @@
  */
 import { redirect, useLoaderData, useFetcher } from "react-router";
 import type { Route } from "./+types/admin.feature-flags";
-import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
-import { isPlatformTenant } from "~/lib/platform-guard";
+import { createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { requirePlatformAdmin, requirePlatformPermission } from "~/lib/platform-rbac/guard.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 import {
   Flag, ToggleLeft, ToggleRight, Building2, Search,
@@ -25,14 +25,10 @@ const CATEGORY_META: Record<string, { label: string; color: string; icon: any }>
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
-  const { supabase, headers } = createSupabaseServerClient(request, env);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return redirect("/", { headers });
-  if (!isPlatformTenant(context)) return redirect("/dashboard", { headers });
+  const { adminCtx, supabaseHeaders: headers } = await requirePlatformAdmin(request, env, context);
+  requirePlatformPermission(adminCtx, "admin.flags.view", headers);
 
   const admin = createSupabaseAdminClient(env);
-  const { data: pa } = await admin.from("platform_admins").select("user_id").eq("user_id", user.id).maybeSingle();
-  if (!pa) return redirect("/dashboard", { headers });
 
   const [flagsRes, overridesRes, orgsRes] = await Promise.all([
     admin.from("feature_flags").select("*").order("category").order("key"),
@@ -49,13 +45,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const env = context.cloudflare.env;
-  const { supabase, headers } = createSupabaseServerClient(request, env);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return redirect("/", { headers });
-  if (!isPlatformTenant(context)) return Response.json({ error: "Forbidden" }, { status: 403, headers });
+  const { adminCtx, supabaseHeaders: headers } = await requirePlatformAdmin(request, env, context);
+  requirePlatformPermission(adminCtx, "admin.flags.manage", headers);
 
   const admin = createSupabaseAdminClient(env);
-  const { data: pa } = await admin.from("platform_admins").select("user_id").eq("user_id", user.id).maybeSingle();
   if (!pa) return Response.json({ error: "Unauthorized" }, { status: 403, headers });
 
   const formData = await request.formData();

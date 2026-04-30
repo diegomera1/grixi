@@ -1,7 +1,7 @@
-import { useLoaderData, Link, redirect } from "react-router";
+import { useLoaderData, Link } from "react-router";
 import type { Route } from "./+types/admin";
-import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
-import { isPlatformTenant } from "~/lib/platform-guard";
+import { createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { requirePlatformAdmin, requirePlatformPermission } from "~/lib/platform-rbac/guard.server";
 import {
   Building2, Users, Activity, FileText, TrendingUp,
   ArrowUpRight, Plus, Send, History, Zap, AlertTriangle,
@@ -14,14 +14,10 @@ import {
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
-  const { supabase, headers } = createSupabaseServerClient(request, env);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return redirect("/", { headers });
-  if (!isPlatformTenant(context)) return redirect("/dashboard", { headers });
+  const { adminCtx, supabaseHeaders: headers } = await requirePlatformAdmin(request, env, context);
+  requirePlatformPermission(adminCtx, "admin.dashboard.view", headers);
 
   const admin = createSupabaseAdminClient(env);
-  const { data: pa } = await admin.from("platform_admins").select("user_id").eq("user_id", user.id).maybeSingle();
-  if (!pa) return redirect("/dashboard", { headers });
 
   const now = new Date();
   const now24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

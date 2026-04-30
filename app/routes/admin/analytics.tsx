@@ -6,8 +6,8 @@
  */
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/admin.analytics";
-import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
-import { isPlatformTenant } from "~/lib/platform-guard";
+import { createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { requirePlatformAdmin, requirePlatformPermission } from "~/lib/platform-rbac/guard.server";
 import {
   BarChart3, Eye, Users, Clock, MousePointer, TrendingUp,
   Globe, Monitor, Smartphone, ArrowUpRight, ArrowDownRight,
@@ -16,14 +16,10 @@ import { useState, useMemo } from "react";
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = context.cloudflare.env;
-  const { supabase, headers } = createSupabaseServerClient(request, env);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return redirect("/", { headers });
-  if (!isPlatformTenant(context)) return redirect("/dashboard", { headers });
+  const { adminCtx, supabaseHeaders: headers } = await requirePlatformAdmin(request, env, context);
+  requirePlatformPermission(adminCtx, "admin.analytics.view", headers);
 
   const admin = createSupabaseAdminClient(env);
-  const { data: pa } = await admin.from("platform_admins").select("user_id").eq("user_id", user.id).maybeSingle();
-  if (!pa) return redirect("/dashboard", { headers });
 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();

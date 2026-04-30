@@ -28,11 +28,13 @@ export default [
   route("api/auth/passkey/auth-verify", "routes/api.auth.passkey.auth-verify.ts"),
 
   // ── Admin Portal (admin.grixi.ai) — layout independiente ──
+  route("admin/reauth", "routes/admin-reauth.tsx"), // Outside layout — accessible when session expired
   layout("routes/admin-layout.tsx", [
     route("admin", "routes/admin/index.tsx"),
     route("admin/organizations", "routes/admin/organizations.tsx"),
     route("admin/organizations/:id", "routes/admin/organizations.$id.tsx"),
     route("admin/users", "routes/admin/users.tsx"),
+    route("admin/roles", "routes/admin/roles.tsx"),
     route("admin/audit", "routes/admin/audit.tsx"),
     route("admin/plans", "routes/admin/plans.tsx"),
     route("admin/notifications", "routes/admin/notifications.tsx"),
