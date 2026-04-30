@@ -66,7 +66,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   const userEmail = sessionData.user.email;
   if (!userEmail) {
-    return redirect("/?error=no_email");
+    return redirect(isAdminPortal ? "/login?error=no_email" : "/?error=no_email");
   }
 
   // ── Record login history + audit ──
@@ -74,6 +74,32 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const ip = getClientIP(request);
   const ua = request.headers.get("user-agent") || "";
   const { browser, os, deviceType } = parseUserAgent(ua);
+
+  // ═══ ADMIN PORTAL FAST-PATH ═══
+  // Platform admins on admin.grixi.ai skip org membership checks entirely
+  if (isAdminPortal) {
+    const { data: platformAdmin } = await admin
+      .from("platform_admins")
+      .select("id")
+      .eq("user_id", sessionData.user.id)
+      .maybeSingle();
+
+    if (platformAdmin) {
+      // Log admin login
+      await logAuditEvent(admin, {
+        actorId: sessionData.user.id,
+        action: "admin.login",
+        entityType: "platform_admin",
+        metadata: { browser, os, deviceType, ip, portal: "admin.grixi.ai" },
+        ipAddress: ip,
+      });
+      return redirect("/admin", { headers });
+    }
+
+    // Not a platform admin → sign out and redirect to login with error
+    await supabase.auth.signOut();
+    return redirect("/login?error=not_admin", { headers });
+  }
 
   // 1. Check existing memberships
   const { data: existingMemberships } = await admin

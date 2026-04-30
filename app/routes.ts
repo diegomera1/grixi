@@ -3,6 +3,7 @@ import { type RouteConfig, index, route, layout } from "@react-router/dev/routes
 export default [
   // Public routes
   index("routes/login.tsx"),
+  route("login", "routes/login.tsx", { id: "login-alias" }),
   route("auth/callback", "routes/auth.callback.tsx"),
   route("auth/signout", "routes/auth.signout.tsx"),
   route("select-org", "routes/select-org.tsx"),

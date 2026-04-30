@@ -51,12 +51,41 @@ export default function LoginPage() {
   const brandColor = tenantBranding?.primaryColor || "#7c3aed";
   const isGrixi = !tenantBranding;
 
+  // Error messages from callback redirects
+  const [searchParams] = useState(() => {
+    if (typeof window !== "undefined") return new URLSearchParams(window.location.search);
+    return new URLSearchParams();
+  });
+  const errorParam = typeof window !== "undefined" ? searchParams.get("error") : null;
+  const errorMessages: Record<string, string> = {
+    not_admin: "Esta cuenta no tiene permisos de administrador de plataforma.",
+    unauthorized: "No tienes acceso autorizado. Contacta al administrador.",
+    auth_failed: "Error de autenticación. Intenta de nuevo.",
+    generic: "Ocurrió un error. Intenta de nuevo.",
+    no_email: "No se pudo obtener el email de tu cuenta.",
+  };
+  const errorMessage = errorParam ? errorMessages[errorParam] || errorMessages.generic : null;
+
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
       <AnimatedNodes />
 
       <div className="relative z-10 w-full max-w-[340px] px-6 login-card-enter">
         <div className="flex flex-col items-center">
+
+          {/* Error alert */}
+          {errorMessage && (
+            <div
+              className="mb-4 w-full rounded-xl px-4 py-3 text-center text-xs font-medium"
+              style={{
+                backgroundColor: "rgba(239,68,68,0.08)",
+                border: "1px solid rgba(239,68,68,0.2)",
+                color: "#FCA5A5",
+              }}
+            >
+              {errorMessage}
+            </div>
+          )}
 
           {/* Logo — clean, no duplicate text */}
           <div className="logo-enter mb-2 relative">
