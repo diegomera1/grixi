@@ -23,6 +23,22 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 // ── Action: handle re-authentication ──
 export async function action({ request, context }: Route.ActionArgs) {
   const env = context.cloudflare.env;
+  const kv = (env as any).KV_CACHE as KVNamespace | undefined;
+
+  // ═══ RATE LIMITING: 5 attempts per 15 minutes per IP ═══
+  const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "unknown";
+  const rateLimitKey = `reauth_attempts:${clientIp}`;
+  if (kv) {
+    const attempts = parseInt(await kv.get(rateLimitKey) || "0", 10);
+    if (attempts >= 5) {
+      return Response.json(
+        { error: "Demasiados intentos. Espera 15 minutos." },
+        { status: 429 }
+      );
+    }
+    await kv.put(rateLimitKey, String(attempts + 1), { expirationTtl: 900 }); // 15 min
+  }
+
   const { supabase, headers } = createSupabaseServerClient(request, env);
   const formData = await request.formData();
   const email = formData.get("email") as string;
@@ -67,8 +83,10 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   // Start fresh admin session
-  const kv = (env as any).KV_CACHE as KVNamespace | undefined;
   await startAdminSession(data.user.id, kv);
+
+  // Clear rate limit on successful reauth
+  if (kv) await kv.delete(rateLimitKey);
 
   // Log re-authentication event
   await admin.from("audit_logs").insert({
@@ -76,7 +94,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     action: "admin.session.reauth",
     entity_type: "platform_admin",
     entity_id: data.user.id,
-    ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for"),
+    ip_address: clientIp,
     user_agent: request.headers.get("user-agent"),
     metadata: { returnTo, method: "password" },
   });
