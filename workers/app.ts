@@ -11,6 +11,8 @@ declare module "react-router" {
     tenantSlug: string | null;
     /** True when accessed from admin.grixi.ai — the dedicated platform admin portal */
     isPlatformAdminPortal: boolean;
+    /** Cryptographic nonce for CSP inline scripts (generated per-request) */
+    cspNonce: string;
   }
 }
 
@@ -76,7 +78,16 @@ function getStaleSessionCleanupHeaders(request: Request, appDomain: string): str
 
 // ─── Security Headers ─────────────────────────────────────
 
-function getSecurityHeaders(): Record<string, string> {
+/**
+ * Generate security headers with per-request CSP nonce.
+ * Nonce eliminates the need for 'unsafe-inline' and 'unsafe-eval' in script-src.
+ */
+function getSecurityHeaders(nonce?: string): Record<string, string> {
+  // Script source: nonce-based (no unsafe-inline, no unsafe-eval)
+  const scriptSrc = nonce
+    ? `'self' 'nonce-${nonce}' https://accounts.google.com https://apis.google.com https://login.microsoftonline.com`
+    : `'self' https://accounts.google.com https://apis.google.com https://login.microsoftonline.com`;
+
   return {
     "X-Frame-Options": "DENY",
     "X-Content-Type-Options": "nosniff",
@@ -86,7 +97,7 @@ function getSecurityHeaders(): Record<string, string> {
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "Content-Security-Policy": [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://login.microsoftonline.com",
+      `script-src ${scriptSrc}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co https://*.grixi.ai https://graph.microsoft.com",
@@ -292,18 +303,24 @@ export default {
       }
     }
 
+    // Generate cryptographic nonce for this request (CSP inline scripts)
+    const nonceBytes = new Uint8Array(16);
+    crypto.getRandomValues(nonceBytes);
+    const cspNonce = btoa(String.fromCharCode(...nonceBytes));
+
     try {
       const response = await requestHandler(request, {
         cloudflare: { env, ctx },
         tenantSlug: isPlatformAdminPortal ? null : tenantSlug,
         isPlatformAdminPortal,
+        cspNonce,
       } as any);
 
       // Build enhanced response with security + cache headers
       const newResponse = new Response(response.body, response);
 
-      // Security headers
-      const secHeaders = getSecurityHeaders();
+      // Security headers (with per-request nonce for CSP)
+      const secHeaders = getSecurityHeaders(cspNonce);
       for (const [key, value] of Object.entries(secHeaders)) {
         newResponse.headers.set(key, value);
       }

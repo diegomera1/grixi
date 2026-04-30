@@ -12,6 +12,12 @@ export async function action({ request, context }: Route.ActionArgs) {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
+  // SECURITY: Limit payload size to prevent abuse (10KB max for error reports)
+  const contentLength = parseInt(request.headers.get("content-length") || "0");
+  if (contentLength > 10240) {
+    return Response.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   try {
     const env = context.cloudflare.env;
     const body = await request.json();

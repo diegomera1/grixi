@@ -31,11 +31,15 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const cookieHeader = request.headers.get("cookie") || "";
   const theme = cookieHeader.match(/grixi_theme=(light|dark)/)?.[1] ?? "dark";
 
+  // Get CSP nonce from context
+  const cspNonce = (context as any).cspNonce as string | undefined;
+
   return Response.json(
     {
       locale,
       translations,
       theme,
+      cspNonce,
       user: user ? { id: user.id, email: user.email } : null,
       env: {
         SUPABASE_URL: env.SUPABASE_URL,
@@ -97,6 +101,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const data = useLoaderData<typeof loader>() as any;
   const locale = (data?.locale ?? "es") as Locale;
   const theme = data?.theme ?? "dark";
+  const nonce = data?.cspNonce;
 
   return (
     <html lang={locale} className={theme === "dark" ? "dark" : ""}>
@@ -119,9 +124,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body className="min-h-screen antialiased">
         <NavigationProgress />
         {children}
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <Scripts nonce={nonce} />
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
