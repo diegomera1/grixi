@@ -1,10 +1,42 @@
-import { useNavigate } from "react-router";
-import { ShieldX, ArrowLeft, Home } from "lucide-react";
+import { redirect, useLoaderData, Form } from "react-router";
+import { ShieldX, LogOut, ArrowLeft, Home } from "lucide-react";
+import type { Route } from "./+types/unauthorized";
+import { createSupabaseServerClient } from "~/lib/supabase/client.server";
 
 export const meta = () => [{ title: "Acceso Denegado — GRIXI" }];
 
+/**
+ * Loader — detect context (admin portal vs tenant) and get user info
+ */
+export async function loader({ request, context }: Route.LoaderArgs) {
+  const host = request.headers.get("host") || "";
+  const isAdmin = host.startsWith("admin.") || host.startsWith("admin.grixi.ai");
+
+  const { supabase } = createSupabaseServerClient(request, context.cloudflare.env);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  return {
+    isAdmin,
+    userEmail: user?.email || null,
+    hasSession: !!user,
+  };
+}
+
+/**
+ * Action — handle signout from unauthorized page
+ */
+export async function action({ request, context }: Route.ActionArgs) {
+  const { supabase, headers } = createSupabaseServerClient(request, context.cloudflare.env);
+  await supabase.auth.signOut({ scope: "global" });
+
+  const host = request.headers.get("host") || "";
+  const isAdmin = host.startsWith("admin.") || host.startsWith("admin.grixi.ai");
+
+  return redirect(isAdmin ? "/login" : "/", { headers });
+}
+
 export default function Unauthorized() {
-  const navigate = useNavigate();
+  const { isAdmin, userEmail, hasSession } = useLoaderData<typeof loader>();
 
   return (
     <main
@@ -44,26 +76,52 @@ export default function Unauthorized() {
         <div className="space-y-2">
           <h1 className="text-xl font-semibold">Acceso Denegado</h1>
           <p className="max-w-sm text-sm leading-relaxed" style={{ color: "#A1A1AA" }}>
-            No tienes membresía en esta organización. Contacta al administrador si necesitas acceso.
+            {isAdmin
+              ? "Esta cuenta no tiene permisos de administrador de plataforma."
+              : "No tienes membresía en esta organización. Contacta al administrador si necesitas acceso."}
           </p>
+          {userEmail && (
+            <p className="text-xs" style={{ color: "#52525B" }}>
+              Sesión activa: {userEmail}
+            </p>
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <a
-            href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 active:scale-95"
-            style={{ backgroundColor: "#7C3AED", boxShadow: "0 4px 14px rgba(124, 58, 237, 0.3)" }}
-          >
-            <Home size={16} /> Ir al Dashboard
-          </a>
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all hover:opacity-80"
-            style={{ border: "1px solid #27272A", color: "#A1A1AA" }}
-          >
-            <ArrowLeft size={16} /> Volver
-          </button>
+          {/* Primary: Sign out (especially important for admin portal) */}
+          {hasSession && (
+            <Form method="post">
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 active:scale-95"
+                style={{ backgroundColor: "#7C3AED", boxShadow: "0 4px 14px rgba(124, 58, 237, 0.3)" }}
+              >
+                <LogOut size={16} /> Cerrar Sesión
+              </button>
+            </Form>
+          )}
+
+          {/* Secondary: different target based on context */}
+          {!isAdmin && (
+            <a
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all hover:opacity-80"
+              style={{ border: "1px solid #27272A", color: "#A1A1AA" }}
+            >
+              <ArrowLeft size={16} /> Iniciar Sesión
+            </a>
+          )}
+
+          {!hasSession && (
+            <a
+              href={isAdmin ? "/login" : "/"}
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 active:scale-95"
+              style={{ backgroundColor: "#7C3AED", boxShadow: "0 4px 14px rgba(124, 58, 237, 0.3)" }}
+            >
+              <Home size={16} /> Iniciar Sesión
+            </a>
+          )}
         </div>
 
         {/* Brand */}

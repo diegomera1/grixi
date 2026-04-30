@@ -61,7 +61,11 @@ export async function requirePlatformAdmin(
     180 // 3 minutes
   );
 
-  if (!platformAdmin) throw redirect("/unauthorized", { headers });
+  if (!platformAdmin) {
+    // Sign out non-admin users and redirect to login with error
+    await supabase.auth.signOut();
+    throw redirect("/login?error=not_admin", { headers });
+  }
 
   const role = (platformAdmin as any).platform_roles as PlatformRole;
 
