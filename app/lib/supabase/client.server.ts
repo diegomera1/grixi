@@ -49,9 +49,9 @@ export function createSupabaseServerClient(
             // 1. Remove maxAge → session cookie (dies when browser closes)
             delete cookieOptions.maxAge;
             delete cookieOptions.expires;
-            // 2. SameSite=Strict → no CSRF on admin panel
-            //    (OAuth login happens on the main portal, not admin)
-            cookieOptions.sameSite = "strict";
+            // 2. SameSite=Lax → protects POST CSRF but allows OAuth redirects
+            //    (Strict would block Google OAuth callback which is cross-site)
+            cookieOptions.sameSite = "lax";
             // 3. Always secure in production
             cookieOptions.secure = true;
           }
