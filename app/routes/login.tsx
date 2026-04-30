@@ -10,7 +10,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const { supabase } = createSupabaseServerClient(request, env);
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (user) return redirect("/dashboard");
+  if (user) {
+    // Admin portal → /admin, tenant portal → /dashboard
+    const host = request.headers.get("host") || "";
+    const isAdmin = host.startsWith("admin.") || host.startsWith("admin.grixi.ai");
+    return redirect(isAdmin ? "/admin" : "/dashboard");
+  }
 
   let tenantBranding: { name: string; logoUrl: string | null; primaryColor: string } | null = null;
   if (tenantSlug) {

@@ -237,11 +237,33 @@ export default {
       });
       if (!success) {
         return new Response(
-          JSON.stringify({ error: "Too Many Requests" }),
+          `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GRIXI Admin — Demasiadas Solicitudes</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0A0A0F;font-family:system-ui,-apple-system,sans-serif;color:#F8FAFC}
+  .card{text-align:center;max-width:380px;padding:2rem}
+  .icon{width:56px;height:56px;border-radius:16px;background:rgba(239,68,68,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem}
+  .icon svg{color:#EF4444}
+  h1{font-size:1.25rem;font-weight:700;margin-bottom:.5rem}
+  p{font-size:.875rem;color:#94A3B8;margin-bottom:1.5rem;line-height:1.5}
+  a{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.5rem;background:linear-gradient(135deg,#7c3aed,#6D28D9);color:#fff;text-decoration:none;border-radius:12px;font-size:.875rem;font-weight:600;transition:opacity .2s}
+  a:hover{opacity:.9}
+  .brand{margin-top:2rem;font-size:10px;font-weight:700;letter-spacing:.3em;color:#475569;text-transform:uppercase}
+</style></head>
+<body><div class="card">
+  <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+  <h1>Demasiadas Solicitudes</h1>
+  <p>Has excedido el límite de solicitudes. Espera un momento antes de intentar de nuevo.</p>
+  <a href="/login">Volver al Inicio</a>
+  <div class="brand">GRIXI ADMIN</div>
+</div></body></html>`,
           {
             status: 429,
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type": "text/html; charset=utf-8",
               "Retry-After": "60",
             },
           }

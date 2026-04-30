@@ -31,8 +31,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const code = url.searchParams.get("code");
   const isLinking = url.searchParams.get("linking") === "true";
 
+  // Detect admin portal for proper redirect targets
+  const host = request.headers.get("host") || "";
+  const isAdminPortal = host.startsWith("admin.") || host.startsWith("admin.grixi.ai");
+  const defaultRedirect = isAdminPortal ? "/admin" : "/dashboard";
+
   if (!code) {
-    return redirect("/?error=generic");
+    return redirect(isAdminPortal ? "/login?error=generic" : "/?error=generic");
   }
 
   const { supabase, headers } = createSupabaseServerClient(request, env);
@@ -121,7 +126,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       ).catch(() => {});
     }
 
-    // User already has access — route to dashboard
+    // User already has access — route appropriately
+    if (isAdminPortal) {
+      return redirect("/admin", { headers });
+    }
     if (existingMemberships.length === 1) {
       return redirect("/dashboard", { headers });
     }
@@ -137,7 +145,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   if (whitelistError || !whitelistAccess || whitelistAccess.length === 0) {
     // No access — sign out and redirect
     await supabase.auth.signOut();
-    return redirect("/?error=unauthorized");
+    return redirect(isAdminPortal ? "/login?error=unauthorized" : "/?error=unauthorized", { headers });
   }
 
   // 3. Create memberships for each whitelisted org
@@ -172,10 +180,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     }
   }
 
-  // Route based on number of orgs
+  // Route based on context
+  if (isAdminPortal) {
+    return redirect("/admin", { headers });
+  }
   if (whitelistAccess.length === 1) {
     return redirect("/dashboard", { headers });
   }
-
   return redirect("/select-org", { headers });
 }

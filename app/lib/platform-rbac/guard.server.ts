@@ -32,7 +32,7 @@ export async function requirePlatformAdmin(
   const { supabase, headers } = createSupabaseServerClient(request, env);
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw redirect("/", { headers });
+  if (!user) throw redirect("/login", { headers });
 
   // Must be on admin.grixi.ai
   if (!isPlatformTenant(context)) throw redirect("/dashboard", { headers });
