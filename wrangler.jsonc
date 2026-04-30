@@ -25,7 +25,7 @@
 			"zone_name": "grixi.ai"
 		}
 	],
-	"workers_dev": true,
+	"workers_dev": false,
 	"ratelimits": [
 		{
 			"name": "ADMIN_RATE_LIMITER",
