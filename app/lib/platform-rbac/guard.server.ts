@@ -67,7 +67,13 @@ export async function requirePlatformAdmin(
     throw redirect("/login?error=not_admin", { headers });
   }
 
-  const role = (platformAdmin as any).platform_roles as PlatformRole;
+  const role = (platformAdmin as any).platform_roles as PlatformRole | null;
+
+  // Defensive: if role join failed (deleted role, etc.), treat as invalid admin
+  if (!role) {
+    await supabase.auth.signOut();
+    throw redirect("/login?error=not_admin", { headers });
+  }
 
   // Load permissions for this role (cached 3 min)
   let permissions: PlatformPermissionKey[] = [];

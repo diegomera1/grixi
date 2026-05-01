@@ -104,6 +104,10 @@ export async function action({ request, context }: Route.ActionArgs) {
   const kv = (env as any).KV_CACHE as KVNamespace | undefined;
 
   if (intent === "promote") {
+    // Promote requires admin.users.roles permission
+    if (!adminCtx.isSuperAdmin && !adminCtx.permissions.includes("admin.users.roles")) {
+      return Response.json({ error: "No tienes permiso para asignar roles" }, { status: 403, headers });
+    }
     const roleId = formData.get("role_id") as string;
     const scopedOrgIds = formData.get("scoped_org_ids") as string;
     const notes = formData.get("notes") as string;
@@ -160,11 +164,25 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   if (intent === "update_role") {
+    // Update role requires admin.users.roles permission
+    if (!adminCtx.isSuperAdmin && !adminCtx.permissions.includes("admin.users.roles")) {
+      return Response.json({ error: "No tienes permiso para cambiar roles" }, { status: 403, headers });
+    }
     const roleId = formData.get("role_id") as string;
     const scopedOrgIds = formData.get("scoped_org_ids") as string;
 
+    // Cannot update own role (prevents self-escalation)
+    if (targetUserId === adminCtx.userId) {
+      return Response.json({ error: "No puedes cambiar tu propio rol" }, { status: 400, headers });
+    }
+
     const { data: role } = await admin.from("platform_roles").select("hierarchy_level, is_super_admin, display_name").eq("id", roleId).single();
-    if (role?.is_super_admin && !adminCtx.isSuperAdmin) return Response.json({ error: "Solo Super Admins pueden asignar este rol" }, { status: 403, headers });
+    if (!role) return Response.json({ error: "Rol no encontrado" }, { status: 400, headers });
+    if (role.is_super_admin && !adminCtx.isSuperAdmin) return Response.json({ error: "Solo Super Admins pueden asignar este rol" }, { status: 403, headers });
+    // Cannot assign a role at or above own level
+    if (!adminCtx.isSuperAdmin && role.hierarchy_level >= adminCtx.role.hierarchy_level) {
+      return Response.json({ error: "No puedes asignar un rol de igual o mayor nivel" }, { status: 403, headers });
+    }
 
     const parsedScope = scopedOrgIds ? JSON.parse(scopedOrgIds) : null;
     await admin.from("platform_admins").update({
