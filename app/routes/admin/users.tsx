@@ -13,7 +13,7 @@ import { logAuditEvent, getClientIP } from "~/lib/audit";
 import { exportCSV } from "~/lib/export";
 import {
   Shield, ShieldOff, Search, Download, ShieldCheck, X,
-  Lock, Building2, ChevronDown,
+  Lock, Building2, ChevronDown, KeyRound, Settings2, Check, Minus, Plus,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -33,14 +33,29 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   // Platform admins with role details
   const { data: platformAdmins } = await admin
     .from("platform_admins")
-    .select("user_id, role_id, scoped_org_ids, granted_by, granted_at, notes, platform_roles(name, display_name, hierarchy_level, is_super_admin, color)")
+    .select("id, user_id, role_id, scoped_org_ids, granted_by, granted_at, notes, platform_roles(name, display_name, hierarchy_level, is_super_admin, color)")
     .order("granted_at", { ascending: false });
 
-  // Available platform roles
+  // Available platform roles + full permission catalog
   const { data: platformRoles } = await admin
     .from("platform_roles")
     .select("id, name, display_name, hierarchy_level, is_super_admin, color, description")
     .order("hierarchy_level", { ascending: false });
+
+  const { data: allPermissions } = await admin
+    .from("platform_permissions")
+    .select("id, key, module, description")
+    .order("module, key");
+
+  // Role → permissions mapping
+  const { data: rolePermLinks } = await admin
+    .from("platform_role_permissions")
+    .select("role_id, permission_id");
+
+  // Per-admin overrides
+  const { data: allOverrides } = await admin
+    .from("platform_admin_permission_overrides")
+    .select("admin_id, permission_id, override_type, notes, granted_by, created_at");
 
   // All organizations for scope selection
   const { data: organizations } = await admin
@@ -71,6 +86,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       avatar: u.user_metadata?.avatar_url,
       lastSignIn: u.last_sign_in_at,
       isPlatformAdmin: !!pa,
+      adminRecordId: pa?.id || null,
+      adminRoleId: pa?.role_id || null,
       adminRole: pa ? (pa as any).platform_roles : null,
       scopedOrgIds: pa?.scoped_org_ids || null,
       memberships: [] as any[],
@@ -85,6 +102,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   return Response.json({
     users: Array.from(usersMap.values()),
     platformRoles: platformRoles || [],
+    allPermissions: allPermissions || [],
+    rolePermLinks: rolePermLinks || [],
+    allOverrides: allOverrides || [],
     organizations: organizations || [],
     canManage: adminCtx.isSuperAdmin || adminCtx.permissions.includes("admin.users.manage"),
     currentAdminCtx: { userId: adminCtx.userId, isSuperAdmin: adminCtx.isSuperAdmin, hierarchyLevel: adminCtx.role.hierarchy_level },
@@ -199,15 +219,87 @@ export async function action({ request, context }: Route.ActionArgs) {
     return Response.json({ success: true }, { headers });
   }
 
+  if (intent === "set_permission_override") {
+    if (!adminCtx.isSuperAdmin && !adminCtx.permissions.includes("admin.users.roles")) {
+      return Response.json({ error: "No tienes permiso para modificar permisos" }, { status: 403, headers });
+    }
+    if (targetUserId === adminCtx.userId) {
+      return Response.json({ error: "No puedes modificar tus propios permisos" }, { status: 400, headers });
+    }
+
+    const adminRecordId = formData.get("admin_record_id") as string;
+    const permissionId = formData.get("permission_id") as string;
+    const overrideType = formData.get("override_type") as string;
+    const overrideNotes = formData.get("notes") as string;
+
+    if (!adminRecordId || !permissionId || !['grant', 'deny'].includes(overrideType)) {
+      return Response.json({ error: "Datos inválidos" }, { status: 400, headers });
+    }
+
+    // Verify target is not super admin
+    const { data: target } = await admin
+      .from("platform_admins")
+      .select("role_id, platform_roles(is_super_admin, hierarchy_level)")
+      .eq("id", adminRecordId).single();
+    if ((target as any)?.platform_roles?.is_super_admin) {
+      return Response.json({ error: "No se pueden aplicar overrides a Super Admins" }, { status: 403, headers });
+    }
+    if (!adminCtx.isSuperAdmin && (target as any)?.platform_roles?.hierarchy_level >= adminCtx.role.hierarchy_level) {
+      return Response.json({ error: "No puedes modificar permisos de alguien de igual o mayor nivel" }, { status: 403, headers });
+    }
+
+    const { error } = await admin.from("platform_admin_permission_overrides").upsert({
+      admin_id: adminRecordId,
+      permission_id: permissionId,
+      override_type: overrideType,
+      granted_by: adminCtx.userId,
+      notes: overrideNotes || null,
+    }, { onConflict: "admin_id,permission_id" });
+
+    if (error) return Response.json({ error: error.message }, { status: 400, headers });
+
+    await invalidatePlatformAdminCache(kv, targetUserId, undefined, adminRecordId);
+    await logAuditEvent(admin, {
+      actorId: adminCtx.userId, action: `platform_admin.permission_override.${overrideType}`,
+      entityType: "platform_admin", entityId: targetUserId,
+      metadata: { permissionId, overrideType, notes: overrideNotes }, ipAddress: ip,
+    });
+    return Response.json({ success: true }, { headers });
+  }
+
+  if (intent === "remove_permission_override") {
+    if (!adminCtx.isSuperAdmin && !adminCtx.permissions.includes("admin.users.roles")) {
+      return Response.json({ error: "No tienes permiso" }, { status: 403, headers });
+    }
+    if (targetUserId === adminCtx.userId) {
+      return Response.json({ error: "No puedes modificar tus propios permisos" }, { status: 400, headers });
+    }
+
+    const adminRecordId = formData.get("admin_record_id") as string;
+    const permissionId = formData.get("permission_id") as string;
+
+    await admin.from("platform_admin_permission_overrides")
+      .delete().eq("admin_id", adminRecordId).eq("permission_id", permissionId);
+
+    await invalidatePlatformAdminCache(kv, targetUserId, undefined, adminRecordId);
+    await logAuditEvent(admin, {
+      actorId: adminCtx.userId, action: "platform_admin.permission_override.remove",
+      entityType: "platform_admin", entityId: targetUserId,
+      metadata: { permissionId }, ipAddress: ip,
+    });
+    return Response.json({ success: true }, { headers });
+  }
+
   return Response.json({ error: "Unknown intent" }, { status: 400, headers });
 }
 
 export default function AdminUsers() {
-  const { users, platformRoles, organizations, canManage, currentAdminCtx } = useLoaderData<typeof loader>();
+  const { users, platformRoles, allPermissions, rolePermLinks, allOverrides, organizations, canManage, currentAdminCtx } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [search, setSearch] = useState("");
   const [filterAdmin, setFilterAdmin] = useState("");
   const [promoteUser, setPromoteUser] = useState<any>(null);
+  const [permissionsUser, setPermissionsUser] = useState<any>(null);
 
   const filtered = useMemo(() => {
     return users.filter((u: any) => {
@@ -310,12 +402,17 @@ export default function AdminUsers() {
                     <div className="flex items-center gap-1">
                       {u.isPlatformAdmin ? (
                         <>
-                          {/* Edit role */}
                           <button onClick={() => setPromoteUser(u)}
                             className="rounded-lg px-2 py-1 text-[10px] font-medium text-brand hover:bg-brand/10">
                             Editar
                           </button>
-                          {/* Revoke — only if not super admin and actor has higher level */}
+                          {/* Granular permissions */}
+                          {!u.adminRole?.is_super_admin && (
+                            <button onClick={() => setPermissionsUser(u)}
+                              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-amber-500 hover:bg-amber-500/10">
+                              <KeyRound size={11} /> Permisos
+                            </button>
+                          )}
                           {!u.adminRole?.is_super_admin && (
                             currentAdminCtx.isSuperAdmin || currentAdminCtx.hierarchyLevel > (u.adminRole?.hierarchy_level || 0)
                           ) && u.id !== currentAdminCtx.userId && (
@@ -351,6 +448,18 @@ export default function AdminUsers() {
           organizations={organizations}
           currentAdmin={currentAdminCtx}
           onClose={() => setPromoteUser(null)}
+        />
+      )}
+
+      {/* Granular Permissions Modal */}
+      {permissionsUser && (
+        <UserPermissionsModal
+          user={permissionsUser}
+          allPermissions={allPermissions}
+          rolePermLinks={rolePermLinks}
+          allOverrides={allOverrides}
+          currentAdmin={currentAdminCtx}
+          onClose={() => setPermissionsUser(null)}
         />
       )}
     </div>
@@ -486,6 +595,213 @@ function PromoteModal({ user, roles, organizations, currentAdmin, onClose }: {
             className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-[11px] font-medium text-white shadow-lg shadow-brand/20 disabled:opacity-50">
             <ShieldCheck size={12} />
             {isEditing ? "Actualizar Rol" : "Promover Admin"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Module labels & icons ──
+const MODULE_META: Record<string, { label: string; icon: string }> = {
+  dashboard: { label: "Dashboard", icon: "📊" },
+  organizations: { label: "Organizaciones", icon: "🏢" },
+  users: { label: "Usuarios", icon: "👥" },
+  audit: { label: "Auditoría", icon: "📋" },
+  billing: { label: "Facturación", icon: "💳" },
+  notifications: { label: "Notificaciones", icon: "🔔" },
+  feature_flags: { label: "Feature Flags", icon: "🚩" },
+  errors: { label: "Errores", icon: "🐛" },
+  analytics: { label: "Analytics", icon: "📈" },
+  settings: { label: "Configuración", icon: "⚙️" },
+  roles: { label: "Roles", icon: "🔑" },
+};
+
+// ── Granular Permissions Modal ──
+function UserPermissionsModal({ user, allPermissions, rolePermLinks, allOverrides, currentAdmin, onClose }: {
+  user: any; allPermissions: any[]; rolePermLinks: any[]; allOverrides: any[];
+  currentAdmin: any; onClose: () => void;
+}) {
+  const fetcher = useFetcher();
+
+  // Permissions this user's role grants
+  const rolePermIds = new Set(
+    rolePermLinks.filter((rp: any) => rp.role_id === user.adminRoleId).map((rp: any) => rp.permission_id)
+  );
+
+  // Current overrides for this admin
+  const userOverrides = new Map<string, { override_type: string; notes: string }>();
+  (allOverrides || []).forEach((ov: any) => {
+    if (ov.admin_id === user.adminRecordId) {
+      userOverrides.set(ov.permission_id, { override_type: ov.override_type, notes: ov.notes });
+    }
+  });
+
+  // Group permissions by module
+  const grouped = useMemo(() => {
+    const map = new Map<string, any[]>();
+    allPermissions.forEach((p: any) => {
+      if (!map.has(p.module)) map.set(p.module, []);
+      map.get(p.module)!.push(p);
+    });
+    return map;
+  }, [allPermissions]);
+
+  const canEdit = user.id !== currentAdmin.userId && (
+    currentAdmin.isSuperAdmin || currentAdmin.hierarchyLevel > (user.adminRole?.hierarchy_level || 0)
+  );
+
+  const handleToggle = (permId: string, currentState: "default" | "grant" | "deny") => {
+    // Cycle: default → grant → deny → default
+    const next = currentState === "default" ? "grant" : currentState === "grant" ? "deny" : "default";
+
+    if (next === "default") {
+      fetcher.submit({
+        intent: "remove_permission_override",
+        user_id: user.id,
+        admin_record_id: user.adminRecordId,
+        permission_id: permId,
+      }, { method: "post" });
+    } else {
+      fetcher.submit({
+        intent: "set_permission_override",
+        user_id: user.id,
+        admin_record_id: user.adminRecordId,
+        permission_id: permId,
+        override_type: next,
+        notes: "",
+      }, { method: "post" });
+    }
+  };
+
+  const getState = (permId: string): "default" | "grant" | "deny" => {
+    const ov = userOverrides.get(permId);
+    if (!ov) return "default";
+    return ov.override_type as "grant" | "deny";
+  };
+
+  const getEffective = (permId: string): boolean => {
+    const state = getState(permId);
+    const fromRole = rolePermIds.has(permId);
+    if (state === "grant") return true;
+    if (state === "deny") return false;
+    return fromRole;
+  };
+
+  const overrideCount = userOverrides.size;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-border bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div className="flex items-center gap-3">
+            {user.avatar ? (
+              <img src={user.avatar} className="h-10 w-10 rounded-full ring-2 ring-amber-500/20" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-[12px] font-bold text-amber-500">
+                {user.name?.charAt(0)?.toUpperCase()}
+              </div>
+            )}
+            <div>
+              <p className="text-[13px] font-bold text-text-primary">{user.name}</p>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold"
+                  style={{ backgroundColor: `${user.adminRole?.color}15`, color: user.adminRole?.color }}>
+                  <ShieldCheck size={9} /> {user.adminRole?.display_name}
+                </span>
+                {overrideCount > 0 && (
+                  <span className="text-[9px] text-amber-500 font-medium">{overrideCount} override{overrideCount > 1 ? "s" : ""}</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary"><X size={16} /></button>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 border-b border-border px-6 py-2.5 bg-muted/30">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted">Estado:</span>
+          <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-zinc-400" /><span className="text-[9px] text-text-muted">Hereda del Rol</span></div>
+          <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-emerald-500" /><span className="text-[9px] text-text-muted">Otorgado (+)</span></div>
+          <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-red-500" /><span className="text-[9px] text-text-muted">Denegado (−)</span></div>
+        </div>
+
+        {/* Permissions List */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {Array.from(grouped.entries()).map(([module, perms]) => {
+            const meta = MODULE_META[module] || { label: module, icon: "📦" };
+            return (
+              <div key={module}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[12px]">{meta.icon}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{meta.label}</span>
+                  <div className="flex-1 border-t border-border" />
+                </div>
+                <div className="space-y-1">
+                  {perms.map((p: any) => {
+                    const state = getState(p.id);
+                    const fromRole = rolePermIds.has(p.id);
+                    const effective = getEffective(p.id);
+
+                    return (
+                      <div key={p.id} className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {/* Effective indicator */}
+                          <div className={`flex h-5 w-5 items-center justify-center rounded-md text-white ${
+                            effective ? "bg-emerald-500/80" : "bg-zinc-600/50"
+                          }`}>
+                            {effective ? <Check size={10} /> : <Minus size={10} />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-medium text-text-primary truncate">{p.description}</p>
+                            <p className="text-[9px] text-text-muted font-mono">{p.key}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* From role badge */}
+                          <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded ${
+                            fromRole ? "text-emerald-600 bg-emerald-500/10" : "text-zinc-500 bg-zinc-500/10"
+                          }`}>
+                            {fromRole ? "Rol ✓" : "Rol ✗"}
+                          </span>
+
+                          {/* Override toggle — cycles: default → grant → deny → default */}
+                          {canEdit ? (
+                            <button
+                              onClick={() => handleToggle(p.id, state)}
+                              disabled={fetcher.state !== "idle"}
+                              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all border ${
+                                state === "default"
+                                  ? "border-border text-text-muted hover:border-zinc-400 bg-transparent"
+                                  : state === "grant"
+                                  ? "border-emerald-500/30 text-emerald-500 bg-emerald-500/10 hover:border-emerald-500"
+                                  : "border-red-500/30 text-red-500 bg-red-500/10 hover:border-red-500"
+                              }`}
+                            >
+                              {state === "default" && <><Settings2 size={10} /> Default</>}
+                              {state === "grant" && <><Plus size={10} /> Grant</>}
+                              {state === "deny" && <><Minus size={10} /> Deny</>}
+                            </button>
+                          ) : (
+                            <span className="text-[9px] text-text-muted">—</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border px-6 py-3 flex items-center justify-between">
+          <p className="text-[9px] text-text-muted">Los cambios se aplican inmediatamente y se registran en auditoría.</p>
+          <button onClick={onClose} className="rounded-lg bg-brand px-4 py-2 text-[11px] font-medium text-white">
+            Cerrar
           </button>
         </div>
       </div>

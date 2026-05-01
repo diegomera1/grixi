@@ -78,7 +78,7 @@ export async function requirePlatformAdmin(
   // Load permissions for this role (cached 3 min)
   let permissions: PlatformPermissionKey[] = [];
   if (role.is_super_admin) {
-    // Super admins get ALL permissions
+    // Super admins get ALL permissions — overrides don't apply
     const { data: allPerms } = await getCachedOrFetch(
       kv,
       "platform_all_permissions",
@@ -105,6 +105,29 @@ export async function requirePlatformAdmin(
     permissions = (rolePerms || []).map(
       (rp: any) => (rp as any).platform_permissions?.key as PlatformPermissionKey
     ).filter(Boolean);
+
+    // ── Per-user permission overrides (grants & denies) ──
+    const { data: overrides } = await getCachedOrFetch(
+      kv,
+      `platform_admin_overrides:${(platformAdmin as any).id}`,
+      async () => {
+        const { data } = await admin
+          .from("platform_admin_permission_overrides")
+          .select("override_type, platform_permissions!inner(key)")
+          .eq("admin_id", (platformAdmin as any).id);
+        return data;
+      },
+      180
+    );
+    for (const ov of (overrides || []) as any[]) {
+      const key = ov.platform_permissions?.key as PlatformPermissionKey;
+      if (!key) continue;
+      if (ov.override_type === "grant" && !permissions.includes(key)) {
+        permissions.push(key);
+      } else if (ov.override_type === "deny") {
+        permissions = permissions.filter((p) => p !== key);
+      }
+    }
   }
 
   return {
@@ -213,11 +236,13 @@ export async function invalidatePlatformAdminCache(
   kv: KVNamespace | undefined,
   userId: string,
   roleId?: string,
+  adminRecordId?: string,
 ): Promise<void> {
   if (!kv) return;
   await Promise.all([
     kv.delete(`platform_admin_ctx:${userId}`),
     kv.delete(cacheKey.platformAdmin(userId)),
     roleId ? kv.delete(`platform_role_perms:${roleId}`) : Promise.resolve(),
+    adminRecordId ? kv.delete(`platform_admin_overrides:${adminRecordId}`) : Promise.resolve(),
   ]);
 }
