@@ -3,9 +3,10 @@
  * 
  * Receives analytics events from the client.
  * Batched: accepts array of events for efficiency.
+ * SECURITY: Requires authentication. user_id is server-enforced.
  */
 import type { Route } from "./+types/api.analytics";
-import { createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 
 export async function action({ request, context }: Route.ActionArgs) {
   if (request.method !== "POST") {
@@ -14,6 +15,15 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   try {
     const env = context.cloudflare.env;
+
+    // SECURITY: Require authentication
+    const { supabase } = createSupabaseServerClient(request, env);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
     const body = await request.json();
     const admin = createSupabaseAdminClient(env);
 
@@ -27,14 +37,14 @@ export async function action({ request, context }: Route.ActionArgs) {
     const rows = events.map((e: any) => ({
       event_name: e.eventName?.substring(0, 100) || "unknown",
       event_category: e.category?.substring(0, 50) || "general",
-      user_id: e.userId || null,
+      user_id: user.id, // SECURITY: Server-enforced, not from client
       organization_id: e.organizationId || null,
       properties: e.properties || {},
       session_id: e.sessionId?.substring(0, 100) || null,
       url: e.url?.substring(0, 500) || null,
       route: e.route?.substring(0, 200) || null,
       referrer: e.referrer?.substring(0, 500) || null,
-      user_agent: (e.userAgent || request.headers.get("user-agent") || "").substring(0, 500),
+      user_agent: (request.headers.get("user-agent") || "").substring(0, 500),
     }));
 
     await admin.from("analytics_events").insert(rows);

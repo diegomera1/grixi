@@ -1,10 +1,6 @@
-/**
- * POST /api/push/cleanup — Cleans expired push subscriptions
- * Admin-only endpoint that attempts to send a test push to each subscription
- * and removes any that return 404/410 (expired/unsubscribed)
- */
 import type { Route } from "./+types/api.push.cleanup";
-import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { requirePlatformAdmin, requirePlatformPermission } from "~/lib/platform-rbac/guard.server";
 import { logAuditEvent, getClientIP } from "~/lib/audit";
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -13,22 +9,20 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   const env = context.cloudflare.env;
-  const { supabase, headers } = createSupabaseServerClient(request, env);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+
+  // SECURITY: Full RBAC check
+  let adminCtx;
+  let headers: HeadersInit;
+  try {
+    const result = await requirePlatformAdmin(request, env, context);
+    adminCtx = result.adminCtx;
+    headers = result.supabaseHeaders;
+    requirePlatformPermission(adminCtx, "admin.settings.manage", headers);
+  } catch {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const admin = createSupabaseAdminClient(env);
-
-  // Check platform admin
-  const { data: platformAdmin } = await admin
-    .from("platform_admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!platformAdmin) {
-    return Response.json({ error: "Forbidden" }, { status: 403, headers });
-  }
 
   // Get all push subscriptions
   const { data: subs } = await admin.from("push_subscriptions").select("id, endpoint, user_id");
@@ -57,7 +51,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   const ip = getClientIP(request);
   await logAuditEvent(admin, {
-    actorId: user.id,
+    actorId: adminCtx.userId,
     action: "system.push_cleanup",
     entityType: "system",
     metadata: { total: subs.length, cleaned: expired.length },

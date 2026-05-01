@@ -5,7 +5,7 @@
  * Uses service_role to bypass RLS (errors don't need user auth).
  */
 import type { Route } from "./+types/api.errors";
-import { createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
 
 export async function action({ request, context }: Route.ActionArgs) {
   if (request.method !== "POST") {
@@ -22,6 +22,10 @@ export async function action({ request, context }: Route.ActionArgs) {
     const env = context.cloudflare.env;
     const body = await request.json();
     const admin = createSupabaseAdminClient(env);
+
+    // Optional auth — errors can come from unauthed pages but we try to get user
+    const { supabase } = createSupabaseServerClient(request, env);
+    const { data: { user } } = await supabase.auth.getUser();
 
     const {
       message,
@@ -57,8 +61,8 @@ export async function action({ request, context }: Route.ActionArgs) {
       stack: stack?.substring(0, 10000),
       source,
       level,
-      user_id: userId || null,
-      organization_id: organizationId || null,
+      user_id: user?.id || null, // SECURITY: Server-enforced
+      organization_id: null, // Will be resolved server-side if needed
       url: url?.substring(0, 500),
       route: route?.substring(0, 200),
       user_agent: ua.substring(0, 500),

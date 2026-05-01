@@ -1,32 +1,29 @@
 import type { Route } from "./+types/api.push.send";
-import { createSupabaseServerClient, createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { createSupabaseAdminClient } from "~/lib/supabase/client.server";
+import { requirePlatformAdmin, requirePlatformPermission } from "~/lib/platform-rbac/guard.server";
 
 /**
  * POST /api/push/send — Send a push notification to a user
  * Body: { userId, title, body, url?, orgId }
  * 
- * Uses Web Push Protocol directly (no npm lib needed - CF Workers compatible)
+ * SECURITY: Requires admin.notifications.broadcast permission
  */
 export async function action({ request, context }: Route.ActionArgs) {
   const env = context.cloudflare.env;
-  const { supabase, headers } = createSupabaseServerClient(request, env);
-  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return Response.json({ error: "No autenticado" }, { status: 401, headers });
+  // SECURITY: Full RBAC check instead of raw table lookup
+  let adminCtx;
+  let headers: HeadersInit;
+  try {
+    const result = await requirePlatformAdmin(request, env, context);
+    adminCtx = result.adminCtx;
+    headers = result.supabaseHeaders;
+    requirePlatformPermission(adminCtx, "admin.notifications.broadcast", headers);
+  } catch {
+    return Response.json({ error: "Sin permisos" }, { status: 403 });
   }
 
-  // Only allow platform admins or the system to send
   const admin = createSupabaseAdminClient(env);
-  const { data: platformAdmin } = await admin
-    .from("platform_admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!platformAdmin) {
-    return Response.json({ error: "Sin permisos" }, { status: 403, headers });
-  }
 
   const body = await request.json();
   const { userId, title, body: notifBody, url = "/dashboard", orgId } = body;
