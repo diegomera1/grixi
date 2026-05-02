@@ -13,15 +13,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   requirePlatformPermission(adminCtx, "admin.orgs.view", headers);
 
 
-  // Platform admin routes ONLY accessible from grixi.grixi.ai
-
   const admin = createSupabaseAdminClient(env);
-  const { data: platformAdmin } = await admin
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!platformAdmin) return redirect("/dashboard", { headers });
 
   const { data: organizations } = await admin
     .from("organizations")
@@ -47,15 +39,7 @@ export async function action({ request, context }: Route.ActionArgs) {
   requirePlatformPermission(adminCtx, "admin.orgs.create", headers);
 
 
-  // CRITICAL: Block mutations from non-platform tenants
-
   const admin = createSupabaseAdminClient(env);
-  const { data: platformAdmin } = await admin
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!platformAdmin) return Response.json({ error: "Unauthorized" }, { status: 403, headers });
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
@@ -117,7 +101,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       }
     }
 
-    await logAuditEvent(admin, { actorId: user.id, action: "organization.create", entityType: "organization", entityId: org.id, metadata: { name, slug, plan }, ipAddress: ip, organizationId: org.id });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "organization.create", entityType: "organization", entityId: org.id, metadata: { name, slug, plan }, ipAddress: ip, organizationId: org.id });
     return Response.json({ success: true, org }, { headers });
   }
 
@@ -127,13 +111,13 @@ export async function action({ request, context }: Route.ActionArgs) {
     const updatePayload: Record<string, any> = { status: newStatus };
     if (newStatus === "suspended") {
       updatePayload.suspended_at = new Date().toISOString();
-      updatePayload.suspended_by = user.id;
+      updatePayload.suspended_by = adminCtx.userId;
     } else {
       updatePayload.suspended_at = null;
       updatePayload.suspended_by = null;
     }
     await admin.from("organizations").update(updatePayload).eq("id", orgId);
-    await logAuditEvent(admin, { actorId: user.id, action: `organization.${newStatus === "suspended" ? "suspend" : "activate"}`, entityType: "organization", entityId: orgId, metadata: { newStatus }, ipAddress: ip });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: `organization.${newStatus === "suspended" ? "suspend" : "activate"}`, entityType: "organization", entityId: orgId, metadata: { newStatus }, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
