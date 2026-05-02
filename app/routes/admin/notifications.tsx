@@ -46,7 +46,6 @@ export async function action({ request, context }: Route.ActionArgs) {
   requirePlatformPermission(adminCtx, "admin.notifications.broadcast", headers);
 
   const admin = createSupabaseAdminClient(env);
-  if (!pa) return Response.json({ error: "Unauthorized" }, { status: 403, headers });
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
@@ -70,13 +69,13 @@ export async function action({ request, context }: Route.ActionArgs) {
       title, message, type, audience,
       status: sendNow ? "sent" : "draft",
       sent_at: sendNow ? new Date().toISOString() : null,
-      sent_by: sendNow ? user.id : null,
+      sent_by: sendNow ? adminCtx.userId : null,
     }).select().single();
 
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "notification.create", entityType: "platform_notification",
+      actorId: adminCtx.userId, action: "notification.create", entityType: "platform_notification",
       entityId: notif.id, metadata: { title, type, audience, sent: sendNow }, ipAddress: ip,
     });
 
@@ -86,11 +85,11 @@ export async function action({ request, context }: Route.ActionArgs) {
   if (intent === "send") {
     const notifId = formData.get("notification_id") as string;
     await admin.from("platform_notifications").update({
-      status: "sent", sent_at: new Date().toISOString(), sent_by: user.id,
+      status: "sent", sent_at: new Date().toISOString(), sent_by: adminCtx.userId,
     }).eq("id", notifId);
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "notification.send", entityType: "platform_notification",
+      actorId: adminCtx.userId, action: "notification.send", entityType: "platform_notification",
       entityId: notifId, ipAddress: ip,
     });
 
@@ -102,7 +101,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     await admin.from("platform_notifications").delete().eq("id", notifId);
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "notification.delete", entityType: "platform_notification",
+      actorId: adminCtx.userId, action: "notification.delete", entityType: "platform_notification",
       entityId: notifId, ipAddress: ip,
     });
 

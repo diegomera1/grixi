@@ -49,7 +49,6 @@ export async function action({ request, context }: Route.ActionArgs) {
   requirePlatformPermission(adminCtx, "admin.flags.manage", headers);
 
   const admin = createSupabaseAdminClient(env);
-  if (!pa) return Response.json({ error: "Unauthorized" }, { status: 403, headers });
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
@@ -64,7 +63,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     await admin.from("feature_flags").update({ default_enabled: newValue }).eq("key", key);
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "feature_flag.toggle", entityType: "feature_flags",
+      actorId: adminCtx.userId, action: "feature_flag.toggle", entityType: "feature_flags",
       entityId: key, metadata: { key, default_enabled: newValue }, ipAddress: ip,
     });
     return Response.json({ success: true }, { headers });
@@ -82,7 +81,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "feature_flag.override", entityType: "feature_flag_overrides",
+      actorId: adminCtx.userId, action: "feature_flag.override", entityType: "feature_flag_overrides",
       entityId: `${flagKey}:${orgId}`, metadata: { flagKey, orgId, enabled }, ipAddress: ip,
     });
     return Response.json({ success: true }, { headers });
@@ -93,7 +92,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     await admin.from("feature_flag_overrides").delete().eq("id", id);
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "feature_flag.override_removed", entityType: "feature_flag_overrides",
+      actorId: adminCtx.userId, action: "feature_flag.override_removed", entityType: "feature_flag_overrides",
       entityId: id, ipAddress: ip,
     });
     return Response.json({ success: true }, { headers });

@@ -55,7 +55,6 @@ export async function action({ request, context }: Route.ActionArgs) {
   requirePlatformPermission(adminCtx, "admin.settings.manage", headers);
 
   const admin = createSupabaseAdminClient(env);
-  if (!pa) return Response.json({ error: "Unauthorized" }, { status: 403, headers });
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
@@ -76,13 +75,13 @@ export async function action({ request, context }: Route.ActionArgs) {
     const { error } = await admin.from("platform_settings").update({
       value: parsedValue,
       updated_at: new Date().toISOString(),
-      updated_by: user.id,
+      updated_by: adminCtx.userId,
     }).eq("key", key);
 
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "settings.update", entityType: "platform_settings",
+      actorId: adminCtx.userId, action: "settings.update", entityType: "platform_settings",
       entityId: key, metadata: { key, value: parsedValue }, ipAddress: ip,
     });
 
@@ -99,11 +98,11 @@ export async function action({ request, context }: Route.ActionArgs) {
     await admin.from("platform_settings").update({
       value: newValue,
       updated_at: new Date().toISOString(),
-      updated_by: user.id,
+      updated_by: adminCtx.userId,
     }).eq("key", key);
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "settings.toggle", entityType: "platform_settings",
+      actorId: adminCtx.userId, action: "settings.toggle", entityType: "platform_settings",
       entityId: key, metadata: { key, enabled: newValue }, ipAddress: ip,
     });
 

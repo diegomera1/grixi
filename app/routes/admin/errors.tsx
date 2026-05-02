@@ -59,7 +59,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     const id = formData.get("id") as string;
     await admin.from("error_logs").update({
       resolved_at: new Date().toISOString(),
-      resolved_by: user.id,
+      resolved_by: adminCtx.userId,
     }).eq("id", id);
     return Response.json({ success: true }, { headers });
   }
@@ -68,7 +68,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     const fingerprint = formData.get("fingerprint") as string;
     await admin.from("error_logs").update({
       resolved_at: new Date().toISOString(),
-      resolved_by: user.id,
+      resolved_by: adminCtx.userId,
     }).eq("fingerprint", fingerprint).is("resolved_at", null);
     return Response.json({ success: true }, { headers });
   }

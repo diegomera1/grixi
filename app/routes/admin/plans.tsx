@@ -64,7 +64,6 @@ export async function action({ request, context }: Route.ActionArgs) {
   requirePlatformPermission(adminCtx, "admin.billing.manage", headers);
 
   const admin = createSupabaseAdminClient(env);
-  if (!pa) return Response.json({ error: "Unauthorized" }, { status: 403, headers });
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
@@ -103,7 +102,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "organization.change_plan", entityType: "organization",
+      actorId: adminCtx.userId, action: "organization.change_plan", entityType: "organization",
       entityId: orgId, metadata: { name: org?.name, oldPlan, newPlan }, ipAddress: ip, organizationId: orgId,
     });
 

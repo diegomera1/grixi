@@ -127,7 +127,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   // CRITICAL: Block mutations from non-platform tenants
 
   const admin = createSupabaseAdminClient(env);
-  if (!pa) return Response.json({ error: "Unauthorized" }, { status: 403, headers });
 
   const orgId = params.id;
   const formData = await request.formData();
@@ -152,7 +151,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: invitation, error } = await admin.from("invitations").insert({
-      organization_id: orgId, email, role_id: roleId, invited_by: user.id,
+      organization_id: orgId, email, role_id: roleId, invited_by: adminCtx.userId,
       status: "pending", expires_at: expiresAt,
     }).select().single();
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
@@ -162,7 +161,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (resendKey) {
       const { data: orgData } = await admin.from("organizations").select("name, slug").eq("id", orgId).maybeSingle();
       const { data: roleData } = await admin.from("roles").select("name").eq("id", roleId).maybeSingle();
-      const inviterName = user.user_metadata?.full_name || user.email || "Un administrador";
+      const inviterName = adminCtx.email || "Un administrador";
       const slug = orgData?.slug || "app";
       const result = await sendInvitationEmail(resendKey, {
         to: email,
@@ -177,14 +176,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       console.warn("[ADMIN-INVITE] RESEND_API_KEY not configured");
     }
 
-    await logAuditEvent(admin, { actorId: user.id, action: "invitation.create", entityType: "invitation", entityId: invitation?.id, metadata: { email, orgId, emailSent: !!resendKey }, ipAddress: ip });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "invitation.create", entityType: "invitation", entityId: invitation?.id, metadata: { email, orgId, emailSent: !!resendKey }, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
   if (intent === "cancel_invitation") {
     const invId = formData.get("invitation_id") as string;
     await admin.from("invitations").update({ status: "revoked" }).eq("id", invId);
-    await logAuditEvent(admin, { actorId: user.id, action: "invitation.cancel", entityType: "invitation", entityId: invId, ipAddress: ip });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "invitation.cancel", entityType: "invitation", entityId: invId, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
@@ -199,7 +198,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       const { data: inv } = await admin.from("invitations").select("email, role_id, roles(name)").eq("id", invId).maybeSingle();
       const { data: orgData } = await admin.from("organizations").select("name, slug").eq("id", orgId).maybeSingle();
       if (inv) {
-        const inviterName = user.user_metadata?.full_name || user.email || "Un administrador";
+        const inviterName = adminCtx.email || "Un administrador";
         const slug = orgData?.slug || "app";
         await sendInvitationEmail(resendKey, {
           to: inv.email,
@@ -212,7 +211,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       }
     }
 
-    await logAuditEvent(admin, { actorId: user.id, action: "invitation.resend", entityType: "invitation", entityId: invId, ipAddress: ip });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "invitation.resend", entityType: "invitation", entityId: invId, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
@@ -220,7 +219,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const memberId = formData.get("membership_id") as string;
     const newRoleId = formData.get("role_id") as string;
     await admin.from("memberships").update({ role_id: newRoleId }).eq("id", memberId);
-    await logAuditEvent(admin, { actorId: user.id, action: "member.change_role", entityType: "membership", entityId: memberId, metadata: { newRoleId, orgId }, ipAddress: ip, organizationId: orgId });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "member.change_role", entityType: "membership", entityId: memberId, metadata: { newRoleId, orgId }, ipAddress: ip, organizationId: orgId });
     return Response.json({ success: true }, { headers });
   }
 
@@ -228,15 +227,15 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const memberId = formData.get("membership_id") as string;
     const currentStatus = formData.get("current_status") as string;
     const newStatus = currentStatus === "active" ? "suspended" : "active";
-    await admin.from("memberships").update({ status: newStatus, deactivated_at: newStatus === "suspended" ? new Date().toISOString() : null, deactivated_by: newStatus === "suspended" ? user.id : null }).eq("id", memberId);
-    await logAuditEvent(admin, { actorId: user.id, action: `member.${newStatus === "suspended" ? "suspend" : "reactivate"}`, entityType: "membership", entityId: memberId, metadata: { newStatus, orgId }, ipAddress: ip, organizationId: orgId });
+    await admin.from("memberships").update({ status: newStatus, deactivated_at: newStatus === "suspended" ? new Date().toISOString() : null, deactivated_by: newStatus === "suspended" ? adminCtx.userId : null }).eq("id", memberId);
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: `member.${newStatus === "suspended" ? "suspend" : "reactivate"}`, entityType: "membership", entityId: memberId, metadata: { newStatus, orgId }, ipAddress: ip, organizationId: orgId });
     return Response.json({ success: true }, { headers });
   }
 
   if (intent === "remove_member") {
     const memberId = formData.get("membership_id") as string;
     await admin.from("memberships").delete().eq("id", memberId);
-    await logAuditEvent(admin, { actorId: user.id, action: "member.remove", entityType: "membership", entityId: memberId, metadata: { orgId }, ipAddress: ip, organizationId: orgId });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "member.remove", entityType: "membership", entityId: memberId, metadata: { orgId }, ipAddress: ip, organizationId: orgId });
     return Response.json({ success: true }, { headers });
   }
 
@@ -246,7 +245,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const { data: org } = await admin.from("organizations").select("settings").eq("id", orgId).single();
     const settings = { ...(org?.settings || {}), enabled_modules: modules };
     await admin.from("organizations").update({ settings }).eq("id", orgId);
-    await logAuditEvent(admin, { actorId: user.id, action: "organization.update_modules", entityType: "organization", entityId: orgId, metadata: { modules }, ipAddress: ip });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "organization.update_modules", entityType: "organization", entityId: orgId, metadata: { modules }, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
@@ -284,7 +283,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     }
 
     await logAuditEvent(admin, {
-      actorId: user.id, action: "feature_flag.toggle", entityType: "feature_flag_overrides",
+      actorId: adminCtx.userId, action: "feature_flag.toggle", entityType: "feature_flag_overrides",
       entityId: `${flagKey}:${orgId}`, metadata: { flagKey, enabled, useDefault, orgId }, ipAddress: ip,
       organizationId: orgId,
     });
@@ -299,7 +298,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const { data: org } = await admin.from("organizations").select("settings").eq("id", orgId).single();
     const settings = { ...(org?.settings || {}), plan, max_users: maxUsers, primary_color: primaryColor, billing_email: billingEmail };
     await admin.from("organizations").update({ settings }).eq("id", orgId);
-    await logAuditEvent(admin, { actorId: user.id, action: "organization.update_settings", entityType: "organization", entityId: orgId, metadata: { plan, maxUsers }, ipAddress: ip });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "organization.update_settings", entityType: "organization", entityId: orgId, metadata: { plan, maxUsers }, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
@@ -307,16 +306,16 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const domain = formData.get("domain") as string;
     const autoRole = formData.get("auto_role") as string;
     if (!domain) return Response.json({ error: "Dominio requerido" }, { status: 400, headers });
-    const { error } = await admin.from("domain_whitelists").insert({ organization_id: orgId, domain, auto_role: autoRole || "member", created_by: user.id });
+    const { error } = await admin.from("domain_whitelists").insert({ organization_id: orgId, domain, auto_role: autoRole || "member", created_by: adminCtx.userId });
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
-    await logAuditEvent(admin, { actorId: user.id, action: "domain.add", entityType: "domain_whitelist", metadata: { domain, orgId }, ipAddress: ip });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "domain.add", entityType: "domain_whitelist", metadata: { domain, orgId }, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
   if (intent === "remove_domain") {
     const domainId = formData.get("domain_id") as string;
     await admin.from("domain_whitelists").delete().eq("id", domainId);
-    await logAuditEvent(admin, { actorId: user.id, action: "domain.remove", entityType: "domain_whitelist", entityId: domainId, ipAddress: ip });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "domain.remove", entityType: "domain_whitelist", entityId: domainId, ipAddress: ip });
     return Response.json({ success: true }, { headers });
   }
 
@@ -330,7 +329,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       description: roleDesc || roleName, is_system: false, hierarchy_level: hierarchyLevel, is_default: false,
     }).select().single();
     if (error) return Response.json({ error: error.message }, { status: 400, headers });
-    await logAuditEvent(admin, { actorId: user.id, action: "role.create", entityType: "role", entityId: newRole.id, metadata: { roleName, hierarchyLevel }, ipAddress: ip, organizationId: orgId });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "role.create", entityType: "role", entityId: newRole.id, metadata: { roleName, hierarchyLevel }, ipAddress: ip, organizationId: orgId });
     return Response.json({ success: true }, { headers });
   }
 
@@ -342,7 +341,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (permissionIds.length > 0) {
       await admin.from("role_permissions").insert(permissionIds.map((pid: string) => ({ role_id: roleId, permission_id: pid })));
     }
-    await logAuditEvent(admin, { actorId: user.id, action: "role.update_permissions", entityType: "role", entityId: roleId, metadata: { permissionCount: permissionIds.length }, ipAddress: ip, organizationId: orgId });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "role.update_permissions", entityType: "role", entityId: roleId, metadata: { permissionCount: permissionIds.length }, ipAddress: ip, organizationId: orgId });
     return Response.json({ success: true }, { headers });
   }
 
@@ -350,7 +349,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const roleId = formData.get("role_id") as string;
     await admin.from("role_permissions").delete().eq("role_id", roleId);
     await admin.from("roles").delete().eq("id", roleId).eq("is_system", false);
-    await logAuditEvent(admin, { actorId: user.id, action: "role.delete", entityType: "role", entityId: roleId, ipAddress: ip, organizationId: orgId });
+    await logAuditEvent(admin, { actorId: adminCtx.userId, action: "role.delete", entityType: "role", entityId: roleId, ipAddress: ip, organizationId: orgId });
     return Response.json({ success: true }, { headers });
   }
 
@@ -361,7 +360,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     }
     await admin.from("organizations").update({ status: newStatus }).eq("id", orgId);
     await logAuditEvent(admin, {
-      actorId: user.id, action: `organization.${newStatus}`, entityType: "organization",
+      actorId: adminCtx.userId, action: `organization.${newStatus}`, entityType: "organization",
       entityId: orgId, metadata: { newStatus }, ipAddress: ip, organizationId: orgId,
     });
     return Response.json({ success: true }, { headers });
